@@ -1,0 +1,529 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://embedded-workflow.invalid/schemas/v1.1/project-profile.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_ref": {
+      "const": "project-profile.schema.json"
+    },
+    "schema_version": {
+      "const": "1.1"
+    },
+    "document_type": {
+      "const": "PROJECT_PROFILE"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "READY",
+        "ACTIVE",
+        "CLOSED"
+      ]
+    },
+    "project_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "standard_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "standard_version": {
+      "enum": [
+        "1.1",
+        "1.2"
+      ]
+    },
+    "repository_root": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "source_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "owned_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "third_party_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "generated_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "generator_sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "owned_paths",
+        "third_party_paths",
+        "generated_paths",
+        "generator_sources"
+      ]
+    },
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "toolchains": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/toolchain"
+      },
+      "minItems": 0
+    },
+    "devices": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/device"
+      },
+      "minItems": 0
+    },
+    "check_profiles": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/profile"
+            },
+            {
+              "properties": {
+                "name": {
+                  "const": "quick"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/profile"
+            },
+            {
+              "properties": {
+                "name": {
+                  "const": "full"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/profile"
+            },
+            {
+              "properties": {
+                "name": {
+                  "const": "hil"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/profile"
+            },
+            {
+              "properties": {
+                "name": {
+                  "const": "soak"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "items": false
+    },
+    "authorization_grants": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/authority"
+      },
+      "minItems": 0
+    },
+    "autonomy_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reuse_valid_preapproval": {
+          "const": true
+        },
+        "outside_scope": {
+          "const": "BLOCK_AND_REPORT"
+        },
+        "unknown_or_failed_precondition": {
+          "const": "BLOCK_DEPENDENT_ACTION"
+        },
+        "physical_user_action_requires_confirmation_or_fixture_evidence": {
+          "const": true
+        },
+        "never_infer_authorization_from_elapsed_time": {
+          "const": true
+        }
+      },
+      "required": [
+        "reuse_valid_preapproval",
+        "outside_scope",
+        "unknown_or_failed_precondition",
+        "physical_user_action_requires_confirmation_or_fixture_evidence",
+        "never_infer_authorization_from_elapsed_time"
+      ]
+    },
+    "default_budgets": {
+      "$ref": "common.schema.json#/$defs/budget"
+    },
+    "risk_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "R0": {
+          "const": "注释和文档，不改变非注释代码与必要的预处理行为"
+        },
+        "R1": {
+          "const": "普通行为变更"
+        },
+        "R2": {
+          "const": "驱动、并发、资源、算法、参数或标定变更"
+        },
+        "R3": {
+          "const": "发布或安全敏感变更"
+        }
+      },
+      "required": [
+        "R0",
+        "R1",
+        "R2",
+        "R3"
+      ]
+    },
+    "log_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "module_registry": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "levels": {
+          "const": [
+            "ERROR",
+            "WARN",
+            "INFO",
+            "DEBUG",
+            "TRACE"
+          ]
+        },
+        "event_id_policy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "event_time_and_boot_identity": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "queue_and_rate_budget": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "drop_and_critical_event_policy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "filtering_contract": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "sensitive_data_policy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "module_registry",
+        "levels",
+        "event_id_policy",
+        "event_time_and_boot_identity",
+        "queue_and_rate_budget",
+        "drop_and_critical_event_policy",
+        "filtering_contract",
+        "sensitive_data_policy"
+      ]
+    },
+    "artifact_retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "archive_root": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "retention_policy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "access_policy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "archive_root",
+        "retention_policy",
+        "access_policy"
+      ]
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rule_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approval_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "review_due": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "rule_id",
+          "scope",
+          "reason",
+          "approval_reference",
+          "review_due"
+        ]
+      },
+      "minItems": 0
+    },
+    "activation_review": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_ref",
+    "schema_version",
+    "document_type",
+    "document_id",
+    "status",
+    "project_id",
+    "description",
+    "standard_reference",
+    "standard_version",
+    "repository_root",
+    "source_scope",
+    "platforms",
+    "toolchains",
+    "devices",
+    "check_profiles",
+    "authorization_grants",
+    "autonomy_policy",
+    "default_budgets",
+    "risk_mapping",
+    "log_contract",
+    "artifact_retention",
+    "exceptions",
+    "activation_review"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "READY",
+              "ACTIVE",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "document_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "project_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "standard_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repository_root": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_scope": {
+            "properties": {
+              "owned_paths": {
+                "minItems": 1
+              }
+            }
+          },
+          "platforms": {
+            "minItems": 1
+          },
+          "toolchains": {
+            "minItems": 1
+          },
+          "check_profiles": {
+            "items": {
+              "properties": {
+                "configuration_state": {
+                  "enum": [
+                    "CONFIGURED",
+                    "NOT_APPLICABLE"
+                  ]
+                }
+              }
+            }
+          },
+          "default_budgets": {
+            "properties": {
+              "task_seconds": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "artifact_retention": {
+            "properties": {
+              "archive_root": {
+                "type": "string",
+                "minLength": 1
+              },
+              "retention_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "access_policy": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "activation_review": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

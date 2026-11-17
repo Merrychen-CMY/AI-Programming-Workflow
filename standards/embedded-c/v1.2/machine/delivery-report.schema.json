@@ -1,0 +1,719 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://embedded-workflow.invalid/schemas/v1.1/delivery-report.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_ref": {
+      "const": "delivery-report.schema.json"
+    },
+    "schema_version": {
+      "const": "1.1"
+    },
+    "document_type": {
+      "const": "DELIVERY_REPORT"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "FINAL"
+      ]
+    },
+    "project_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "task_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "test_plan_artifact": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/artifact"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "acceptance_status": {
+      "enum": [
+        "ACCEPTED",
+        "INCOMPLETE",
+        "REJECTED"
+      ]
+    },
+    "acceptance_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "generated_at": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "final_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "$ref": "common.schema.json#/$defs/source_identity"
+        },
+        "configuration_artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "minItems": 0
+        },
+        "parameter_and_calibration_artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "minItems": 0
+        },
+        "toolchain_artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "minItems": 0
+        },
+        "firmware_applicability": {
+          "enum": [
+            "UNDECIDED",
+            "APPLICABLE",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "firmware_not_applicable_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "firmware_artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "minItems": 0
+        },
+        "diagnostic_release_differences": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source",
+        "configuration_artifacts",
+        "parameter_and_calibration_artifacts",
+        "toolchain_artifacts",
+        "firmware_applicability",
+        "firmware_not_applicable_reason",
+        "firmware_artifacts",
+        "diagnostic_release_differences"
+      ]
+    },
+    "change_manifest": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/change"
+      },
+      "minItems": 0
+    },
+    "identity_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_matches_final_source_and_config": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "firmware_matches_build": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "flashed_firmware_matches_artifact": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "hardware_not_used_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "checks_after_last_affected_change": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "evidence_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "evidence_matches_final_source_and_config",
+        "firmware_matches_build",
+        "flashed_firmware_matches_artifact",
+        "hardware_not_used_reason",
+        "checks_after_last_affected_change",
+        "evidence_reference"
+      ]
+    },
+    "execution_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "discovered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_run": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_required": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_incomplete": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "zero_tests_is_error": {
+          "const": true
+        }
+      },
+      "required": [
+        "discovered",
+        "executed",
+        "passed",
+        "failed",
+        "skipped",
+        "blocked",
+        "errors",
+        "not_run",
+        "missing_required",
+        "required_incomplete",
+        "zero_tests_is_error"
+      ]
+    },
+    "test_results": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/result"
+      },
+      "minItems": 0
+    },
+    "evidence_artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/artifact"
+      },
+      "minItems": 0
+    },
+    "device_observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "device_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "stable_identity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "firmware_sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "run_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "power_reset_history": {
+            "type": "string",
+            "minLength": 1
+          },
+          "manual_actions_and_observations": {
+            "type": "string",
+            "minLength": 1
+          },
+          "waveform_status": {
+            "enum": [
+              "MEASURED",
+              "NOT_MEASURED",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "waveform_evidence_or_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "device_id",
+          "stable_identity",
+          "firmware_sha256",
+          "run_id",
+          "power_reset_history",
+          "manual_actions_and_observations",
+          "waveform_status",
+          "waveform_evidence_or_reason"
+        ]
+      },
+      "minItems": 0
+    },
+    "limitations_and_unverified_items": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "recovery_or_rollback": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "independent_review": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "acceptance_evidence": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_ref",
+    "schema_version",
+    "document_type",
+    "document_id",
+    "status",
+    "project_id",
+    "description",
+    "task_id",
+    "test_plan_artifact",
+    "acceptance_status",
+    "acceptance_reason",
+    "generated_at",
+    "final_identity",
+    "change_manifest",
+    "identity_checks",
+    "execution_summary",
+    "test_results",
+    "evidence_artifacts",
+    "device_observations",
+    "limitations_and_unverified_items",
+    "recovery_or_rollback",
+    "independent_review",
+    "acceptance_evidence"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "DRAFT"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "acceptance_status": {
+            "const": "INCOMPLETE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "FINAL"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "document_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "project_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "acceptance_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generated_at": {
+            "$ref": "common.schema.json#/$defs/timestamp"
+          },
+          "recovery_or_rollback": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance_evidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "acceptance_status": {
+            "const": "ACCEPTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "FINAL"
+          },
+          "test_plan_artifact": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "final_identity": {
+            "properties": {
+              "source": {
+                "properties": {
+                  "source_manifest": {
+                    "$ref": "common.schema.json#/$defs/artifact"
+                  },
+                  "worktree_clean": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "configuration_artifacts": {
+                "minItems": 1
+              },
+              "toolchain_artifacts": {
+                "minItems": 1
+              },
+              "firmware_applicability": {
+                "enum": [
+                  "APPLICABLE",
+                  "NOT_APPLICABLE"
+                ]
+              },
+              "diagnostic_release_differences": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "identity_checks": {
+            "properties": {
+              "evidence_matches_final_source_and_config": {
+                "const": true
+              },
+              "checks_after_last_affected_change": {
+                "const": true
+              },
+              "evidence_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "execution_summary": {
+            "properties": {
+              "discovered": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "executed": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "failed": {
+                "const": 0
+              },
+              "blocked": {
+                "const": 0
+              },
+              "errors": {
+                "const": 0
+              },
+              "missing_required": {
+                "const": 0
+              },
+              "required_incomplete": {
+                "const": 0
+              }
+            }
+          },
+          "test_results": {
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/result"
+                },
+                {
+                  "properties": {
+                    "result": {
+                      "enum": [
+                        "PASS",
+                        "SKIP",
+                        "NOT_RUN"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "required": {
+                        "const": true
+                      },
+                      "applicability": {
+                        "const": "APPLICABLE"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "result": {
+                        "const": "PASS"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "contains": {
+              "properties": {
+                "result": {
+                  "const": "PASS"
+                },
+                "applicability": {
+                  "const": "APPLICABLE"
+                }
+              }
+            },
+            "minContains": 1
+          },
+          "evidence_artifacts": {
+            "minItems": 1
+          },
+          "independent_review": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "acceptance_status": {
+            "const": "ACCEPTED"
+          },
+          "final_identity": {
+            "properties": {
+              "firmware_applicability": {
+                "const": "APPLICABLE"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "final_identity": {
+            "properties": {
+              "firmware_artifacts": {
+                "minItems": 1
+              }
+            }
+          },
+          "identity_checks": {
+            "properties": {
+              "firmware_matches_build": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "final_identity": {
+            "properties": {
+              "firmware_applicability": {
+                "const": "NOT_APPLICABLE"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "final_identity": {
+            "properties": {
+              "firmware_not_applicable_reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "firmware_artifacts": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "acceptance_status": {
+            "const": "ACCEPTED"
+          },
+          "device_observations": {
+            "minItems": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity_checks": {
+            "properties": {
+              "flashed_firmware_matches_artifact": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "acceptance_status": {
+            "const": "ACCEPTED"
+          },
+          "device_observations": {
+            "maxItems": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity_checks": {
+            "properties": {
+              "hardware_not_used_reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

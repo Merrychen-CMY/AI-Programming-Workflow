@@ -1,0 +1,38 @@
+{
+  "schema_ref": "test-plan.schema.json",
+  "schema_version": "1.1",
+  "document_type": "TEST_PLAN",
+  "document_id": null,
+  "status": "DRAFT",
+  "project_id": null,
+  "description": null,
+  "task_reference": null,
+  "project_profile_reference": null,
+  "planned_source": {
+    "repository": null,
+    "revision": null,
+    "worktree_clean": null,
+    "dirty_patch": null,
+    "untracked_artifacts": [],
+    "source_manifest": null
+  },
+  "requirement_ids": [],
+  "criterion_ids": [],
+  "selected_profiles": [],
+  "selection_rationale": null,
+  "coverage_contract": {
+    "zero_discovered_tests": "ERROR",
+    "missing_required_cases": "BLOCK_ACCEPTANCE",
+    "mandatory_cases_cannot_be_removed_by_agent": true,
+    "required_skip_or_blocked_or_not_run": "INCOMPLETE",
+    "no_silent_expected_value_tolerance_or_rule_changes": true
+  },
+  "cases": [],
+  "shared_datasets": [],
+  "review": {
+    "oracle_and_coverage_review": null,
+    "hardware_scope_review": null,
+    "changes_to_accepted_plan_require_record": true
+  },
+  "activation_review": null
+}

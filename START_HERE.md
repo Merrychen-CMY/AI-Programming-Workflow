@@ -16,6 +16,7 @@
 
 | 事件 | 参考 |
 | --- | --- |
+| 嵌入式C开发/验证 | [规范入口](standards/embedded-c/README.md)、[规则映射](policy/embedded-c.json)及当前变化对应章节 |
 | 首次接入 | [接入指南](docs/guides/adopt-project.md)、[首次闭环](docs/guides/first-run.md) |
 | 测试失败 | [L4矩阵](policy/l4-failures.json)、[问题处理](docs/guides/handle-issue.md) |
 | 交付退回或失败 | [L5矩阵](policy/l5-delivery.json)、DOT的交付规则 |

@@ -3,7 +3,7 @@
   "document_kind": "template",
   "status": "DRAFT",
   "workflow": {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "repository": "REPLACE_WORKFLOW_REPOSITORY",
     "commit": "REPLACE_FULL_COMMIT",
     "mode": "simple",
@@ -46,5 +46,6 @@
     "delivery_guard": "NOT_IMPLEMENTED"
   },
   "requirements_document_ref": null,
-  "note": "Optional internal DOT record; user reviews requirements.md rather than filling this template."
+  "note": "Optional internal DOT record; user reviews requirements.md rather than filling this template. DOT selects the applicable coding standard and its scope; an empty draft list is not an exemption.",
+  "applicable_coding_standard_refs": []
 }

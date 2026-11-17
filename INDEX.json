@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.0.0",
+  "workflow_version": "2.1.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -81,6 +81,14 @@
     ],
     "formal_automation_adoption": [
       "docs/advanced-profile.md"
+    ],
+    "embedded_c_task": [
+      "standards/embedded-c/README.md",
+      "policy/embedded-c.json"
+    ],
+    "embedded_c_contracts": [
+      "standards/embedded-c/contracts-and-states.md",
+      "standards/embedded-c/v1.2/machine/README.txt"
     ]
   },
   "full_reference": [
@@ -231,5 +239,14 @@
     "DOT.md",
     "templates/requirements.md"
   ],
-  "reference_scope": "docs/advanced-profile.md"
+  "reference_scope": "docs/advanced-profile.md",
+  "coding_standards": [
+    {
+      "id": "embedded-c",
+      "version": "1.2",
+      "scope": "embedded_C_owned_or_AI_maintained_source_and_applicable_development_tasks",
+      "index": "standards/embedded-c/v1.2/INDEX.json",
+      "policy": "policy/embedded-c.json"
+    }
+  ]
 }

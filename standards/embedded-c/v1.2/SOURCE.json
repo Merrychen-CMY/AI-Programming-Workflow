@@ -1,0 +1,146 @@
+{
+  "archive_name": "嵌入式C开发规范与流程_V1.2_完整资料包.zip",
+  "archive_sha256": "3cc089b15582a45b6c6a5a34404667af4c9eafbf5ba8f88369f534c9234d0299",
+  "source_checksums_verified_before_import": true,
+  "normalization": "UTF-8, LF only; source content and schema/tool behavior unchanged. Section Markdown only reformats headings/tables.",
+  "imported_files": [
+    {
+      "original_path": "规范正文检索版.txt",
+      "path": "standards/embedded-c/v1.2/source/standard.txt",
+      "original_sha256": "afeea54c52aaaf10cde967539224af6278e6772871de2d607443b5ace8e76df1",
+      "repository_sha256": "07a59088c2dfbb18e6b77f6b36156021c4b833ea7b4c22182826d4d3be986550"
+    },
+    {
+      "original_path": "使用说明.txt",
+      "path": "standards/embedded-c/v1.2/source/usage.txt",
+      "original_sha256": "40fcd26eb491a729667cc97bcaf48163bb0c9a09fc7de68ff0dd290474b49ef5",
+      "repository_sha256": "a8aca59fe4303cd2e2ead9c1f599e262d44f3e0b3a25e37372dc70d1862ef0e2"
+    },
+    {
+      "original_path": "变更记录.txt",
+      "path": "standards/embedded-c/v1.2/source/changelog.txt",
+      "original_sha256": "06a0f64461a2a3269ec43267c821c658d6fc70c4d6e6073e6e04511b3c4872cb",
+      "repository_sha256": "53768ad5da2a7e7f5cabfe0092072daff05a2779b68021e4e66ec7eefcae5294"
+    },
+    {
+      "original_path": "可读性审查清单.txt",
+      "path": "standards/embedded-c/v1.2/source/readability-checklist.txt",
+      "original_sha256": "e357fae1f424bcb4b6f1997a3050276ed5bfea5ad82f282d24ea44ed3fa8a733",
+      "repository_sha256": "7931102abcccddbe8bcb1f3284adfa0c7d57b00bf651c78485eca8c2e4ef949f"
+    },
+    {
+      "original_path": "项目规范入口模板.txt",
+      "path": "standards/embedded-c/v1.2/source/project-entry-template.txt",
+      "original_sha256": "1e5c9ca97c49f5eef81c43525c8b5f05a18f119ab4586052b331e1549365fe94",
+      "repository_sha256": "30ad8ecd860a90803be1915a93fd68e099c1cc33cea73cfb38535e308de4e751"
+    },
+    {
+      "original_path": "AI项目指令模板.txt",
+      "path": "standards/embedded-c/v1.2/source/agent-instructions-template.txt",
+      "original_sha256": "8405df00e54235ca145467e8fe8317efdf8a047fb557e92978b701b41ec21fdd",
+      "repository_sha256": "07f47f08d4897f2d3fea45c9eabfbdf0fda3f5cda1d86db5e15a343283a5e4c6"
+    },
+    {
+      "original_path": "rules-index.json",
+      "path": "standards/embedded-c/v1.2/source/rules-index.json",
+      "original_sha256": "c0587039349e02bab5acfca4b66048766b30ae666d800ca57b9b4e0ab17bcf61",
+      "repository_sha256": "9f7defd4fd6d0f44a04db7ec4f492b1c2f3c4664ac091477ab8c2702a728e2ea"
+    },
+    {
+      "original_path": "machine/common.schema.json",
+      "path": "standards/embedded-c/v1.2/machine/common.schema.json",
+      "original_sha256": "0448bd9f1555dbdb7ac119384e6a10cba3646c206e2af2e15f3048964c94e13c",
+      "repository_sha256": "0547ca0eaad79cdeba9c62b212833b394b5e5d20f1eb1dc1e779efc7592878f1"
+    },
+    {
+      "original_path": "machine/delivery-report.schema.json",
+      "path": "standards/embedded-c/v1.2/machine/delivery-report.schema.json",
+      "original_sha256": "3685862a21c29f154f58094cd13bd58372a1744bf6dfb6f990b8fd36bc155a13",
+      "repository_sha256": "4520f64b195cdb77df59ad8fa5c483186deb7152a04b03b8eb46813203133ffa"
+    },
+    {
+      "original_path": "machine/delivery-report.template.json",
+      "path": "standards/embedded-c/v1.2/machine/delivery-report.template.json",
+      "original_sha256": "9cd513e5c1e2d7fee43df695dea10f6ba75b85aeccdf9400c9fd21eae40a59a8",
+      "repository_sha256": "282ac93020ee1f9fc89807d222067c0ba8fb06d66985d1b8df2b8c62c93ba2e2"
+    },
+    {
+      "original_path": "machine/dev-task.schema.json",
+      "path": "standards/embedded-c/v1.2/machine/dev-task.schema.json",
+      "original_sha256": "6e9286353586deb12413fcc2d9b56100e2a2c3e45c942fb229ed328cf24de4a5",
+      "repository_sha256": "3a3405351f3a8ec8b174ec21136d3751f876a68559c6f1c43993782a1a59dca1"
+    },
+    {
+      "original_path": "machine/dev-task.template.json",
+      "path": "standards/embedded-c/v1.2/machine/dev-task.template.json",
+      "original_sha256": "1656cc7089dd784ff561054e88db69df8baa5b689bfb16c0162034d5acefc4ff",
+      "repository_sha256": "4a9a296885bcb9b23a3f98f3be79f9f673e39201bad954bae31ca3091ca0d36a"
+    },
+    {
+      "original_path": "machine/project-profile.schema.json",
+      "path": "standards/embedded-c/v1.2/machine/project-profile.schema.json",
+      "original_sha256": "93632491d862a61a51bc71c224bb0428afe6f283097b51503d53d49f732905be",
+      "repository_sha256": "e84d4b73259ac413c1c968f8a14bf19e91b68fbdfd58bfdd1a35017ffad38d24"
+    },
+    {
+      "original_path": "machine/project-profile.template.json",
+      "path": "standards/embedded-c/v1.2/machine/project-profile.template.json",
+      "original_sha256": "0d5446e85accbde0568c3cfd98f96b6e11daa0603830d938a274370dc244d431",
+      "repository_sha256": "277dc06064f86a1581152cbb4a9fa35ad8a78429b64afa7985d6e5221554efe7"
+    },
+    {
+      "original_path": "machine/README.txt",
+      "path": "standards/embedded-c/v1.2/machine/README.txt",
+      "original_sha256": "f9e91ffd89eeb37b8f6914d70ca050ba74a3582158311292a2a549ee326fa4cb",
+      "repository_sha256": "f9e91ffd89eeb37b8f6914d70ca050ba74a3582158311292a2a549ee326fa4cb"
+    },
+    {
+      "original_path": "machine/test-plan.schema.json",
+      "path": "standards/embedded-c/v1.2/machine/test-plan.schema.json",
+      "original_sha256": "b306e63692d706db5b1550c8f8455d9a8c0eeb6baf90eaf920590e9dbaa9b605",
+      "repository_sha256": "a9d77b09658d8ab56b9831dc56173c7f1876a2aa9156c7a84092f25f5176a4bf"
+    },
+    {
+      "original_path": "machine/test-plan.template.json",
+      "path": "standards/embedded-c/v1.2/machine/test-plan.template.json",
+      "original_sha256": "b274216aa28c1dc17688009d75460291b21b81b12c9d4cb0214ab07003151dfb",
+      "repository_sha256": "f2be7eeb704d36abc5fafc68b46a1f239e42fac8c4e1c0fe944b9824884971ac"
+    },
+    {
+      "original_path": "machine/tests/test_contract_schemas.py",
+      "path": "standards/embedded-c/v1.2/machine/tests/test_contract_schemas.py",
+      "original_sha256": "43defdabf6a44c461fe2a7a0c8e62fd206536b75457fd75ff440081c929d0763",
+      "repository_sha256": "b310db37718a342c9af61d0faf0544fab278aa5290c2500dd130fb1ea0d6c8b7"
+    },
+    {
+      "original_path": "machine/tests/test_contract_validator.py",
+      "path": "standards/embedded-c/v1.2/machine/tests/test_contract_validator.py",
+      "original_sha256": "2c9162b49ae061a92907cca2e8e089f8747dd885afb9e3bec9363668be69316d",
+      "repository_sha256": "8f1b830293a1ecd16e90f98edc7deebfea8746b2dda053d25fd91193be3e814b"
+    },
+    {
+      "original_path": "machine/tests/test_readability_contracts.py",
+      "path": "standards/embedded-c/v1.2/machine/tests/test_readability_contracts.py",
+      "original_sha256": "a47232dd660e6c15488cd765e18fb5bbaa29e31062779e3a926021d99f9d649f",
+      "repository_sha256": "a47232dd660e6c15488cd765e18fb5bbaa29e31062779e3a926021d99f9d649f"
+    },
+    {
+      "original_path": "machine/tools/requirements-validation.txt",
+      "path": "standards/embedded-c/v1.2/machine/tools/requirements-validation.txt",
+      "original_sha256": "8b9a05eae8be30662585ec427fcebd47916e0206e1a478c6e90d7446aacd195e",
+      "repository_sha256": "8b9a05eae8be30662585ec427fcebd47916e0206e1a478c6e90d7446aacd195e"
+    },
+    {
+      "original_path": "machine/tools/validate_contracts.py",
+      "path": "standards/embedded-c/v1.2/machine/tools/validate_contracts.py",
+      "original_sha256": "37751236f5fa8a6b68abcc7b7e7e1aa206558fcb9ce693705b2de7f63560e1e5",
+      "repository_sha256": "37751236f5fa8a6b68abcc7b7e7e1aa206558fcb9ce693705b2de7f63560e1e5"
+    }
+  ],
+  "omitted": [
+    "Word binary: equivalent searchable text imported",
+    "Original validation reports: historical package checks, not current product evidence",
+    "Original checksums file: replaced by original and normalized per-file hashes here"
+  ],
+  "source_specific_restriction": "Appendix D ESP32 comment-only phase is not a default constraint for unrelated projects."
+}

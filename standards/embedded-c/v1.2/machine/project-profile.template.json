@@ -1,0 +1,95 @@
+{
+  "schema_ref": "project-profile.schema.json",
+  "schema_version": "1.1",
+  "document_type": "PROJECT_PROFILE",
+  "document_id": null,
+  "status": "DRAFT",
+  "project_id": null,
+  "description": null,
+  "standard_reference": null,
+  "standard_version": "1.2",
+  "repository_root": null,
+  "source_scope": {
+    "owned_paths": [],
+    "third_party_paths": [],
+    "generated_paths": [],
+    "generator_sources": []
+  },
+  "platforms": [],
+  "toolchains": [],
+  "devices": [],
+  "check_profiles": [
+    {
+      "name": "quick",
+      "configuration_state": "UNCONFIGURED",
+      "entrypoint": null,
+      "timeout_seconds": null,
+      "reason": null
+    },
+    {
+      "name": "full",
+      "configuration_state": "UNCONFIGURED",
+      "entrypoint": null,
+      "timeout_seconds": null,
+      "reason": null
+    },
+    {
+      "name": "hil",
+      "configuration_state": "UNCONFIGURED",
+      "entrypoint": null,
+      "timeout_seconds": null,
+      "reason": null
+    },
+    {
+      "name": "soak",
+      "configuration_state": "UNCONFIGURED",
+      "entrypoint": null,
+      "timeout_seconds": null,
+      "reason": null
+    }
+  ],
+  "authorization_grants": [],
+  "autonomy_policy": {
+    "reuse_valid_preapproval": true,
+    "outside_scope": "BLOCK_AND_REPORT",
+    "unknown_or_failed_precondition": "BLOCK_DEPENDENT_ACTION",
+    "physical_user_action_requires_confirmation_or_fixture_evidence": true,
+    "never_infer_authorization_from_elapsed_time": true
+  },
+  "default_budgets": {
+    "task_seconds": null,
+    "automatic_fix_attempts": 0,
+    "test_retry_attempts": 0,
+    "hardware_write_attempts": 0,
+    "stop_on_repeated_failure_without_new_evidence": true
+  },
+  "risk_mapping": {
+    "R0": "注释和文档，不改变非注释代码与必要的预处理行为",
+    "R1": "普通行为变更",
+    "R2": "驱动、并发、资源、算法、参数或标定变更",
+    "R3": "发布或安全敏感变更"
+  },
+  "log_contract": {
+    "module_registry": [],
+    "levels": [
+      "ERROR",
+      "WARN",
+      "INFO",
+      "DEBUG",
+      "TRACE"
+    ],
+    "event_id_policy": null,
+    "event_time_and_boot_identity": null,
+    "queue_and_rate_budget": null,
+    "drop_and_critical_event_policy": null,
+    "filtering_contract": null,
+    "sensitive_data_policy": null
+  },
+  "artifact_retention": {
+    "archive_root": null,
+    "retention_policy": null,
+    "access_policy": null
+  },
+  "exceptions": [],
+  "activation_review": null
+}

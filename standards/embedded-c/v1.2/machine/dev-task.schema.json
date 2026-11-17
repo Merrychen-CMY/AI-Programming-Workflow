@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://embedded-workflow.invalid/schemas/v1.1/dev-task.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_ref": {
+      "const": "dev-task.schema.json"
+    },
+    "schema_version": {
+      "const": "1.1"
+    },
+    "document_type": {
+      "const": "DEV_TASK"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "READY",
+        "ACTIVE",
+        "CLOSED"
+      ]
+    },
+    "project_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "project_profile_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "objective": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "change_mode": {
+      "enum": [
+        null,
+        "COMMENT_ONLY",
+        "FORMAT_ONLY",
+        "FUNCTIONAL",
+        "RELEASE"
+      ]
+    },
+    "risk": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/risk"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "risk_rationale": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "starting_source": {
+      "$ref": "common.schema.json#/$defs/source_identity"
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "excluded_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "allowed_modules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "unchanged_behaviors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "allowed_paths",
+        "excluded_paths",
+        "allowed_modules",
+        "unchanged_behaviors"
+      ]
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/requirement"
+      },
+      "minItems": 0
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/criterion"
+      },
+      "minItems": 0
+    },
+    "interface_state_and_data_contracts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "hardware_parameter_calibration_impacts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "required_test_profiles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "quick",
+          "full",
+          "hil",
+          "soak"
+        ]
+      },
+      "minItems": 0
+    },
+    "test_plan_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "authorization_grant_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/identifier"
+      },
+      "minItems": 0
+    },
+    "budgets": {
+      "$ref": "common.schema.json#/$defs/budget"
+    },
+    "change_manifest": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/change"
+      },
+      "minItems": 0
+    },
+    "completion_conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "all_required_checks_on_final_identity": {
+          "const": true
+        },
+        "scope_and_invariants_reviewed": {
+          "const": true
+        },
+        "unexecuted_required_checks_block_completion": {
+          "const": true
+        },
+        "evidence_and_manifest_required": {
+          "const": true
+        },
+        "delivery_report_required": {
+          "const": true
+        }
+      },
+      "required": [
+        "all_required_checks_on_final_identity",
+        "scope_and_invariants_reviewed",
+        "unexecuted_required_checks_block_completion",
+        "evidence_and_manifest_required",
+        "delivery_report_required"
+      ]
+    },
+    "open_decisions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "activation_review": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_ref",
+    "schema_version",
+    "document_type",
+    "document_id",
+    "status",
+    "project_id",
+    "description",
+    "project_profile_reference",
+    "objective",
+    "change_mode",
+    "risk",
+    "risk_rationale",
+    "starting_source",
+    "scope",
+    "requirements",
+    "acceptance_criteria",
+    "interface_state_and_data_contracts",
+    "hardware_parameter_calibration_impacts",
+    "required_test_profiles",
+    "test_plan_reference",
+    "authorization_grant_ids",
+    "budgets",
+    "change_manifest",
+    "completion_conditions",
+    "open_decisions",
+    "activation_review"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "READY",
+              "ACTIVE",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "document_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "project_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "project_profile_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "objective": {
+            "type": "string",
+            "minLength": 1
+          },
+          "change_mode": {
+            "type": "string"
+          },
+          "risk": {
+            "$ref": "common.schema.json#/$defs/risk"
+          },
+          "risk_rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "starting_source": {
+            "properties": {
+              "source_manifest": {
+                "$ref": "common.schema.json#/$defs/artifact"
+              }
+            }
+          },
+          "scope": {
+            "properties": {
+              "allowed_paths": {
+                "minItems": 1
+              },
+              "allowed_modules": {
+                "minItems": 1
+              },
+              "unchanged_behaviors": {
+                "minItems": 1
+              }
+            }
+          },
+          "requirements": {
+            "minItems": 1
+          },
+          "acceptance_criteria": {
+            "minItems": 1
+          },
+          "required_test_profiles": {
+            "minItems": 1
+          },
+          "test_plan_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authorization_grant_ids": {
+            "minItems": 1
+          },
+          "budgets": {
+            "properties": {
+              "task_seconds": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "open_decisions": {
+            "maxItems": 0
+          },
+          "activation_review": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "change_mode": {
+            "const": "COMMENT_ONLY"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "change_manifest": {
+            "items": {
+              "properties": {
+                "category": {
+                  "enum": [
+                    "COMMENT",
+                    "DOCUMENTATION"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

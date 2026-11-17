@@ -1,0 +1,8 @@
+# 仅用于契约文档结构校验，不是产品/固件依赖。
+# Python >= 3.11；本次在 Python 3.12.14 验证。
+jsonschema==4.23.0
+referencing==0.37.0
+jsonschema-specifications==2025.9.1
+attrs==26.1.0
+rpds-py==2026.9.1
+typing-extensions==4.16.0

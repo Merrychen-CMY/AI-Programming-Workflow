@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.0.0",
+  "workflow_version": "2.1.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -142,5 +142,9 @@
   ],
   "advanced_reference": "docs/advanced-profile.md",
   "existing_project_protections_remain_required": true,
-  "runtime_implemented_by_this_repository": false
+  "runtime_implemented_by_this_repository": false,
+  "applicable_coding_standards": [
+    "policy/embedded-c.json"
+  ],
+  "coding_standard_requires_extra_user_document": false
 }

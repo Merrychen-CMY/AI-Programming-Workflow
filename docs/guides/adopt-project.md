@@ -9,3 +9,5 @@
 产品仓库若已有AGENTS.md，先读取并保留其约束，再引用本规范固定commit；不要覆盖未知规则。实际需求、批准、凭证和私有证据按产品权限存放，本公开规范仓库只存通用模板。
 
 [project-context.json](../../templates/project-context.json) 是DOT可按需维护的内部模板，用户不必逐项填写。能力未接通保持NOT_IMPLEMENTED；文件存在不等于审批服务或权限隔离已经可用。
+
+嵌入式C项目同时按 [编码规范接入清单](../../standards/embedded-c/adoption.md) 完成规范版本、范围、风险、独立判据和最终证据映射；用已有统一需求作为来源，不增加用户表单。

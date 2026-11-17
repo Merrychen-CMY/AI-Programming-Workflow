@@ -142,6 +142,56 @@ def validate_simple_flow(flow):
     return errors
 
 
+def validate_embedded_c_policy(policy, source_rules):
+    """Check integration boundaries and faithful mapping, not real C compliance."""
+    errors = []
+    expected = {
+        'standard_version': '1.2', 'contract_schema_version': '1.1',
+        'default_for_applicable_projects': True, 'extra_user_documents_required': False,
+        'AI_written_source_is_generated_code_exception': False,
+        'source_ESP32_comment_only_restriction_is_global': False,
+        'rule_checkers_all_implemented': False,
+        'coding.goto_allowed': False, 'coding.control_statement_braces_required': True,
+        'coding.indentation': 'tab', 'coding.tab_width': 8,
+        'coding.column_target': 80, 'coding.column_target_is_hard_limit': False,
+        'readability.thresholds_are_hard_limits': False,
+        'readability.trigger_requires_recorded_review': True,
+        'readability.mechanical_split_counts_as_fix': False,
+        'readability.preserve_short_circuit_MMIO_atomicity_cleanup': True,
+        'risk.behavior_preserving_implementation_refactor_may_be_R0': False,
+        'risk.all_profiles_required_for_every_task': False,
+        'verification.host_behavior_links_real_C': True,
+        'verification.oracle_independent_of_current_output': True,
+        'verification.zero_tests_or_exit_zero_alone_means_pass': False,
+        'verification.schema_validation_means_product_acceptance': False,
+        'verification.source_schema_cross_file_runtime_validation_implemented': False,
+        'acceptance.report_starts': 'INCOMPLETE',
+        'acceptance.FINAL_or_CLOSED_means_accepted': False,
+        'acceptance.ACCEPTED_means_delivered_or_authorized': False,
+        'acceptance.required_unexecuted_checks_block_acceptance': True,
+        'acceptance.optional_failure_affecting_requirement_may_be_ignored': False,
+    }
+    for path, wanted in expected.items():
+        value = policy
+        for key in path.split('.'):
+            value = value.get(key) if isinstance(value, dict) else None
+        if type(value) is not type(wanted) or value != wanted:
+            errors.append(f'Embedded C boundary {path}: expected {wanted!r}, got {value!r}')
+    original = {rule['id']: rule for rule in source_rules}
+    mapped = policy.get('rules', [])
+    if len(original) != 33 or len(mapped) != 33 or {r.get('id') for r in mapped} != set(original):
+        errors.append('All 33 original embedded C rules must be mapped exactly once')
+    for rule in mapped:
+        source = original.get(rule.get('id'), {})
+        if any(rule.get(key) != source.get(key) for key in ('level', 'title', 'scope', 'sections', 'verification', 'failure_handling')):
+            errors.append(f'Embedded C rule differs from source: {rule.get("id")}')
+        if rule.get('finding_intake') != 'DOT_as_L2' or rule.get('dispatch_requires_root_cause_analysis') is not True:
+            errors.append(f'Embedded C finding must enter DOT triage: {rule.get("id")}')
+        if rule.get('default_responsibility') not in ('L1', 'L1-V', 'L2', 'L3', 'L4', 'L5') or not rule.get('references'):
+            errors.append(f'Embedded C mapping missing owner/reference: {rule.get("id")}')
+    return errors
+
+
 def check_local_link(root, source, target):
     target = target.strip().strip('<>')
     parsed = urlsplit(target)
@@ -169,7 +219,7 @@ def validate_repository(root):
             for target in re.findall(r'!?\[[^\]\n]*\]\(([^)\n]+)\)', content):
                 errors.extend(check_local_link(root, file, target))
     required = ['AGENTS.md', 'L1.md', 'DOT.md', 'templates/requirements.md',
-                'policy/simple-flow.json', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
+                'policy/simple-flow.json', 'policy/embedded-c.json', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
                 'docs/core-rules.md', '.github/workflows/validate.yml',
                 'policy/workflow.json', 'policy/roles.json', 'policy/rejection-tests.json',
                 'policy/l4-failures.json', 'policy/l5-delivery.json']
@@ -193,6 +243,36 @@ def validate_repository(root):
     paths = [index['entrypoint'], *index['always_read'], *index['original_examples']]
     paths.extend(primary)
     paths.extend([index['reference_scope'], simple['advanced_reference'], policy['default_user_flow']])
+    embedded = documents['policy/embedded-c.json']
+    paths.extend([embedded['entrypoint'], embedded['source_index']])
+    errors.extend(validate_embedded_c_policy(embedded, documents[embedded['source_index']]['rules']))
+    if embedded.get('workflow_version') != version:
+        errors.append('Embedded C integration workflow version mismatch')
+    for standard in index.get('coding_standards', []):
+        paths.extend([standard['index'], standard['policy']])
+    for rule in embedded['rules']:
+        paths.extend(rule['references'])
+    embedded_root = 'standards/embedded-c/v1.2/'
+    source_record = documents[embedded_root + 'SOURCE.json']
+    for record in source_record['imported_files']:
+        path = root / record['path']
+        if not path.is_file() or digest(path) != record['repository_sha256']:
+            errors.append(f'Imported source drift: {record["path"]}')
+    source_text = (root / embedded_root / 'source/standard.txt').read_text(encoding='utf-8').splitlines()
+    sections = documents[embedded_root + 'INDEX.json']['sections']
+    if len(sections) != 18:
+        errors.append('Embedded C reference must retain 18 sections/appendices')
+    for section in sections:
+        paths.append(section['path'])
+        page = root / section['path']
+        if not page.is_file():
+            continue
+        rendered = page.read_text(encoding='utf-8').replace('\\|', '|')
+        normalize = lambda value: re.sub(r'[\s|]', '', value)
+        for line in source_text[section['source_start_line'] - 1:section['source_end_line']]:
+            if line.strip() and normalize(line) not in normalize(rendered):
+                errors.append(f'Embedded C section lost source text: {section["path"]}')
+                break
     for group in ('role_reading', 'event_reading'):
         for entries in index[group].values():
             paths.extend(entries)
@@ -247,6 +327,7 @@ def main():
             print(f'ERROR: {error}')
         return 1
     print(f'STATIC_SPEC_CHECKS_PASS: {len(repository_files(ROOT))} files; 21 chapters; 16 L4 + 12 L5 scenarios.')
+    print('Embedded C V1.2: 33 mapped rules, 18 reference sections and imported-source hashes verified; not product C compliance.')
     print('48 product/HIL acceptance scenarios remain NOT_RUN. No execution, approval or delivery authority is granted.')
     return 0
 

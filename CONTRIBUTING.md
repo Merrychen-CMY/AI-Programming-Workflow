@@ -22,3 +22,20 @@ GitHub CI使用固定SHA的官方 [checkout](https://github.com/actions/checkout
 ## 发布材料
 
 保留可读文本、脚本、测试和示例。不要提交本机缓存、真实凭证、审批数据、运行证据或重复Word/PDF。内容清单摘要不能替代可信发布者身份或受保护分支审查。
+
+## 嵌入式C规范资料的维护
+
+适用产品通过 [规范入口](standards/embedded-c/README.md) 接入，C专属规则不套用本仓库的Python检查脚本。v1.2/source及machine是带来源哈希的导入文本，不能静默修改来源快照；新增整合说明和职责映射放快照外。新来源版本应重新核对来源、Schema、模板及所有测试，并更新策略和索引。
+
+规范内容、按章节派生正文、33条规则映射及INDEX保持一致，MUST/SHOULD不能改义。新增例外不能默认放行。更新工作流版本时同步policy/embedded-c.json的workflow_version。
+
+仓库基本检查仍使用标准库；契约测试额外使用原包固定依赖（Python3.11+，建议隔离环境）：
+
+```powershell
+python -m pip install -r standards/embedded-c/v1.2/machine/tools/requirements-validation.txt
+python standards/embedded-c/v1.2/machine/tests/test_contract_schemas.py
+python standards/embedded-c/v1.2/machine/tests/test_contract_validator.py
+python standards/embedded-c/v1.2/machine/tests/test_readability_contracts.py
+```
+
+这些是规范及契约工具自检，不是产品源码合规、固件回归或HIL验收。

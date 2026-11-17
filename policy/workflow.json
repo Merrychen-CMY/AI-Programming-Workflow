@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "2.0.0",
+  "policy_version": "2.1.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "内部职责与回流不变量；默认用户入口为L1和DOT，正式控制器契约按进阶接入范围适用。",
@@ -140,5 +140,8 @@
       "L5"
     ],
     "six_separate_conversations_required": false
-  }
+  },
+  "coding_standards": [
+    "policy/embedded-c.json"
+  ]
 }
