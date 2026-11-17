@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.3.0",
+  "workflow_version": "2.4.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -48,7 +48,9 @@
     ],
     "DOT": [
       "DOT.md",
-      "policy/simple-flow.json"
+      "policy/simple-flow.json",
+      "templates/execution-plan.md",
+      "templates/final-report.md"
     ]
   },
   "event_reading": {
@@ -98,6 +100,9 @@
       "standards/embedded-c/v1.3/huawei/README.md",
       "standards/embedded-c/v1.3/huawei/coverage.json",
       "standards/embedded-c/v1.3/huawei/coverage.md"
+    ],
+    "local_runtime": [
+      "docs/guides/local-runtime.md"
     ]
   },
   "full_reference": [
@@ -235,7 +240,7 @@
   },
   "capabilities": {
     "static_repo_validation": true,
-    "runtime_controller": false,
+    "runtime_controller": true,
     "real_approval_service": false,
     "product_tests_executed": false,
     "hil_tests_executed": false,
@@ -257,5 +262,13 @@
       "index": "standards/embedded-c/v1.3/INDEX.json",
       "policy": "policy/embedded-c.json"
     }
-  ]
+  ],
+  "runtime_scope": {
+    "entrypoint": "scripts/dot.py",
+    "implementation": "runtime/dot_runtime",
+    "approval_trust_model": "local_interactive_user_account_no_authenticated_approval_service",
+    "external_delivery_implemented": false,
+    "codex_end_to_end_verified": false,
+    "validation_record": "docs/reports/2.4.0-validation.md"
+  }
 }

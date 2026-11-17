@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "2.3.0",
+  "policy_version": "2.4.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "内部职责与回流不变量；默认用户入口为L1和DOT，正式控制器契约按进阶接入范围适用。",
@@ -14,15 +14,19 @@
   ],
   "forward_flow": [
     "L1",
+    "user_requirements_review",
+    "L2_plan",
+    "user_execution_plan_review",
     "G1",
-    "L2",
     "L3",
     "G2",
     "L1-V-candidate-binding",
     "V0",
-    "L4",
+    "L4-test",
+    "L4-review",
     "G3",
     "L5",
+    "user_final_report_review",
     "G4",
     "delivery_guard"
   ],
@@ -104,15 +108,15 @@
     "infrastructure_only": "same_candidate_possible_with_documented_impact_and_new_run_id"
   },
   "approval_rules": {
-    "G1": "authenticated_execution_authorization",
+    "G1": "authenticated_requirements_and_execution_plan_authorization",
     "V0": "validate_candidate_package_against_explicit_authorization",
-    "G4": "exact_candidate_evidence_action_target_authorization_or_validation_against_explicit_bounded_preauthorization",
+    "G4": "user_approved_success_report_then_exact_action_target_authorization_and_real_receipt",
     "L5_can_approve_delivery": false,
     "merge_implies_release": false,
     "example_is_authorization": false,
-    "simple_mode": "record_real_user_approval_of_version_and_scope; preserve_existing_project_approval_controls",
+    "simple_mode": "user_reviews_requirements_then_execution_plan_then_success_or_failure_report",
     "formal_gate_contract_scope": "when_formal_approval_and_gate_services_are_adopted",
-    "delegated_plan_maintenance": "new_version_and_authorization_by_verification_owner_within_explicit_scope; otherwise_user_decision"
+    "delegated_plan_maintenance": "equivalent_maintenance_within_approved_scope_logged; material_execution_plan_change_requires_user_review"
   },
   "closure": {
     "implementation_or_verification": "independent_L4_reverification_and_trusted_verdict_then_L2_close",
@@ -139,7 +143,12 @@
       "L2",
       "L5"
     ],
-    "six_separate_conversations_required": false
+    "six_separate_conversations_required": false,
+    "review_artifacts": [
+      "requirements",
+      "execution_plan",
+      "final_report"
+    ]
   },
   "coding_standards": [
     "policy/embedded-c.json"

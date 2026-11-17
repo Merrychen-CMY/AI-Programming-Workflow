@@ -3,7 +3,7 @@
   "rows": [
     {
       "id": "门1 开工",
-      "conditions": "产品需求、AC、代码起点、预设验收计划及预算已绑定",
+      "conditions": "用户已审核批准具体需求与DOT执行计划，AC、代码起点、验证/审核安排与预算均绑定",
       "decision_owner": "授权审批人",
       "failure_path": "保持 READY；L2 汇总原因；需求决策提交 L1"
     },
@@ -21,13 +21,13 @@
     },
     {
       "id": "门3 证据准入",
-      "conditions": "必需验证完整、来源可信、版本匹配、无未处置失败",
+      "conditions": "独立测试与独立审核全部必需项完整、来源可核、版本匹配、失败已处置；生成报告待用户审核",
       "decision_owner": "govrail 调用证据验证器",
       "failure_path": "停止放行；L4 或门禁产生问题单，统一交 L2"
     },
     {
       "id": "门4 交付",
-      "conditions": "固定候选、证据、verdict、动作和目标获批准",
+      "conditions": "最终成功报告已由用户审核；固定候选、证据、verdict、具体动作和目标获有效授权",
       "decision_owner": "授权审批人",
       "failure_path": "L5 记录待审或退回；有问题则交 L2 分诊"
     }

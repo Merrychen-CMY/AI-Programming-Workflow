@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate this reference repository; never authorizes execution or delivery.
+"""Validate this workflow and local-runtime repository; never grants approval or delivery authority.
 
 Python 3.10+, standard library only. MANIFEST is a drift detector, not a signature.
 """
@@ -97,31 +97,60 @@ def validate_policy(policy):
     return errors
 
 
+SIMPLE_FLOW_TRANSITIONS = {
+    'DISCOVERY': {'REVIEW_PENDING'},
+    'REVIEW_PENDING': {'DISCOVERY', 'PLAN_PENDING', 'BLOCKED'},
+    'PLAN_PENDING': {'REVIEW_PENDING', 'EXECUTING', 'BLOCKED'},
+    'EXECUTING': {'VERIFYING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
+    'VERIFYING': {'EXECUTING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
+    'DECISION_PENDING': {'REVIEW_PENDING', 'PLAN_PENDING', 'EXECUTING', 'VERIFYING', 'REPORT_PENDING', 'BLOCKED'},
+    'BLOCKED': {'REVIEW_PENDING', 'PLAN_PENDING', 'REPORT_PENDING'},
+    'REPORT_PENDING': {'DELIVERY_READY', 'BLOCKED'},
+    'DELIVERY_READY': {'DELIVERED', 'DECISION_PENDING', 'BLOCKED'},
+    'DELIVERED': {'DISCOVERY'},
+}
+
+
 def validate_simple_flow(flow):
-    """Check declared boundaries; this is not an executable controller."""
+    """Validate policy invariants and exact allowed edges; not a runtime approval."""
     errors = []
     expected = {
         'default_mode': 'simple',
         'execution_authority': False,
         'user_facing_roles': ['L1', 'DOT'],
+        'user_approval_artifact': 'versioned_requirements_execution_plan_and_final_report',
         'implementation_requires_user_approval': True,
+        'requirements_approval_allows_implementation': False,
+        'execution_plan_requires_user_approval': True,
+        'final_report_requires_user_approval': True,
         'routine_in_scope_work_requires_new_user_approval': False,
         'internal_verification_plan_requires_separate_user_document': False,
         'independent_verification_required': True,
+        'independent_review_required': True,
+        'distinct_worker_sessions': ['developer', 'tester', 'reviewer'],
         'implementation_worker_can_issue_final_acceptance': False,
         'issue_intake': 'DOT_as_L2',
         'direct_verifier_to_developer_dispatch': False,
         'product_or_ac_change_requires_user_decision': True,
         'plan_maintenance.may_lower_acceptance_standard': False,
+        'plan_maintenance.semantic_change': 'user_reapproves_changed_execution_plan_and_all_required_reverification',
         'delivery.execute_when_existing_authorization_covers_actual_action': True,
         'delivery.check_actual_candidate_evidence_action_target': True,
         'delivery.require_new_approval_when_scope_not_covered': True,
+        'delivery.requires_approved_success_report': True,
+        'delivery.preauthorization_may_bypass_report_review': False,
+        'delivery.local_runtime_executes_delivery': False,
+        'delivery.delivered_requires_external_receipt': True,
         'delivery.DOT_may_self_authorize': False,
         'internal_role_mapping.L2': 'DOT_orchestration',
         'internal_role_mapping.L5': 'DOT_acceptance_and_delivery_request',
         'existing_project_protections_remain_required': True,
-        'runtime_implemented_by_this_repository': False,
-        'three_checkpoints': ['approved_requirements_and_scope', 'independent_candidate_verification', 'valid_delivery_authorization'],
+        'runtime_implemented_by_this_repository': True,
+        'runtime_approval_trust_model': 'local_interactive_user_account_no_authenticated_approval_service',
+        'agent_may_enter_user_approval': False,
+        'failed_report_approval_resumes_execution': False,
+        'budgets_reset_on_restart_or_replan': False,
+        'three_checkpoints': ['approved_requirements', 'approved_execution_plan', 'approved_final_report'],
     }
     for path, wanted in expected.items():
         value = flow
@@ -132,14 +161,52 @@ def validate_simple_flow(flow):
     required_bindings = {'actions', 'targets', 'candidate_conditions', 'evidence_conditions', 'expiry', 'use_limit'}
     if not required_bindings.issubset(flow.get('delivery', {}).get('preauthorization_must_bind', [])):
         errors.append('Delivery preauthorization must be bounded and bind actual candidate/evidence conditions')
+    required_outputs = {'requirements_for_review', 'execution_plan_for_review', 'success_or_failure_final_report_for_review'}
+    if not required_outputs.issubset(flow.get('user_visible_outputs', [])):
+        errors.append('Requirements, execution plan and final success/failure report must reach the user')
     states = flow.get('states', [])
+    if not isinstance(states, list) or not all(isinstance(state, dict) for state in states):
+        return errors + ['Simple flow states must be objects in a list']
     ids = [state.get('id') for state in states]
-    required_states = {'DISCOVERY', 'REVIEW_PENDING', 'EXECUTING', 'VERIFYING', 'DELIVERY_READY', 'DECISION_PENDING', 'BLOCKED', 'DELIVERED'}
-    if set(ids) != required_states or len(set(ids)) != len(ids):
+    if not all(isinstance(state_id, str) for state_id in ids):
+        return errors + ['Simple flow state IDs must be strings']
+    if set(ids) != set(SIMPLE_FLOW_TRANSITIONS) or len(set(ids)) != len(ids):
         errors.append('Simple flow states are incomplete or duplicated')
     for state in states:
-        if not state.get('guard') or any(target not in required_states for target in state.get('next', [])):
-            errors.append(f'Invalid simple flow transition: {state.get("id")}')
+        state_id = state.get('id')
+        targets = state.get('next')
+        valid_targets = isinstance(targets, list) and all(isinstance(target, str) for target in targets)
+        if not valid_targets or len(targets) != len(set(targets)) or set(targets) != SIMPLE_FLOW_TRANSITIONS.get(state_id):
+            errors.append(f'Invalid simple flow allowed edges: {state_id}')
+        if not isinstance(state.get('guard'), str) or not state['guard'].strip():
+            errors.append(f'Missing simple flow guard: {state_id}')
+    return errors
+
+
+def validate_capabilities(index):
+    """Only the implemented local runtime may be advertised, not external services."""
+    expected = {
+        'static_repo_validation': True,
+        'runtime_controller': True,
+        'real_approval_service': False,
+        'product_tests_executed': False,
+        'hil_tests_executed': False,
+        'delivery_executor': False,
+    }
+    errors = []
+    capabilities = index.get('capabilities', {})
+    if set(capabilities) != set(expected):
+        errors.append('Capability inventory differs from supported local runtime scope')
+    for name, wanted in expected.items():
+        if type(capabilities.get(name)) is not bool or capabilities.get(name) is not wanted:
+            errors.append(f'Capability {name} must be {wanted}')
+    runtime = index.get('runtime_scope', {})
+    if runtime.get('approval_trust_model') != 'local_interactive_user_account_no_authenticated_approval_service':
+        errors.append('Local runtime must declare its limited approval trust model')
+    if runtime.get('external_delivery_implemented') is not False:
+        errors.append('Local runtime must not claim external delivery')
+    if runtime.get('entrypoint') != 'scripts/dot.py' or runtime.get('implementation') != 'runtime/dot_runtime':
+        errors.append('Runtime must identify the actual local entrypoint and implementation')
     return errors
 
 
@@ -234,6 +301,7 @@ def validate_repository(root):
             for target in re.findall(r'!?\[[^\]\n]*\]\(([^)\n]+)\)', content):
                 errors.extend(check_local_link(root, file, target))
     required = ['AGENTS.md', 'L1.md', 'DOT.md', 'templates/requirements.md',
+                'templates/execution-plan.md', 'templates/final-report.md', 'docs/guides/local-runtime.md', 'scripts/dot.py',
                 'policy/simple-flow.json', 'policy/embedded-c.json', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
                 'docs/core-rules.md', '.github/workflows/validate.yml',
                 'policy/workflow.json', 'policy/roles.json', 'policy/rejection-tests.json',
@@ -322,9 +390,9 @@ def validate_repository(root):
         errors.append('Expected 48 unique acceptance/rejection scenarios')
     if any(c.get('execution_status') != 'NOT_RUN' or c.get('evidence_ref') is not None for c in cases):
         errors.append('Reference scenarios must not claim real execution; store actual results in the product project')
-    for capability, implemented in index['capabilities'].items():
-        if capability != 'static_repo_validation' and implemented is not False:
-            errors.append(f'Reference repo cannot claim runtime capability: {capability}')
+    errors.extend(validate_capabilities(index))
+    if not (root / 'runtime/dot_runtime').is_dir():
+        errors.append('Advertised local runtime implementation is missing')
     for name in ('project-context', 'task-draft'):
         template = documents[f'templates/{name}.json']
         if template.get('status') != 'DRAFT':

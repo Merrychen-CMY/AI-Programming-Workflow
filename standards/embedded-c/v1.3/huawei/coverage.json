@@ -1,5 +1,5 @@
 {
-  "coverage_revision": 1,
+  "coverage_revision": 2,
   "standard_version": "1.3",
   "source_document_id": "DKBA 2826-2011.5",
   "source_sha256": "4de7381858f8e47f3c04b6f1950bcebdb41b289bf8fedf67990ff0180ef6efba",
@@ -306,13 +306,13 @@
       "title": "源文件与公共接口配对",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "提供公共接口的.c应有同名.h；纯定义头文件不必有对应.c，内部函数声明留在.c。",
+      "project_requirement": "除程序入口外，每个自有.c提供同名.h并声明其对外接口；纯定义头文件不必有对应.c，内部函数声明留在.c。没有公共接口的内部.c不能默认豁免，确需保留须取得绑定条款与范围的明确例外批准。",
       "applicability": "新增源文件和公共接口",
-      "verification": "检查.c/.h配对、导出范围及无头文件源的职责说明。",
+      "verification": "核对.c/.h配对、公共接口及入口职责；非入口无同名.h时检查有效例外批准和适用版本，只有职责说明不能放行。",
       "project_rule_ids": [
         "HEADER-001"
       ],
-      "difference": "原文除入口外要求.c有公开接口；项目允许确实无公共接口的内部.c并记录边界，不创建空.h。",
+      "difference": "取消对私有.c无.h的默认放宽；遵循原规则，仅经正式授权可使用明确例外，不为形式配对制造无意义接口。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
@@ -1106,14 +1106,14 @@
       "title": "静态变量前缀",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "静态存储的static变量使用s_前缀，包含文件内和函数内静态对象。",
+      "project_requirement": "所有static对象（包括文件内、函数内及const限定对象）使用s_前缀和项目变量命名风格；const限定不将对象改按宏或枚举命名。",
       "applicability": "static变量定义",
       "verification": "检查作用域、前缀及可重入约束。",
       "project_rule_ids": [
         "C-001",
         "RES-001"
       ],
-      "difference": "明确文件级static对象由本条优先确定前缀。",
+      "difference": "文件级static对象按本条优先确定s_前缀；const对象仍按对象存储与链接属性命名，避免与R3.5冲突。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
@@ -1237,13 +1237,13 @@
       "title": "常量名称统一",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "具名数值、字符串常量和枚举成员采用大写下划线风格，平台定义保留兼容。",
+      "project_requirement": "数值或字符串常量宏和枚举成员采用大写下划线风格；具有存储空间的const对象遵守变量命名和g_/s_前缀规则，平台定义保留兼容。",
       "applicability": "自有常量和枚举",
       "verification": "检查声明、引用及平台例外。",
       "project_rule_ids": [
         "C-001"
       ],
-      "difference": "原文编号为规则但句中用建议措辞；保留原类别，本项目明确采用统一风格。",
+      "difference": "结合原文3.5宏命名小节限定对象：大写用于宏及枚举，const对象不是宏。保留原规则类别和统一命名要求。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
@@ -2181,13 +2181,13 @@
       "title": "文件说明可追溯",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "文件头说明职责、使用边界和文件关系，记录真实版权及可确认元数据；头文件简述公共能力。",
+      "project_requirement": "文件头使用Doxygen说明版权、版本、创建日期、真实作者姓名及工号、内容功能、文件关系和修改历史；头文件还简述公共接口。不得虚构作者、日期、工号或版权。确需以版本控制记录代替文件内字段，或某字段不适用（例如无工号项目改用可追溯项目身份），必须取得明确例外批准并保留追溯引用。",
       "applicability": "新文件及文件职责变更",
-      "verification": "检查Doxygen文件头和版本记录，禁止虚构人员、日期、版权。",
+      "verification": "逐项核查文件头元数据和契约；缺失、未知或以版本控制替代必需字段时检查明确授权例外，不能凭提交历史存在就通过。",
       "project_rule_ids": [
         "DOC-001"
       ],
-      "difference": "不移植华为姓名工号和版权模板；版本及修改日志可由版本控制提供，真实作者信息按项目政策。",
+      "difference": "华为版权和组织工号不移植为本项目真实身份；字段替代或省略须有正式项目例外，取消默认以版本控制替代版本/修改日志的放宽。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",

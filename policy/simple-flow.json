@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.3.0",
+  "workflow_version": "2.4.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -13,7 +13,7 @@
     "DOT.md",
     "templates/requirements.md"
   ],
-  "user_approval_artifact": "single_versioned_requirements_document_with_execution_scope",
+  "user_approval_artifact": "versioned_requirements_execution_plan_and_final_report",
   "implementation_requires_user_approval": true,
   "routine_in_scope_work_requires_new_user_approval": false,
   "internal_verification_plan_requires_separate_user_document": false,
@@ -22,7 +22,7 @@
     "L1-V": "internal_verification_plan",
     "L2": "DOT_orchestration",
     "L3": "implementation_worker",
-    "L4": "independent_verification_worker",
+    "L4": "independent_test_and_review_workers",
     "L5": "DOT_acceptance_and_delivery_request"
   },
   "independent_verification_required": true,
@@ -31,10 +31,10 @@
   "direct_verifier_to_developer_dispatch": false,
   "product_or_ac_change_requires_user_decision": true,
   "plan_maintenance": {
-    "within_explicit_delegation": "verification_owner_records_new_plan_and_authorization",
-    "semantic_change": "new_plan_authorization_and_all_required_reverification",
+    "within_explicit_delegation": "equivalent_maintenance_logged_without_changing_approved_scope_checks_or_budget",
+    "semantic_change": "user_reapproves_changed_execution_plan_and_all_required_reverification",
     "may_lower_acceptance_standard": false,
-    "outside_delegation": "L1_requests_user_decision"
+    "outside_delegation": "L1_or_DOT_requests_user_decision_before_affected_execution"
   },
   "delivery": {
     "execute_when_existing_authorization_covers_actual_action": true,
@@ -48,23 +48,30 @@
       "evidence_conditions",
       "expiry",
       "use_limit"
-    ]
+    ],
+    "requires_approved_success_report": true,
+    "preauthorization_may_bypass_report_review": false,
+    "local_runtime_executes_delivery": false,
+    "delivered_requires_external_receipt": true
   },
   "three_checkpoints": [
-    "approved_requirements_and_scope",
-    "independent_candidate_verification",
-    "valid_delivery_authorization"
+    "approved_requirements",
+    "approved_execution_plan",
+    "approved_final_report"
   ],
   "user_decision_triggers": [
     "requirements_or_AC_change",
+    "material_execution_plan_change",
     "scope_permission_or_budget_expansion",
     "unresolved_blocker",
     "delivery_not_covered_by_authorization"
   ],
   "user_visible_outputs": [
     "requirements_for_review",
+    "execution_plan_for_review",
     "decision_needed_with_options",
-    "delivery_result"
+    "success_or_failure_final_report_for_review",
+    "delivery_result_when_external_executor_connected"
   ],
   "states": [
     {
@@ -78,28 +85,68 @@
       "id": "REVIEW_PENDING",
       "next": [
         "DISCOVERY",
-        "EXECUTING"
+        "PLAN_PENDING",
+        "BLOCKED"
       ],
-      "guard": "Only real approval of exact version and scope permits execution"
+      "guard": "Real user approval binds requirements hash and permits planning only; refusal returns discovery"
+    },
+    {
+      "id": "PLAN_PENDING",
+      "next": [
+        "REVIEW_PENDING",
+        "EXECUTING",
+        "BLOCKED"
+      ],
+      "guard": "Real user approval binds execution plan and approved requirements hashes before product execution"
     },
     {
       "id": "EXECUTING",
       "next": [
         "VERIFYING",
         "DECISION_PENDING",
+        "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "DOT dispatches within approved scope and budget"
+      "guard": "Current requirements and plan approvals valid; dispatch within scope and cumulative budgets; failure or exhaustion produces report"
     },
     {
       "id": "VERIFYING",
       "next": [
         "EXECUTING",
-        "DELIVERY_READY",
         "DECISION_PENDING",
+        "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "Failure enters DOT triage before repair; only independent evidence permits delivery readiness"
+      "guard": "Distinct developer tester reviewer sessions; immutable candidate and all required evidence; failures return DOT triage before bounded repair"
+    },
+    {
+      "id": "DECISION_PENDING",
+      "next": [
+        "REVIEW_PENDING",
+        "PLAN_PENDING",
+        "EXECUTING",
+        "VERIFYING",
+        "REPORT_PENDING",
+        "BLOCKED"
+      ],
+      "guard": "Changed requirements or material plan must return respective approval stage; unchanged authorized work only may resume"
+    },
+    {
+      "id": "BLOCKED",
+      "next": [
+        "REVIEW_PENDING",
+        "PLAN_PENDING",
+        "REPORT_PENDING"
+      ],
+      "guard": "No automatic resumption; reconcile old runs and side effects; changed scope or additional budget needs new approval; counters never reset"
+    },
+    {
+      "id": "REPORT_PENDING",
+      "next": [
+        "DELIVERY_READY",
+        "BLOCKED"
+      ],
+      "guard": "User approves exact report and candidate evidence; success permits DELIVERY_READY only; failed or incomplete report approval leads BLOCKED without retry authority"
     },
     {
       "id": "DELIVERY_READY",
@@ -108,43 +155,34 @@
         "DECISION_PENDING",
         "BLOCKED"
       ],
-      "guard": "Check actual action and target against valid authorization, then execute and verify receipt"
-    },
-    {
-      "id": "DECISION_PENDING",
-      "next": [
-        "REVIEW_PENDING",
-        "EXECUTING",
-        "VERIFYING",
-        "DELIVERY_READY",
-        "BLOCKED"
-      ],
-      "guard": "L1 obtains decision; changed requirements need new version/approval; reevaluate impacts before resuming"
-    },
-    {
-      "id": "BLOCKED",
-      "next": [
-        "DISCOVERY",
-        "REVIEW_PENDING",
-        "EXECUTING",
-        "VERIFYING",
-        "DELIVERY_READY"
-      ],
-      "guard": "Cause resolved, authorization valid, old runs and side effects reconciled; budgets do not reset"
+      "guard": "Approved success report plus exact action and target authorization and external receipt required for DELIVERED; local runtime cannot deliver"
     },
     {
       "id": "DELIVERED",
       "next": [
         "DISCOVERY"
       ],
-      "guard": "New request keeps original delivery evidence intact"
+      "guard": "New request preserves prior reports approvals evidence and cumulative history"
     }
   ],
   "advanced_reference": "docs/advanced-profile.md",
   "existing_project_protections_remain_required": true,
-  "runtime_implemented_by_this_repository": false,
+  "runtime_implemented_by_this_repository": true,
   "applicable_coding_standards": [
     "policy/embedded-c.json"
   ],
-  "coding_standard_requires_extra_user_document": false
+  "coding_standard_requires_extra_user_document": false,
+  "execution_plan_requires_user_approval": true,
+  "final_report_requires_user_approval": true,
+  "requirements_approval_allows_implementation": false,
+  "independent_review_required": true,
+  "distinct_worker_sessions": [
+    "developer",
+    "tester",
+    "reviewer"
+  ],
+  "runtime_approval_trust_model": "local_interactive_user_account_no_authenticated_approval_service",
+  "agent_may_enter_user_approval": false,
+  "failed_report_approval_resumes_execution": false,
+  "budgets_reset_on_restart_or_replan": false
 }

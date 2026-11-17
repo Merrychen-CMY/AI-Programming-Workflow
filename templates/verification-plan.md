@@ -2,6 +2,8 @@
 
 状态：DRAFT。计划ID/版本：REPLACE_PLAN。Product L1及AC版本：REPLACE_SPEC。独立负责人：REPLACE_OWNER。
 
+此内部计划的关键检查、环境、判据和预算纳入DOT执行计划交用户审核；日常等义维护留痕，实质变化须重审。独立测试与独立审核由不同会话执行。
+
 ## 检查映射
 
 | check_id | AC ID | 方法与输入 | 预期/阈值 | 必需性与适用阶段 | 环境/治具 | 证据 |

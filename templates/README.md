@@ -1,21 +1,22 @@
 # 模板使用顺序
 
-默认只给用户审核 [requirements.md](requirements.md)。启动见 [agent-start.md](agent-start.md)。其他模板供DOT和内部执行者按需维护，不要求用户逐一填写。
+用户审核三份主要产物：[需求文档](requirements.md)、[DOT执行计划](execution-plan.md)、[最终报告](final-report.md)。由L1/DOT填写，用户不必填内部JSON和逐条规范适用表。启动见 [agent-start.md](agent-start.md)。
 
-## 模板使用说明
-
-本目录中的对象均为草案。复制到真实项目约定的位置再填写，不在通用规范库里积累运行状态。
+所有模板均是草案，复制到真实项目私有位置再填写；本公开规范仓库不保存真实批准、运行状态或凭证。
 
 | 文件 | 用途 |
 | --- | --- |
-| [agent-start.md](agent-start.md) | 给Agent的首次读取与任务说明 |
-| [project-context.json](project-context.json) | 项目、版本、角色及能力现状 |
-| [product-spec.md](product-spec.md) | Product L1需求与AC |
-| [verification-plan.md](verification-plan.md) | L1-V验证计划与候选绑定 |
-| [task-draft.json](task-draft.json) | L2准备的任务草案 |
-| [issue-intake.json](issue-intake.json) | L4/L5问题接收，不预填根因结论 |
-| [handoff.md](handoff.md) | 层级/Agent之间交接 |
-| [verification-report.md](verification-report.md) | L4观察结果与证据引用 |
-| [delivery-request.md](delivery-request.md) | L5验收汇总与交付申请 |
+| [requirements.md](requirements.md) | L1的需求、约束、验收与范围，首次审核 |
+| [execution-plan.md](execution-plan.md) | DOT的方案、任务、独立执行与预算，开工审核 |
+| [final-report.md](final-report.md) | 成功/失败/未完成报告，结束审核 |
+| [local-execution-plan.example.json](local-execution-plan.example.json) | 本地运行器JSON计划草案，须填写真实环境并审核 |
+| [project-context.json](project-context.json) | DOT维护项目版本、角色和能力现状 |
+| [product-spec.md](product-spec.md) | 内部产品规格与AC |
+| [verification-plan.md](verification-plan.md) | 内部L1-V计划与候选绑定 |
+| [task-draft.json](task-draft.json) | DOT准备的任务草案 |
+| [issue-intake.json](issue-intake.json) | 问题接收，不预填根因结论 |
+| [handoff.md](handoff.md) | 角色之间交接 |
+| [verification-report.md](verification-report.md) | 独立观察结果与证据 |
+| [delivery-request.md](delivery-request.md) | 最终报告批准后的具体交付授权申请 |
 
-任何REPLACE_*、null、NOT_RUN、DRAFT均表示未完成。不得替换成PASS或批准状态来绕过实际检查。正式契约还应根据受信服务实现进行结构校验和身份验证，参见 [接入适配器](../docs/reference/14-adapters.md)。
+REPLACE_*、null、NOT_RUN、DRAFT表示未完成；不能写成PASS或APPROVED绕过真实检查。正式审批身份与权限条件见 [接入适配器](../docs/reference/14-adapters.md)。

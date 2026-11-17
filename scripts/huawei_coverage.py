@@ -36,7 +36,7 @@ def validate_coverage(data, inventory, project_rule_ids):
                        'not_applicable_requires_reason':True, 'omission_is_not_pass':True}.items():
         if data.get(key) is not value:
             errors.append(f'Huawei coverage boundary changed: {key}')
-    if data.get('standard_version') != '1.3' or data.get('coverage_revision') != 1:
+    if data.get('standard_version') != '1.3' or data.get('coverage_revision') != 2:
         errors.append('Unexpected Huawei coverage/standard revision')
     if data.get('inventory') != BASE + 'source-inventory.json':
         errors.append('Huawei coverage must link its reviewed source inventory')

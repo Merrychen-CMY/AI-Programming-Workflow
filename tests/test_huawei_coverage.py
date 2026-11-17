@@ -74,6 +74,10 @@ class HuaweiCoverageTests(unittest.TestCase):
         self.data['source_sha256'] = '0' * 64
         self.rejected()
 
+    def test_old_revision_cannot_hide_changed_exception_policy(self):
+        self.data['coverage_revision'] = 1
+        self.rejected()
+
     def test_empty_requirement_applicability_check_or_delta_rejected(self):
         for field in ('project_requirement','applicability','verification','difference'):
             with self.subTest(field=field):

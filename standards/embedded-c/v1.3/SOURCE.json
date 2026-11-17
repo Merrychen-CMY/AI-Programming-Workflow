@@ -18,7 +18,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/01.md",
-      "repository_sha256": "17a55e2428ec620a24851754387a264175e83d00bd44eb092bfd5fab88ddc64d"
+      "repository_sha256": "089b47bb87021b68a97f169e71ba3364e81674b09132d5ee9258df62ed6918a9"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/02.md",
@@ -26,7 +26,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/03.md",
-      "repository_sha256": "e6b18a1ee2fe0e70200a9d3a987b988826071c477f34701a58ad0728871554e4"
+      "repository_sha256": "90c281f9859ff96743f1fd92c478a878aee7bb3bb9814b8be9fead3490fb7b58"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/04.md",
@@ -46,7 +46,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/08.md",
-      "repository_sha256": "f8fc269fb054e79cf2eac8f812bb9cd7e81dd4bce32b895a2dc56f32d6858493"
+      "repository_sha256": "42aa7eaa058564518ef6acedcf893767bf3e1fe11047565e6631d29c1ad9c1ce"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/09.md",
@@ -78,7 +78,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/coverage.json",
-      "repository_sha256": "9781b16807eba8a2ae2fc7a8ed410de856f3b267055aed14567709d7e40494f7"
+      "repository_sha256": "e08f018a340a9c366b564e8cb8a855ce6d668b08a5eedf80f8548044a0ff7458"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/coverage.md",
@@ -86,7 +86,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/README.md",
-      "repository_sha256": "bc82e4d2c376ddb96e7a53f7eac437ee844ca3147014cc741fd707e6fa86f528"
+      "repository_sha256": "19622f65ae5bfa6fdab34b091f19bf194f0eb556a4a9a17a16ba59fcce54d091"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/huawei/runtime-evidence.md",
+      "repository_sha256": "1232e425c1f2cdd88aad69b146a34e8f1437e4cf6a894202977ead8dadad2ea9"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/source-inventory.json",
@@ -166,7 +170,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/02-risk.md",
-      "repository_sha256": "91ef0f48652f3df3b394d2e08ca25ec265a30842157969757086ac4ebfb51975"
+      "repository_sha256": "3e08f8aef09cb4b532e76f825bb1cb19f3964507e2cf5598b3078e0b9ee107a5"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/03-1-readability.md",
@@ -178,11 +182,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
-      "repository_sha256": "786374006585a13c282f146df5d7185b72e1cca45f91cfe19b5a2a0b9871ea4a"
+      "repository_sha256": "bef7472df85b13fd7298819af36b4435e08d4bf094273183f3e6c554ba158eff"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "repository_sha256": "3a1127691b7831f638dfd9c6bddfb822be975b98fb980ed419f22f65f562ab8c"
+      "repository_sha256": "9cba30b4b890f73f55203906bb8f3c6fb4b6cf0c8182e0de635f4b98cc3e47a3"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
@@ -234,15 +238,15 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference-adoption.md",
-      "repository_sha256": "32d20eeb7ed3d7627a968cd00c01ea2f3b2c26e3ae30fc10b41df8a69bdbe959"
+      "repository_sha256": "3789b9b38dc987ef48b7aec930ee8d9c3a7b927adba0470f788214c9021b688b"
     },
     {
       "path": "standards/embedded-c/v1.3/source/agent-instructions-template.txt",
-      "repository_sha256": "55ca694ee2bbcabd77f0d17c15ac7425ae04872e6b4318cd3d3e64bdb025e593"
+      "repository_sha256": "683e0c83b6be217763413c9c01f4993a27d70a1cef3f4024e6e52ba4f2f8ba9d"
     },
     {
       "path": "standards/embedded-c/v1.3/source/project-entry-template.txt",
-      "repository_sha256": "6fc9ab457df6e661bd04cd3196922b6940d3d6bcd67a111224ffedbc8ae2a7df"
+      "repository_sha256": "54eec14a85df119069a72faebed6d344db259f5f943957f3b4a27c3fe31f92cd"
     },
     {
       "path": "standards/embedded-c/v1.3/source/readability-checklist.txt",
@@ -254,7 +258,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "ae462edce1bec2b0fd9f3dff4f1d38b440aaebfde6725fe5d23a75f61d5ad8bb"
+      "repository_sha256": "e8071cfd5c8db556bf93cc2fef7a053bc3f4567474b90b773990fe06db060edf"
     }
   ],
   "changes": [

@@ -1,4 +1,4 @@
-name: Workflow specification checks
+name: Workflow specification and local runtime checks
 on:
   push:
   pull_request:
@@ -18,7 +18,7 @@ jobs:
           python-version: '3.12'
       - name: Validate specification files
         run: python scripts/validate_repo.py
-      - name: Test the static validator
+      - name: Test policy, local controller, adapters and evidence rejection
         run: python -m unittest discover -s tests -v
   embedded-c-contracts:
     runs-on: ubuntu-latest

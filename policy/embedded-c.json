@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.3.0",
+  "workflow_version": "2.4.0",
   "standard_version": "1.3",
   "contract_schema_version": "1.1",
   "entrypoint": "standards/embedded-c/README.md",
@@ -27,7 +27,10 @@
     "goto_prohibition_origin": "retained_project_requirement_stricter_than_Huawei_suggestion_6.3",
     "global_prefix": "g_",
     "static_prefix": "s_",
-    "brace_placement": "project_consistent_not_vendor_mandated"
+    "brace_placement": "project_consistent_not_vendor_mandated",
+    "const_object_naming": "storage_linkage_prefix_rules_not_macro_uppercase",
+    "private_c_without_header_default_exception": false,
+    "file_header_metadata_vcs_substitution_requires_approved_exception": true
   },
   "readability": {
     "review_triggers": {
@@ -606,6 +609,13 @@
     "inventory": "standards/embedded-c/v1.3/huawei/source-inventory.json",
     "numbered_clauses": 139,
     "governance_supplements": 6,
-    "product_compliance_claimed": false
+    "product_compliance_claimed": false,
+    "coverage_revision": 2,
+    "runtime_gate": "runtime/dot_runtime/compliance.py",
+    "record_template": "templates/huawei-compliance.example.json",
+    "all_catalog_clauses_accounted_for": true,
+    "candidate_bound_evidence_required": true,
+    "controller_authenticated_verifier_required": true,
+    "self_approved_exception_allowed": false
   }
 }

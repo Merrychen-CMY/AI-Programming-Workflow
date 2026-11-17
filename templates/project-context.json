@@ -3,7 +3,7 @@
   "document_kind": "template",
   "status": "DRAFT",
   "workflow": {
-    "version": "2.3.0",
+    "version": "2.4.0",
     "repository": "REPLACE_WORKFLOW_REPOSITORY",
     "commit": "REPLACE_FULL_COMMIT",
     "mode": "simple",
@@ -23,7 +23,9 @@
   "baselines": {
     "product_spec_ref": null,
     "verification_plan_ref": null,
-    "candidate_ref": null
+    "candidate_ref": null,
+    "execution_plan_ref": null,
+    "final_report_ref": null
   },
   "authorization_receipt_refs": [],
   "trusted_state_location": null,
@@ -46,6 +48,6 @@
     "delivery_guard": "NOT_IMPLEMENTED"
   },
   "requirements_document_ref": null,
-  "note": "Optional internal DOT record; user reviews requirements.md rather than filling this template. DOT selects the applicable coding standard and its scope; an empty draft list is not an exemption.",
+  "note": "Internal DOT draft; user reviews requirements, execution plan and final report. Actual project capabilities must be verified; no permission is granted by this template.",
   "applicable_coding_standard_refs": []
 }

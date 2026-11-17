@@ -4,12 +4,12 @@
     {
       "state_or_phase": "READY",
       "transition": "门1有效 → L2 PLANNED",
-      "guard": "需求、AC、起点与预算绑定；未批准不得派单"
+      "guard": "用户已批准需求和DOT执行计划，需求、AC、起点与累计预算绑定；任一未批准不得派实现"
     },
     {
       "state_or_phase": "PLANNED / IMPLEMENTING",
       "transition": "L2 派 L3；完成后 → CANDIDATE_FROZEN",
-      "guard": "依赖就绪；唯一写入者；任务与授权范围一致"
+      "guard": "需求/执行计划批准均有效；依赖就绪；唯一写入者；任务与授权范围一致"
     },
     {
       "state_or_phase": "CANDIDATE_FROZEN",
@@ -38,13 +38,18 @@
     },
     {
       "state_or_phase": "ACCEPTANCE_READY",
-      "transition": "L5 汇总 → DELIVERY_PENDING",
-      "guard": "逐项 AC、风险、完整问题历史与证据齐备"
+      "transition": "L5汇总成功或失败报告 → REPORT_PENDING（用户审核）",
+      "guard": "成功需独立测试与独立审核；失败/耗尽亦提交报告，完整AC、风险、问题历史及证据"
+    },
+    {
+      "state_or_phase": "REPORT_PENDING",
+      "transition": "用户批准成功报告 → DELIVERY_PENDING；确认失败/未完成 → BLOCKED",
+      "guard": "绑定确切报告/候选；不得把失败报告确认当继续执行或产品通过"
     },
     {
       "state_or_phase": "DELIVERY_PENDING",
       "transition": "有效门4及守卫 → DELIVERING",
-      "guard": "未批准保持待审；退回进入 L2 分诊"
+      "guard": "最终成功报告获用户批准且具体交付授权有效；本地运行器不执行此阶段"
     },
     {
       "state_or_phase": "DELIVERING",
@@ -73,5 +78,6 @@
     }
   ],
   "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
-  "formal_integration_scope": "Controller, approval service and named gate executors are formal integration contracts, not mandatory tools for initial requirements review."
+  "formal_integration_scope": "Formal gate stages supplement the mandatory requirements/plan/report user reviews; external delivery is not implemented locally.",
+  "current_user_flow": "policy/simple-flow.json"
 }

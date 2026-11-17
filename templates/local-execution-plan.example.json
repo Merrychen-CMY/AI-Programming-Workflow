@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "description": "示例必须由DOT根据已审核需求改写，用户审核后方可执行；此文件本身不是授权。",
+  "coding_standard": "huawei-c",
+  "standard_scope_reason": "项目自有或AI维护的嵌入式C，应用华为规范和Doxygen。",
+  "allowed_paths": ["src", "include"],
+  "environment": {
+    "compiler": "REPLACE_WITH_EXACT_TOOLCHAIN_VERSION",
+    "target": "REPLACE_WITH_TARGET_AND_TEST_ENVIRONMENT"
+  },
+  "tasks": [
+    {
+      "id": "implement",
+      "instruction": "按已批准需求实现最小可验收改动。填写实际任务、范围和交付物后提交审核。",
+      "depends_on": []
+    }
+  ],
+  "verification": {
+    "test_report_format": "ctest",
+    "test_command": ["REPLACE_WITH_CTEST_EXECUTABLE", "--test-dir", "REPLACE_WITH_APPROVED_BUILD_DIRECTORY", "--output-on-failure"],
+    "test_instructions": "独立从需求推导并执行测试；记录实际命令、输出、运行的非零测试数，失败/未执行如实报告。仅在临时目录创建构建产物，不修改候选源码。填写本项目准确测试步骤。",
+    "review_instructions": "独立检查代码正确性、安全性、需求/AC覆盖和Doxygen注释。逐条记录已审查的文件、问题与证据；不能用实现者自测代替独立审核。"
+  },
+  "budgets": {
+    "implementation_attempts": 3,
+    "same_root_cause_attempts": 2,
+    "infrastructure_retries": 2,
+    "timeout_seconds": 2700
+  }
+}
