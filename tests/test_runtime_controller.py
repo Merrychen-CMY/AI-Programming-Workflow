@@ -115,6 +115,16 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(c.run()['state'], 'DECISION_PENDING')
         self.assertFalse(c.adapter.calls)
 
+    def test_rejected_report_can_be_revised_without_authorizing_a_retry(self):
+        c = self.approved()
+        c.run()
+        self.assertEqual(c.reject('report', 'Missing required case', lambda *_: True)['state'], 'BLOCKED')
+        with self.assertRaises(ValueError):
+            c.run()
+        c.revise(self.requirements, self.plan)
+        self.assertEqual(c.state['state'], 'REVIEW_PENDING')
+        self.assertEqual(c.state['implementation_attempts'], 1)
+
     def test_changed_input_during_human_approval_rejected(self):
         c = self.controller()
         def race(*_):

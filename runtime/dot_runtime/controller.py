@@ -283,6 +283,27 @@ class Controller:
                                 'Final report reviewed; no external delivery was executed')
             return self.state
 
+    def reject(self, kind, reason, confirm=operator_confirm):
+        """Reject a reviewed artifact without authorizing execution or resetting counters."""
+        with run_lock(self.run_dir):
+            self.state = read_json(self.state_path)
+            wanted = {'requirements': 'REVIEW_PENDING', 'plan': 'PLAN_PENDING', 'report': 'REPORT_PENDING'}
+            if kind not in wanted or self.state['state'] != wanted[kind] or not reason.strip():
+                raise ValueError('Rejection needs a pending artifact and a concrete reason')
+            artifact = self.run_dir / 'final-report.json' if kind == 'report' else Path(self.state[kind])
+            path = self.run_dir / 'rejection-request.json'
+            record = {'kind': kind, 'artifact_sha256': file_hash(artifact), 'reason': reason,
+                      'run_id': self.state['run_id'], 'at': now(), 'authorizes_execution': False}
+            atomic_json(path, record)
+            if not confirm('rejection_decision', path, file_hash(path)):
+                raise ValueError('Rejection decision not confirmed')
+            if file_hash(artifact) != record['artifact_sha256']:
+                raise ValueError('Artifact changed during rejection review')
+            self.state['history'].append({'action': 'operator_rejected', **record, 'operator': getpass.getuser()})
+            self.state['approvals'].pop(kind, None)
+            self.transition('BLOCKED', 'User rejected ' + kind + ': ' + reason)
+            return self.state
+
     def revise(self, requirements, plan):
         """Stage revised inputs, preserving all prior attempts and budgets; approval still required."""
         with run_lock(self.run_dir):

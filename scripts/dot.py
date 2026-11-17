@@ -19,6 +19,10 @@ def main(argv=None):
     approval = sub.add_parser('approve', help='Human-only local terminal review of exact document hash')
     approval.add_argument('kind', choices=('requirements', 'plan', 'report'))
     approval.add_argument('--run-dir', required=True, type=Path)
+    rejection = sub.add_parser('reject', help='Human rejects a pending artifact with a reason; no execution authority')
+    rejection.add_argument('kind', choices=('requirements', 'plan', 'report'))
+    rejection.add_argument('--run-dir', required=True, type=Path)
+    rejection.add_argument('--reason', required=True)
     run = sub.add_parser('run', help='Run independent Codex sessions within approved scope and persistent budgets')
     run.add_argument('--run-dir', required=True, type=Path)
     run.add_argument('--codex', default='codex', help='Codex executable path; preserves configured model')
@@ -37,6 +41,8 @@ def main(argv=None):
             controller = Controller(args.run_dir, CodexAdapter(args.codex) if args.command == 'run' else None)
             if args.command == 'approve':
                 state = controller.approve(args.kind)
+            elif args.command == 'reject':
+                state = controller.reject(args.kind, args.reason)
             elif args.command == 'run':
                 state = controller.run()
             elif args.command == 'revise':

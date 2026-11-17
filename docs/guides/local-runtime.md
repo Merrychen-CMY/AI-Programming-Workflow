@@ -31,6 +31,8 @@ python scripts/dot.py approve report --run-dir PATH_TO_PRIVATE_RUN
 
 ## 修改需求或计划与恢复
 
+审核不通过时，由用户在终端执行 `python scripts/dot.py reject report --reason "退回原因" --run-dir PATH_TO_PRIVATE_RUN` 并确认退回决定；requirements和plan也支持同样退回。退回进入BLOCKED，保留问题与累计次数，不把退回本身当作继续工作的授权。之后通过revise更新基线并重新审核，避免卡在无法修改的待审报告状态。
+
 停止当前执行后，通过以下命令提交新基线。运行器保留历史与累计预算，撤销旧批准并返回REVIEW_PENDING；再由用户依次审核需求和计划。需追加预算时批准新的累计总上限，不能把已消耗次数当作新的一轮零起点。
 
 ```powershell
