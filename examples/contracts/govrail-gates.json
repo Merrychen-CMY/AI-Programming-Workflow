@@ -1,0 +1,34 @@
+{
+  "defaultMode": "local",
+  "modes": {
+    "local": [
+      "candidate-admission"
+    ],
+    "release": [
+      "candidate-admission",
+      "evidence-admission"
+    ]
+  },
+  "gates": [
+    {
+      "id": "candidate-admission",
+      "label": "Candidate identity and scope",
+      "command": [
+        "python",
+        "adapters/candidate_admission.py"
+      ],
+      "timeoutMs": 60000,
+      "allowFailure": false
+    },
+    {
+      "id": "evidence-admission",
+      "label": "Trusted evidence for exact candidate",
+      "command": [
+        "python",
+        "adapters/evidence_gate.py"
+      ],
+      "timeoutMs": 120000,
+      "allowFailure": false
+    }
+  ]
+}

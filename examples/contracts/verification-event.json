@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "event_id": "EVT-001",
+  "run_id": "RUN-001",
+  "attempt": 1,
+  "candidate_manifest_sha256": "REPLACE_CANDIDATE_MANIFEST_SHA256",
+  "policy_sha256": "REPLACE_POLICY_SHA256",
+  "check_id": "hil.serial-ping",
+  "ac_ids": [
+    "AC-02"
+  ],
+  "producer_id": "REPLACE_AUTHENTICATED_RUNNER_ID",
+  "started_at": "2026-11-17T02:00:00Z",
+  "finished_at": "2026-11-17T02:00:20Z",
+  "outcome": "PASS",
+  "exit_code": 0,
+  "tests": {
+    "expected": 1,
+    "executed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "artifacts": [
+    {
+      "kind": "serial-log",
+      "uri": "REPLACE_IMMUTABLE_LOG_URI",
+      "sha256": "REPLACE_LOG_SHA256"
+    }
+  ],
+  "attestation_ref": "REPLACE_TRUSTED_COLLECTOR_RECEIPT"
+}

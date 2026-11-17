@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "candidate_id": "CAND-001",
+  "launch_sha256": "REPLACE_LAUNCH_SHA256",
+  "code_repository": "REPLACE_CODE_REPOSITORY",
+  "base_commit": "REPLACE_FULL_BASE_COMMIT",
+  "candidate_commit": "REPLACE_FULL_CANDIDATE_COMMIT",
+  "candidate_tree": "REPLACE_GIT_TREE_ID",
+  "control_commit": "REPLACE_APPROVED_CONTROL_COMMIT",
+  "build_run_id": "BUILD-001",
+  "build_environment_sha256": "REPLACE_ENVIRONMENT_MANIFEST_SHA256",
+  "artifacts": [
+    {
+      "name": "firmware-flash-image.bin",
+      "sha256": "REPLACE_BINARY_SHA256",
+      "uri": "REPLACE_IMMUTABLE_ARTIFACT_URI"
+    }
+  ],
+  "flash_layout_sha256": "REPLACE_FLASH_LAYOUT_SHA256"
+}

@@ -1,0 +1,20 @@
+# 术语与对象
+
+| 对象 | 含义 |
+| --- | --- |
+| Product L1 / L1 | 产品需求与验收目标决策层 |
+| Verification/Delivery L1-V | 验证需求、验收计划及候选验证包基线层；不是最终交付审批人 |
+| AC | 稳定编号的产品验收条件 |
+| launch | 门1批准的需求、代码起点、范围和预算开工包 |
+| task / attempt / run_id | 任务、执行尝试及真实运行标识；重启不能重置计数 |
+| candidate_id | 不可变候选标识，绑定代码、构建来源、产物 |
+| issue_id | 回流问题标识，关联原失败、根因、处理与重验 |
+| phase / outcome / issue_status | 项目阶段、一次检查结果、问题生命周期；不要混用 |
+| FAIL / ERROR | 观察结果；不直接代表代码/设施根因已经确认 |
+| UNKNOWN | 真实运行或副作用尚未确认，需要查询恢复 |
+| BLOCKED | 缺证据、缺决策或其他条件阻断 |
+| STALE | 受影响的基线、候选、证据或批准已不再适用 |
+| evidence-set / verdict | 不可变证据集合及受信验证器对具体集合的结论 |
+| G1 G2 G3 G4 / V0 | 门1至门4，以及验证任务准入检查 |
+
+状态转换见 [状态机](../policy/state-machine.json)。L1-V.control_commit与candidate.control_commit分别标识本次验证控制版本与冻结时控制版本；分别校验来源和兼容性，不能覆写候选迁就新计划。

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "change": "产品代码、依赖、工具链、构建配置、产物或集成起点改变",
+      "candidate_and_baseline": "新 candidate_id；旧对象不可覆盖，关联 parent_candidate_id 与 issue_id",
+      "required_actions": "门2；新 L1-V 候选包及 V0；原失败、受影响回归和本阶段全部必需检查；门3和 L5"
+    },
+    {
+      "change": "产品需求或 AC 变化",
+      "candidate_and_baseline": "L1 新版本；L2 重做影响分析并更新 launch；L1-V同步；已有候选需重新论证适用",
+      "required_actions": "受影响门1重新批准；当前基线的 V0、全部必需检查、门3；必要时新候选"
+    },
+    {
+      "change": "测试计划、用例语义、验证器逻辑或控制策略变化",
+      "candidate_and_baseline": "产品内容不变可保留候选；L1-V/控制基线新版本并重新批准",
+      "required_actions": "新 V0、全部必需验证及门3；禁止用旧计划的 PASS 自动填充新计划"
+    },
+    {
+      "change": "测试设施恢复，产品/计划/判定逻辑未变",
+      "candidate_and_baseline": "可保留候选和计划；新 run_id 与环境记录，L2批准有限恢复",
+      "required_actions": "受影响检查、环境健康/校准检查；受污染或过期证据全部重验；重封存证据并算门3"
+    },
+    {
+      "change": "只补充汇总引用，可信原件已完整存在",
+      "candidate_and_baseline": "候选与原始事件不变；追加 L5 报告或收集回执",
+      "required_actions": "核对原始哈希/身份/完整性；证据集合或 verdict 改变则重算门3并更新交付申请"
+    },
+    {
+      "change": "仅交付动作、目标或审批变化",
+      "candidate_and_baseline": "L5 更新申请；候选可不变，但先评估验证假设是否仍适用",
+      "required_actions": "新门4和 delivery_guard；目标环境改变影响验证时先由 L1-V更新计划并由L4重验"
+    },
+    {
+      "change": "证据到期、身份或来源不可验证",
+      "candidate_and_baseline": "候选可不变；旧证据只保留为历史",
+      "required_actions": "所有过期/不可信检查重新产生证据；无法证明影响边界则全部必需检查重验"
+    },
+    {
+      "change": "交付后缺陷或回退",
+      "candidate_and_baseline": "新问题关联旧交付；修复新候选；回退对象及授权单独绑定",
+      "required_actions": "修复按完整主线；回退按预批准条件核验并保存实际回执"
+    }
+  ]
+}

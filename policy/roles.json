@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "roles": [
+    {
+      "id": "L1",
+      "name": "产品需求与验收目标",
+      "path": "roles/product-l1.md",
+      "responsibilities": "决定产品需求、范围、约束与验收目标；发布产品基线、稳定 AC 和变更决定。",
+      "prohibitions": "不以修改 AC 掩盖实现失败；不接管日常修复派单；AI 不代替授权人批准。"
+    },
+    {
+      "id": "L1-V",
+      "name": "验证需求与验收计划基线",
+      "path": "roles/verification-l1v.md",
+      "responsibilities": "维护验证需求、验收计划与用例基线；定义 AC 映射、预期、覆盖、环境要求、证据和候选验证包。",
+      "prohibitions": "不改变产品 AC；不以降低阈值或删除用例消除失败；不直接修改产品代码或授权交付。"
+    },
+    {
+      "id": "L2",
+      "name": "任务拆解与统一回流调度",
+      "path": "roles/orchestrator-l2.md",
+      "responsibilities": "统一接收问题、分析根因、分类、拆解任务、协调方案、管理依赖、分配处理者；维护问题单和影响分析。",
+      "prohibitions": "不擅自改需求或测试基线；不替 L3 修代码、替 L4 写 PASS；不代替授权审批人批准交付。"
+    },
+    {
+      "id": "L3",
+      "name": "产品代码实现与修复",
+      "path": "roles/implementer-l3.md",
+      "responsibilities": "按 L2 任务实现和修复产品代码；保留自测、提交、变更说明与根因对应关系。",
+      "prohibitions": "不接受 L4/L5 绕过 L2 的正式修复派单；不改正式验收标准、覆盖历史或自证验收通过。"
+    },
+    {
+      "id": "L4",
+      "name": "独立验证与测试设施",
+      "path": "roles/verifier-l4.md",
+      "responsibilities": "独立验证、测试环境与设施维护、身份确认、证据采集；提交可复现问题和重验结果。",
+      "prohibitions": "不直接派 L3 修复；不自行变更测试预期、产品目标或批准例外；不把自测或缺失证据记为 PASS。"
+    },
+    {
+      "id": "L5",
+      "name": "验收汇总与交付申请",
+      "path": "roles/delivery-l5.md",
+      "responsibilities": "汇总逐项验收结论、失败历史和风险；评估交付可行性，准备申请、目标与回退方案并核对回执。",
+      "prohibitions": "不绕过 L2 下达修复任务；不批准自己的交付申请、不豁免必需检查、不把门3 PASS 当作交付授权。"
+    }
+  ]
+}

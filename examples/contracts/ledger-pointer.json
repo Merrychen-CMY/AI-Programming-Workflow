@@ -1,0 +1,13 @@
+{
+  "action": "record",
+  "kind": "test",
+  "status": "observed",
+  "claim": "CAND-001 的正式验证已生成回执",
+  "evidence": "REPLACE_RECEIPT_URI_AND_DIGEST",
+  "source": "REPLACE_TRUSTED_RUN_URI",
+  "tags": [
+    "REQ-001",
+    "CAND-001",
+    "verification-receipt"
+  ]
+}

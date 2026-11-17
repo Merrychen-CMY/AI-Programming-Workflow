@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-001",
+  "attempt": 1,
+  "launch_sha256": "REPLACE_LAUNCH_SHA256",
+  "ac_ids": [
+    "AC-01",
+    "AC-02",
+    "AC-03"
+  ],
+  "depends_on": [],
+  "allowed_paths": [
+    "main/",
+    "tests/"
+  ],
+  "executor": "cao",
+  "deliverables": [
+    "candidate_commit",
+    "self_test_logs",
+    "change_summary"
+  ],
+  "idempotency_key": "REPLACE_TASK_ATTEMPT_LAUNCH_KEY"
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "state_or_phase": "READY",
+      "transition": "门1有效 → L2 PLANNED",
+      "guard": "需求、AC、起点与预算绑定；未批准不得派单"
+    },
+    {
+      "state_or_phase": "PLANNED / IMPLEMENTING",
+      "transition": "L2 派 L3；完成后 → CANDIDATE_FROZEN",
+      "guard": "依赖就绪；唯一写入者；任务与授权范围一致"
+    },
+    {
+      "state_or_phase": "CANDIDATE_FROZEN",
+      "transition": "门2通过 → VERIFICATION_READY",
+      "guard": "受控构建与不可变清单；L1-V 候选包完成授权及 V0"
+    },
+    {
+      "state_or_phase": "VERIFICATION_READY / VERIFYING",
+      "transition": "L2 调度 L4；完整证据经门3 → ACCEPTANCE_READY",
+      "guard": "任何失败先进入 TRIAGE_PENDING；不得跳过必需检查"
+    },
+    {
+      "state_or_phase": "TRIAGE_PENDING / TRIAGING",
+      "transition": "L2 接收、根因分析 → RESOLVING 或 BLOCKED",
+      "guard": "不得仅凭错误码直接派修；分类和依据入库"
+    },
+    {
+      "state_or_phase": "RESOLVING",
+      "transition": "责任层完成 → REVERIFY_PENDING",
+      "guard": "L2 核对基线、候选、依赖和权限；L3 完成不等于关闭"
+    },
+    {
+      "state_or_phase": "REVERIFY_PENDING",
+      "transition": "按20.6进入 L4 重验或审批/守卫核验",
+      "guard": "独立核验处理结果；需重验时生成新 run_id，更新门3并交 L5"
+    },
+    {
+      "state_or_phase": "ACCEPTANCE_READY",
+      "transition": "L5 汇总 → DELIVERY_PENDING",
+      "guard": "逐项 AC、风险、完整问题历史与证据齐备"
+    },
+    {
+      "state_or_phase": "DELIVERY_PENDING",
+      "transition": "有效门4及守卫 → DELIVERING",
+      "guard": "未批准保持待审；退回进入 L2 分诊"
+    },
+    {
+      "state_or_phase": "DELIVERING",
+      "transition": "核对实际结果 → DELIVERED",
+      "guard": "领取一次性执行权；超时进入 UNKNOWN，先查询真实目标"
+    },
+    {
+      "state_or_phase": "UNKNOWN",
+      "transition": "L2 调度只读核对 → 原阶段或 BLOCKED",
+      "guard": "确认旧运行/写入者/设备会话后才可创建新尝试"
+    },
+    {
+      "state_or_phase": "STALE / BLOCKED",
+      "transition": "L2 记录失效原因或阻断原因 → 对应恢复阶段",
+      "guard": "新基线/批准或诊断齐备；不得直接跳为 PASS"
+    },
+    {
+      "state_or_phase": "CANCELLED",
+      "transition": "停止任务、释放资源；保留历史",
+      "guard": "恢复须重新校验授权和运行身份；不能清零计数"
+    },
+    {
+      "state_or_phase": "DELIVERED",
+      "transition": "L5 保存回执；后续问题新建关联问题单交 L2",
+      "guard": "不回写旧验收；回退只执行预先批准且仍有效的动作"
+    }
+  ]
+}

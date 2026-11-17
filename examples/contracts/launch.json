@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "request_id": "REQ-001",
+  "spec": {
+    "repository": "REPLACE_SPEC_REPOSITORY",
+    "path": "requirements/REQ-001/spec.md",
+    "commit": "REPLACE_FULL_SPEC_COMMIT",
+    "sha256": "REPLACE_SPEC_FILE_SHA256"
+  },
+  "code": {
+    "repository": "REPLACE_CODE_REPOSITORY",
+    "base_commit": "REPLACE_FULL_BASE_COMMIT"
+  },
+  "control_commit": "REPLACE_APPROVED_CONTROL_COMMIT",
+  "acceptance_plan_sha256": "REPLACE_PLAN_SHA256",
+  "allowed_paths": [
+    "main/",
+    "tests/"
+  ],
+  "budget": {
+    "max_attempts_per_task": 3,
+    "max_parallel_tasks": 1,
+    "max_hil_minutes": 30
+  }
+}

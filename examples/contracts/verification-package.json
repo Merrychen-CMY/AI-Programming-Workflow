@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "verification_request_id": "VREQ-001",
+  "product_request_id": "REQ-001",
+  "product_spec_commit": "REPLACE_PRODUCT_SPEC_COMMIT",
+  "product_ac_ids": [
+    "AC-01",
+    "AC-02",
+    "AC-03"
+  ],
+  "candidate": {
+    "candidate_id": "CAND-001",
+    "candidate_commit": "REPLACE_CANDIDATE_COMMIT",
+    "candidate_manifest_sha256": "REPLACE_CANDIDATE_MANIFEST_SHA256"
+  },
+  "control_commit": "REPLACE_APPROVED_CONTROL_COMMIT",
+  "acceptance_plan_sha256": "REPLACE_PLAN_SHA256",
+  "required_checks": [
+    "software.unit",
+    "software.acceptance",
+    "quality.static-analysis",
+    "hil.boot",
+    "hil.serial-ping",
+    "hil.invalid-command"
+  ],
+  "coverage_targets": {
+    "requirements": "100% of applicable AC mapped",
+    "branch": "REPLACE_PROJECT_THRESHOLD",
+    "boundary_and_error_paths": "REPLACE_PROJECT_RULE"
+  },
+  "hardware": {
+    "board": "esp32-s3",
+    "hardware_revision": "REPLACE_REVISION",
+    "fixture": "REPLACE_FIXTURE_ID"
+  },
+  "budget": {
+    "max_infrastructure_retries": 2,
+    "max_hil_minutes": 30
+  },
+  "delivery_actions_requested": [
+    "merge"
+  ],
+  "verification_policy_sha256": "REPLACE_POLICY_SHA256"
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "document_kind": "template",
+  "status": "OPEN",
+  "issue_id": "REPLACE_ISSUE_ID",
+  "source_layer": "L4",
+  "intake_owner": "L2",
+  "candidate_ref": null,
+  "product_spec_ref": null,
+  "verification_package_ref": null,
+  "source_run_id": null,
+  "check_ids": [],
+  "ac_ids": [],
+  "observed_outcome": null,
+  "expected": null,
+  "actual": null,
+  "reproduction_steps": [],
+  "evidence_refs": [],
+  "hypothesis_not_confirmed": null,
+  "triage": null,
+  "dispatch": null,
+  "closure": null
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "source_layer": "L5",
+  "intake_owner": "L2",
+  "triage_owner": "L2",
+  "source_reference": "docs/reference/20-reflow.md",
+  "scenarios": [
+    {
+      "id": "L5D-01",
+      "observation": "验收汇总发现 AC 未满足",
+      "l2_analysis_and_blocking": "按事实缺陷分类，不以报告修饰代替修复",
+      "handler_after_l2_triage": "实现→L3；产品目标→L1；计划→L1-V",
+      "resume_or_close_conditions": "相应处理、L4 重验、新门3结论及 L5 汇总"
+    },
+    {
+      "id": "L5D-02",
+      "observation": "材料缺失或汇总错误",
+      "l2_analysis_and_blocking": "区分汇总漏引与原始证据不存在",
+      "handler_after_l2_triage": "汇总→L5；原始采集→L4",
+      "resume_or_close_conditions": "修正报告引用；缺原件需重验，不得手工补 PASS"
+    },
+    {
+      "id": "L5D-03",
+      "observation": "证据陈旧或对象不匹配",
+      "l2_analysis_and_blocking": "STALE/BLOCKED；停止门4申请或守卫执行",
+      "handler_after_l2_triage": "L4 重验；绑定/计划问题交 L1-V",
+      "resume_or_close_conditions": "当前候选与有效计划的完整新证据、verdict"
+    },
+    {
+      "id": "L5D-04",
+      "observation": "门3 PASS 但存在未处置失败",
+      "l2_analysis_and_blocking": "判定流程或证据集合不完整，阻断交付",
+      "handler_after_l2_triage": "L1-V/验证器维护者；L4补核证据",
+      "resume_or_close_conditions": "处置失败、独立重验；重新封存与裁决"
+    },
+    {
+      "id": "L5D-05",
+      "observation": "交付目标、设备范围或环境变化",
+      "l2_analysis_and_blocking": "目标授权失效；评估是否影响验证假设",
+      "handler_after_l2_triage": "L5 重拟申请；涉及验证范围交 L1-V",
+      "resume_or_close_conditions": "新目标、风险评估与门4；受影响检查先重验"
+    },
+    {
+      "id": "L5D-06",
+      "observation": "目标分支前进或合并内容变化",
+      "l2_analysis_and_blocking": "原候选不覆盖实际落地内容，标记 STALE",
+      "handler_after_l2_triage": "L2 协调集成，L3 处理冲突；L5更新申请",
+      "resume_or_close_conditions": "新候选、完整验证、新门3和门4"
+    },
+    {
+      "id": "L5D-07",
+      "observation": "合并已批却申请发布/刷写",
+      "l2_analysis_and_blocking": "动作不匹配；不得推定授权",
+      "handler_after_l2_triage": "L5 准备独立动作申请",
+      "resume_or_close_conditions": "有效新门4；确认产物和目标证据仍适用"
+    },
+    {
+      "id": "L5D-08",
+      "observation": "审批缺失、过期、撤销或 nonce 已使用",
+      "l2_analysis_and_blocking": "保持待审/拒绝执行；已使用先核对实际结果",
+      "handler_after_l2_triage": "L5 与授权审批人",
+      "resume_or_close_conditions": "新有效批准或确认既有动作已完成；不重放"
+    },
+    {
+      "id": "L5D-09",
+      "observation": "交付风险不可接受或要求扩大范围",
+      "l2_analysis_and_blocking": "保留阻断；先明确风险改变了哪条基线",
+      "handler_after_l2_triage": "产品风险/AC→L1；计划→L1-V；操作目标→L5",
+      "resume_or_close_conditions": "相应决策、批准与重验；不得由 L5 豁免必需 AC"
+    },
+    {
+      "id": "L5D-10",
+      "observation": "交付程序失败、部分成功或超时",
+      "l2_analysis_and_blocking": "UNKNOWN；核实目标与副作用，禁止盲重试",
+      "handler_after_l2_triage": "L5 协调受控交付维护者；L2 管理恢复任务",
+      "resume_or_close_conditions": "真实状态回执、恢复/回退授权；动作幂等且不重复消费"
+    },
+    {
+      "id": "L5D-11",
+      "observation": "用户退回但未说明原因",
+      "l2_analysis_and_blocking": "保持 DELIVERY_PENDING/BLOCKED；L2 汇总可选解释",
+      "handler_after_l2_triage": "L5 补齐验收意见；需产品决策则交 L1",
+      "resume_or_close_conditions": "明确退回原因后分类；不能默认派 L3 或重跑全部测试"
+    },
+    {
+      "id": "L5D-12",
+      "observation": "交付后发现缺陷或请求回退",
+      "l2_analysis_and_blocking": "保留原交付审计，新建关联 issue 与修复请求",
+      "handler_after_l2_triage": "实现→L3；需求变化→L1；回退申请→L5",
+      "resume_or_close_conditions": "新候选按主线验收；回退仅按仍有效授权执行并留回执"
+    }
+  ]
+}

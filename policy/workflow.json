@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "policy_version": "1.0.0",
+  "status": "reference_specification",
+  "execution_authority": false,
+  "description": "可读流程规范和静态检查；不是运行中的调度器、审批服务或产品验收器。",
+  "roles": [
+    "L1",
+    "L1-V",
+    "L2",
+    "L3",
+    "L4",
+    "L5"
+  ],
+  "forward_flow": [
+    "L1",
+    "G1",
+    "L2",
+    "L3",
+    "G2",
+    "L1-V-candidate-binding",
+    "V0",
+    "L4",
+    "G3",
+    "L5",
+    "G4",
+    "delivery_guard"
+  ],
+  "baseline_flow": {
+    "before_G1": [
+      "Product L1",
+      "L1-V-plan"
+    ],
+    "after_G2": [
+      "L1-V-candidate-binding",
+      "V0"
+    ]
+  },
+  "reflow": {
+    "sources": [
+      "L4",
+      "L5"
+    ],
+    "intake_owner": "L2",
+    "triage_owner": "L2",
+    "require_issue_id": true,
+    "require_evidence_before_classification": true,
+    "allow_direct_l4_l5_to_l3": false,
+    "routes": {
+      "implementation": {
+        "owner": "L3",
+        "action": "L2 派发实现修复；新候选独立重验"
+      },
+      "product_requirement": {
+        "owner": "L1",
+        "action": "L2 提交产品需求或 AC 决策；更新受影响基线及批准"
+      },
+      "task_plan_or_design": {
+        "owner": "L2",
+        "action": "重新拆解、协调方案和依赖；必要时再派 L3"
+      },
+      "verification_plan_or_test": {
+        "owner": "L1-V",
+        "action": "修订计划、用例、预期或验证器逻辑；独立维护并重新授权"
+      },
+      "test_infrastructure": {
+        "owner": "L4",
+        "action": "恢复环境、治具、会话或采集设施；有限重试"
+      },
+      "evidence_collection": {
+        "owner": "L4",
+        "action": "核验原件及来源；不可恢复的证据须重新产生"
+      },
+      "delivery_target_or_authorization": {
+        "owner": "L5",
+        "action": "核对目标及动作，准备重新审批；L5不授予授权"
+      },
+      "security": {
+        "owner": "authorized_security_owner",
+        "action": "阻断并人工审查；L2协调，按根因另派修复"
+      },
+      "unknown": {
+        "owner": null,
+        "action": "BLOCKED；L2登记诊断任务，不自动派修"
+      },
+      "mixed": {
+        "owner": "L2",
+        "action": "拆关联子单；上游基线先决，分别分派并独立核验"
+      }
+    }
+  },
+  "candidate_rules": {
+    "immutable": true,
+    "new_id_on": [
+      "product_code",
+      "dependencies",
+      "toolchain",
+      "build_configuration",
+      "artifacts",
+      "integration_base"
+    ],
+    "reuse_pass_across_candidates": false,
+    "plan_or_verifier_semantic_change": "new_approval_and_rerun_all_required_checks",
+    "infrastructure_only": "same_candidate_possible_with_documented_impact_and_new_run_id"
+  },
+  "approval_rules": {
+    "G1": "authenticated_execution_authorization",
+    "V0": "validate_candidate_package_against_explicit_authorization",
+    "G4": "authenticated_exact_candidate_evidence_action_target_authorization",
+    "L5_can_approve_delivery": false,
+    "merge_implies_release": false,
+    "example_is_authorization": false
+  },
+  "closure": {
+    "implementation_or_verification": "independent_L4_reverification_and_trusted_verdict_then_L2_close",
+    "delivery_only": "approval_service_and_delivery_guard_validation_L5_review_then_L2_close",
+    "G3_requires_issue_CLOSED": false,
+    "preserve_all_attempts": true
+  },
+  "budgets": {
+    "implementation_attempts_including_initial": 3,
+    "same_root_cause_failures_before_escalation": 2,
+    "infrastructure_retries_excluding_initial": 2,
+    "max_parallel_tasks_initial": 1,
+    "task_timeout_minutes_example": 45,
+    "evidence_max_age_hours_example": 24,
+    "max_hil_minutes_example": 30,
+    "reset_on_restart": false
+  },
+  "conflict_action": "BLOCKED_and_report_to_L2_or_user_no_silent_override",
+  "project_adoption": "requires_explicit_user_assignment_scope_and_project_baselines"
+}

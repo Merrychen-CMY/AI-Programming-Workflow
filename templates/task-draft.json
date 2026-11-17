@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "document_kind": "template",
+  "status": "DRAFT",
+  "task_id": "REPLACE_TASK_ID",
+  "dispatch_owner": "L2",
+  "assigned_role": "L3",
+  "launch_sha256": "REPLACE_LAUNCH_SHA256",
+  "authorization_receipt_ref": null,
+  "ac_ids": [],
+  "depends_on": [],
+  "allowed_paths": [],
+  "attempt": 1,
+  "related_issue_id": null,
+  "l2_triage_record_ref": null,
+  "expected_deliverables": [
+    "candidate_commit",
+    "self_test_logs",
+    "change_summary"
+  ],
+  "reverification_plan_ref": null
+}

@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "workflow_version": "1.0.0",
+  "language": "zh-CN",
+  "entrypoint": "AGENTS.md",
+  "always_read": [
+    "AGENTS.md",
+    "START_HERE.md",
+    "docs/core-rules.md",
+    "policy/workflow.json"
+  ],
+  "role_reading": {
+    "L1": [
+      "roles/product-l1.md",
+      "docs/reference/05-product-l1.md",
+      "docs/reference/17-dual-l1.md",
+      "docs/reference/20-reflow.md"
+    ],
+    "L1-V": [
+      "roles/verification-l1v.md",
+      "docs/reference/17-dual-l1.md",
+      "docs/reference/18-quality.md",
+      "docs/reference/08-software-evidence.md",
+      "docs/reference/20-reflow.md"
+    ],
+    "L2": [
+      "roles/orchestrator-l2.md",
+      "docs/reference/06-l2-orchestration.md",
+      "docs/reference/13-state-machine.md",
+      "docs/reference/14-adapters.md",
+      "docs/reference/20-reflow.md"
+    ],
+    "L3": [
+      "roles/implementer-l3.md",
+      "docs/reference/07-l3-implementation.md",
+      "docs/reference/04-directories.md",
+      "docs/reference/08-software-evidence.md",
+      "docs/reference/20-reflow.md"
+    ],
+    "L4": [
+      "roles/verifier-l4.md",
+      "docs/reference/08-software-evidence.md",
+      "docs/reference/09-esp32-hil.md",
+      "docs/reference/18-quality.md",
+      "docs/reference/19-security.md",
+      "docs/reference/20-reflow.md"
+    ],
+    "L5": [
+      "roles/delivery-l5.md",
+      "docs/reference/12-delivery.md",
+      "docs/reference/20-reflow.md",
+      "docs/reference/21-acceptance.md"
+    ]
+  },
+  "event_reading": {
+    "l4_failure": [
+      "policy/l4-failures.json",
+      "docs/guides/handle-issue.md"
+    ],
+    "l5_return": [
+      "policy/l5-delivery.json",
+      "docs/guides/handle-issue.md"
+    ],
+    "baseline_or_candidate_change": [
+      "policy/reverification.json",
+      "docs/reference/17-dual-l1.md"
+    ],
+    "unknown_or_restart": [
+      "policy/state-machine.json",
+      "docs/reference/13-state-machine.md"
+    ],
+    "escalation": [
+      "policy/escalation.json"
+    ],
+    "first_project": [
+      "docs/guides/adopt-project.md",
+      "docs/guides/first-run.md"
+    ],
+    "production_readiness": [
+      "policy/rejection-tests.json",
+      "docs/reference/21-acceptance.md"
+    ]
+  },
+  "full_reference": [
+    {
+      "chapter": 1,
+      "title": "1 统一回流架构",
+      "path": "docs/reference/01-architecture.md"
+    },
+    {
+      "chapter": 2,
+      "title": "2 四道门与职责边界",
+      "path": "docs/reference/02-gates-and-roles.md"
+    },
+    {
+      "chapter": 3,
+      "title": "3 准备环境与固定版本",
+      "path": "docs/reference/03-environment.md"
+    },
+    {
+      "chapter": 4,
+      "title": "4 规划目录与事实来源",
+      "path": "docs/reference/04-directories.md"
+    },
+    {
+      "chapter": 5,
+      "title": "5 配置 L1 并生成开工包",
+      "path": "docs/reference/05-product-l1.md"
+    },
+    {
+      "chapter": 6,
+      "title": "6 配置 L2 与 Dot 的项目管理规则",
+      "path": "docs/reference/06-l2-orchestration.md"
+    },
+    {
+      "chapter": 7,
+      "title": "7 配置 Codex 和 CAO 执行边界",
+      "path": "docs/reference/07-l3-implementation.md"
+    },
+    {
+      "chapter": 8,
+      "title": "8 配置软件验证和可信证据",
+      "path": "docs/reference/08-software-evidence.md"
+    },
+    {
+      "chapter": 9,
+      "title": "9 接入 SiliconRig 和 ESP32 HIL",
+      "path": "docs/reference/09-esp32-hil.md"
+    },
+    {
+      "chapter": 10,
+      "title": "10 配置 govrail 正式判定",
+      "path": "docs/reference/10-govrail.md"
+    },
+    {
+      "chapter": 11,
+      "title": "11 配置 CI 与受保护分支",
+      "path": "docs/reference/11-ci-protection.md"
+    },
+    {
+      "chapter": 12,
+      "title": "12 配置门4与交付回执",
+      "path": "docs/reference/12-delivery.md"
+    },
+    {
+      "chapter": 13,
+      "title": "13 配置状态机与恢复规则",
+      "path": "docs/reference/13-state-machine.md"
+    },
+    {
+      "chapter": 14,
+      "title": "14 需要实现的接入适配器",
+      "path": "docs/reference/14-adapters.md"
+    },
+    {
+      "chapter": 15,
+      "title": "15 最小闭环演练",
+      "path": "docs/reference/15-pilot.md"
+    },
+    {
+      "chapter": 16,
+      "title": "16 分阶段启用",
+      "path": "docs/reference/16-rollout.md"
+    },
+    {
+      "chapter": 17,
+      "title": "17 双 L1 基线与候选验证授权",
+      "path": "docs/reference/17-dual-l1.md"
+    },
+    {
+      "chapter": 18,
+      "title": "18 强化独立验证与质量门禁",
+      "path": "docs/reference/18-quality.md"
+    },
+    {
+      "chapter": 19,
+      "title": "19 安全隔离、证据可信与供应链防护",
+      "path": "docs/reference/19-security.md"
+    },
+    {
+      "chapter": 20,
+      "title": "20 统一回流调度与重新验证",
+      "path": "docs/reference/20-reflow.md"
+    },
+    {
+      "chapter": 21,
+      "title": "21 首次跑通与上线验收",
+      "path": "docs/reference/21-acceptance.md"
+    }
+  ],
+  "original_examples": [
+    "examples/contracts/launch.json",
+    "examples/contracts/task.json",
+    "examples/contracts/candidate.json",
+    "examples/contracts/verification-event.json",
+    "examples/contracts/ledger-pointer.json",
+    "examples/contracts/govrail-gates.json",
+    "examples/contracts/delivery-approval-object.json",
+    "examples/contracts/verification-package.json",
+    "examples/contracts/triaged-issue.json",
+    "examples/contracts/workflow-adapter.yaml"
+  ],
+  "precedence": {
+    "policy": "核心结构化不变量",
+    "core_rules": "短版规范",
+    "reference": "完整技术条件",
+    "templates_and_examples": "无执行效力的草案/示例",
+    "on_conflict": "停止受影响操作并报告，不静默选择宽松规则"
+  },
+  "source": {
+    "name": "AI自动编程流程配置教程_统一回流架构完整版.docx",
+    "sha256": "3bb9ae41bb37fb9059237f8b15590024ca2ba67e6d0bb676fe5a0cc703b1609e",
+    "included_binary": false
+  },
+  "capabilities": {
+    "static_repo_validation": true,
+    "runtime_controller": false,
+    "real_approval_service": false,
+    "product_tests_executed": false,
+    "hil_tests_executed": false,
+    "delivery_executor": false
+  }
+}

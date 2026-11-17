@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "source_layer": "L4",
+  "intake_owner": "L2",
+  "triage_owner": "L2",
+  "source_reference": "docs/reference/20-reflow.md",
+  "scenarios": [
+    {
+      "id": "L4F-01",
+      "observation": "编译/构建失败",
+      "l2_analysis_and_blocking": "区分代码、依赖方案、工具设施；未冻结则阻断门2",
+      "handler_after_l2_triage": "代码→L3；方案/依赖→L2；验证设施→L4",
+      "resume_or_close_conditions": "代码/构建输入变更生成新候选；受控构建与必需检查通过"
+    },
+    {
+      "id": "L4F-02",
+      "observation": "功能断言失败",
+      "l2_analysis_and_blocking": "既定 AC 明确且测试预期正确；记录 FAIL",
+      "handler_after_l2_triage": "L3 修复实现",
+      "resume_or_close_conditions": "新候选；重跑原失败、受影响回归及本轮全部必需项"
+    },
+    {
+      "id": "L4F-03",
+      "observation": "性能、稳定性或质量阈值未达标",
+      "l2_analysis_and_blocking": "核对阈值来源及测量可信度，不擅改阈值",
+      "handler_after_l2_triage": "实现→L3；设计协调→L2；产品阈值争议→L1",
+      "resume_or_close_conditions": "相应基线/候选更新，按新授权完整验证；保留旧失败"
+    },
+    {
+      "id": "L4F-04",
+      "observation": "接口不匹配、集成冲突、任务遗漏",
+      "l2_analysis_and_blocking": "确认拆分、契约或依赖顺序问题",
+      "handler_after_l2_triage": "L2 重新拆解/协调，再派 L3",
+      "resume_or_close_conditions": "关联任务全部完成，生成项目集成候选并整体回归"
+    },
+    {
+      "id": "L4F-05",
+      "observation": "需求歧义、AC 矛盾或缺失",
+      "l2_analysis_and_blocking": "歧义保持 BLOCKED；批准变更后受影响对象 STALE",
+      "handler_after_l2_triage": "L1 产品决策",
+      "resume_or_close_conditions": "新产品基线；L1-V 同步；校验门1后实现/验证"
+    },
+    {
+      "id": "L4F-06",
+      "observation": "测试预期错误、用例误报",
+      "l2_analysis_and_blocking": "区分产品语义与测试实现错误；不能转成 PASS",
+      "handler_after_l2_triage": "L1-V；独立维护者修用例",
+      "resume_or_close_conditions": "新控制/计划基线和授权；重验全部必需项"
+    },
+    {
+      "id": "L4F-07",
+      "observation": "覆盖不足、零测试、必需跳过",
+      "l2_analysis_and_blocking": "定位计划遗漏还是设施未执行",
+      "handler_after_l2_triage": "计划→L1-V；执行设施→L4",
+      "resume_or_close_conditions": "补齐 AC 映射或恢复执行；全部必需检查产生有效证据"
+    },
+    {
+      "id": "L4F-08",
+      "observation": "验证器判定逻辑错误",
+      "l2_analysis_and_blocking": "BLOCKED；判定逻辑属于验证基线",
+      "handler_after_l2_triage": "L1-V 和独立控制代码维护者",
+      "resume_or_close_conditions": "固定修正版并重新审批；重算门禁并重跑必需验证"
+    },
+    {
+      "id": "L4F-09",
+      "observation": "板卡/治具/网络/云服务不可用",
+      "l2_analysis_and_blocking": "ERROR；不确定仍在运行则 UNKNOWN",
+      "handler_after_l2_triage": "L4 恢复设施",
+      "resume_or_close_conditions": "确认旧会话/写入者停止；新 run_id；最多 2 次设施重试"
+    },
+    {
+      "id": "L4F-10",
+      "observation": "板卡型号、外设或环境不符",
+      "l2_analysis_and_blocking": "BLOCKED；区分配置错与验证能力不足",
+      "handler_after_l2_triage": "配置→L4；计划能力→L1-V",
+      "resume_or_close_conditions": "记录设备身份与环境；必要时换治具并更新计划授权"
+    },
+    {
+      "id": "L4F-11",
+      "observation": "超时、失联或取消",
+      "l2_analysis_and_blocking": "先区分软件超时和设施错误；状态未知不定责",
+      "handler_after_l2_triage": "L4 核对运行；实现确认后派 L3",
+      "resume_or_close_conditions": "查询原 run/session；无残留后恢复；不并发新写入"
+    },
+    {
+      "id": "L4F-12",
+      "observation": "日志缺失或收集失败",
+      "l2_analysis_and_blocking": "BLOCKED；有可信原始文件才可重新采集",
+      "handler_after_l2_triage": "L4 证据采集设施",
+      "resume_or_close_conditions": "可验证原件则追加采集回执；不可恢复则重跑检查"
+    },
+    {
+      "id": "L4F-13",
+      "observation": "哈希/签名/身份不可信",
+      "l2_analysis_and_blocking": "BLOCKED 并隔离可疑证据；禁止补写 PASS",
+      "handler_after_l2_triage": "L4 及授权安全负责人；逻辑问题交 L1-V",
+      "resume_or_close_conditions": "重建可信来源；无法证明真实运行的证据必须重新产生"
+    },
+    {
+      "id": "L4F-14",
+      "observation": "偶发失败、同候选先红后绿",
+      "l2_analysis_and_blocking": "保留 FAIL；判断产品不稳定、测试误报或设施故障",
+      "handler_after_l2_triage": "分别派 L3、L1-V 或 L4",
+      "resume_or_close_conditions": "按根因处置及批准统计规则重验；禁止只取最后成功"
+    },
+    {
+      "id": "L4F-15",
+      "observation": "越权、注入或恶意依赖",
+      "l2_analysis_and_blocking": "立即停止危险操作，L2 阻断调度并上报",
+      "handler_after_l2_triage": "授权安全负责人；产品修复派 L3",
+      "resume_or_close_conditions": "事件审查、权限恢复批准及独立安全/功能重验"
+    },
+    {
+      "id": "L4F-16",
+      "observation": "多个根因或无法归因",
+      "l2_analysis_and_blocking": "拆关联子单或保持 BLOCKED；不盲目派修",
+      "handler_after_l2_triage": "L2 协调诊断并按边界升级",
+      "resume_or_close_conditions": "各根因有证据及处理结果；阻断子单均通过重验"
+    }
+  ]
+}

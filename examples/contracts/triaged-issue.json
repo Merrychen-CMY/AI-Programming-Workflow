@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "issue_id": "ISSUE-001",
+  "source_layer": "L4",
+  "source_run_id": "RUN-001",
+  "candidate_id": "CAND-001",
+  "candidate_manifest_sha256": "REPLACE_CANDIDATE_SHA256",
+  "product_spec_commit": "REPLACE_SPEC_COMMIT",
+  "verification_package_sha256": "REPLACE_VREQ_SHA256",
+  "ac_ids": [
+    "AC-02"
+  ],
+  "check_ids": [
+    "hil.serial-ping"
+  ],
+  "observed_outcome": "FAIL",
+  "expected": "PING returns PONG within approved deadline",
+  "actual": "No response",
+  "evidence_refs": [
+    "REPLACE_IMMUTABLE_RECEIPT_URI"
+  ],
+  "triage": {
+    "owner": "L2",
+    "category": "implementation",
+    "root_cause": "REPLACE_CONFIRMED_CAUSE",
+    "basis_refs": [
+      "REPLACE_DIAGNOSIS_EVIDENCE"
+    ],
+    "affected_tasks": [
+      "TASK-001"
+    ],
+    "resolution_owner": "L3"
+  },
+  "dispatch": {
+    "resolution_task_id": "FIX-001",
+    "allowed_paths": [
+      "main/",
+      "tests/"
+    ],
+    "launch_sha256": "REPLACE_LAUNCH_SHA256",
+    "attempt": 2,
+    "reverify_checks": [
+      "hil.serial-ping",
+      "REPLACE_ALL_REQUIRED_CHECKS"
+    ]
+  },
+  "status": "ASSIGNED",
+  "parent_issue_id": null
+}

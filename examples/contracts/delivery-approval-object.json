@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "candidate_manifest_sha256": "REPLACE_CANDIDATE_MANIFEST_SHA256",
+  "evidence_set_sha256": "REPLACE_EVIDENCE_SET_SHA256",
+  "verdict_sha256": "REPLACE_VERDICT_SHA256",
+  "action": "merge",
+  "target": "REPLACE_REPOSITORY_AND_MAIN_REF",
+  "expected_target_commit": "REPLACE_TARGET_COMMIT",
+  "expires_at": "REPLACE_APPROVAL_EXPIRY_UTC",
+  "nonce": "REPLACE_SINGLE_USE_RANDOM_ID"
+}

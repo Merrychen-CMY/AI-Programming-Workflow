@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "document_kind": "template",
+  "status": "DRAFT",
+  "workflow": {
+    "version": "1.0.0",
+    "repository": "REPLACE_WORKFLOW_REPOSITORY",
+    "commit": "REPLACE_FULL_COMMIT"
+  },
+  "product": {
+    "repository": "REPLACE_PRODUCT_REPOSITORY",
+    "base_commit": "REPLACE_PRODUCT_BASE_COMMIT",
+    "target_ref": "REPLACE_TARGET_REF",
+    "allowed_paths": []
+  },
+  "assigned_role": null,
+  "task_id": null,
+  "baselines": {
+    "product_spec_ref": null,
+    "verification_plan_ref": null,
+    "candidate_ref": null
+  },
+  "authorization_receipt_refs": [],
+  "trusted_state_location": null,
+  "role_identity_refs": {
+    "L1": null,
+    "L1-V": null,
+    "L2": null,
+    "L3": null,
+    "L4": null,
+    "L5": null
+  },
+  "capabilities": {
+    "controller": "NOT_IMPLEMENTED",
+    "approval_service": "NOT_IMPLEMENTED",
+    "candidate_freezer": "NOT_IMPLEMENTED",
+    "software_wrapper": "NOT_IMPLEMENTED",
+    "hil_wrapper": "NOT_IMPLEMENTED",
+    "evidence_store": "NOT_IMPLEMENTED",
+    "evidence_gate": "NOT_IMPLEMENTED",
+    "delivery_guard": "NOT_IMPLEMENTED"
+  }
+}
