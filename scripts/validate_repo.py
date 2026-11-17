@@ -10,6 +10,7 @@ import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+from huawei_coverage import check_repository_coverage
 
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED = {'.git', '__pycache__', '.venv', 'local-project', 'private-evidence'}
@@ -148,6 +149,10 @@ def validate_embedded_c_policy(policy, source_rules):
     expected = {
         'standard_version': '1.3', 'contract_schema_version': '1.1',
         'coding_reference.document_id': 'DKBA 2826-2011.5',
+        'clause_coverage.catalog': 'standards/embedded-c/v1.3/huawei/coverage.json',
+        'clause_coverage.numbered_clauses': 139,
+        'clause_coverage.governance_supplements': 6,
+        'clause_coverage.product_compliance_claimed': False,
         'default_for_applicable_projects': True, 'extra_user_documents_required': False,
         'AI_written_source_is_generated_code_exception': False,
         'source_ESP32_comment_only_restriction_is_global': False,
@@ -264,6 +269,8 @@ def validate_repository(root):
         paths.extend(rule['references'])
     embedded_root = embedded['reference_root']
     paths.append(embedded['coding_reference']['adoption'])
+    paths.extend(embedded['clause_coverage'][key] for key in ('entrypoint', 'catalog', 'inventory'))
+    errors.extend(check_repository_coverage(root, {r['id'] for r in embedded['rules']}))
     source_record = documents[embedded_root + 'SOURCE.json']
     records = source_record['derived_files'][:]
     for snapshot in embedded['historical_source_snapshots']:
@@ -343,6 +350,7 @@ def main():
         return 1
     print(f'STATIC_SPEC_CHECKS_PASS: {len(repository_files(ROOT))} files; 21 chapters; 16 L4 + 12 L5 scenarios.')
     print('Embedded C V1.3 / Huawei reference: 33 mapped rules, 18 sections and provenance verified; not product C compliance.')
+    print('Huawei clause coverage: 139 numbered + 6 governance items; catalog completeness only.')
     print('48 product/HIL acceptance scenarios remain NOT_RUN. No execution, approval or delivery authority is granted.')
     return 0
 

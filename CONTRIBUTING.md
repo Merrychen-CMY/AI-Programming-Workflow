@@ -39,3 +39,10 @@ python standards/embedded-c/v1.3/machine/tests/test_readability_contracts.py
 ```
 
 这些是规范及契约工具自检，不是产品源码合规、固件回归或HIL验收。
+
+
+## 华为逐条清单维护
+
+`standards/embedded-c/v1.3/huawei/coverage.json`为145项规范性内容的权威文件；`source-inventory.json`记录139条原文编号及6个本项目治理补充ID和起始页。增删或改强度前核对原文，不通过同时删来源清单和正文隐藏遗漏。
+
+修改后运行`python scripts/huawei_coverage.py --render`生成16份分章视图与总览，再更新V1.3派生文件哈希和根MANIFEST。普通`validate_repo.py`会核对ID全集、差异、映射及生成视图，并在CI运行相关拒绝测试。这证明枚举与文件一致，不证明自然语言全部正确或产品已符合。

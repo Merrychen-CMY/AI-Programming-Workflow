@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.2.0",
+  "workflow_version": "2.3.0",
   "standard_version": "1.3",
   "contract_schema_version": "1.1",
   "entrypoint": "standards/embedded-c/README.md",
@@ -599,5 +599,13 @@
     "document_id": "DKBA 2826-2011.5",
     "sha256": "4de7381858f8e47f3c04b6f1950bcebdb41b289bf8fedf67990ff0180ef6efba",
     "adoption": "standards/embedded-c/v1.3/reference-adoption.md"
+  },
+  "clause_coverage": {
+    "entrypoint": "standards/embedded-c/v1.3/huawei/README.md",
+    "catalog": "standards/embedded-c/v1.3/huawei/coverage.json",
+    "inventory": "standards/embedded-c/v1.3/huawei/source-inventory.json",
+    "numbered_clauses": 139,
+    "governance_supplements": 6,
+    "product_compliance_claimed": false
   }
 }

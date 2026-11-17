@@ -1,0 +1,1039 @@
+{
+  "source_document_id": "DKBA 2826-2011.5",
+  "source_sha256": "4de7381858f8e47f3c04b6f1950bcebdb41b289bf8fedf67990ff0180ef6efba",
+  "numbered_clause_count": 139,
+  "governance_supplement_count": 6,
+  "scope": "第1—15章全部编号原则/规则/建议，加第0.2—0.4节六项治理内容；页码按PDF页序。",
+  "excluded_material": [
+    {
+      "scope": "封面、修订人员表、目录及0.1前言",
+      "reason": "文档说明或背景，不是独立代码要求；不转载人员信息。"
+    },
+    {
+      "scope": "各条说明与示例",
+      "reason": "解释、限制和例外并入对应条款；示例代码不作为额外条款，不逐行复制。"
+    },
+    {
+      "scope": "第16章及各章延伸阅读",
+      "reason": "参考书目和其他规范介绍，不自动激活其全部规则。"
+    }
+  ],
+  "review_method": "逐页提取标题并对照条款编号、说明与例外；条款数量仅证明枚举范围，不代替语义审阅。",
+  "entries": [
+    {
+      "id": "HW-G-0.2-1",
+      "source_kind": "治理补充",
+      "source_number": "0.2-1",
+      "source_page": 5,
+      "chapter": 0
+    },
+    {
+      "id": "HW-G-0.2-2",
+      "source_kind": "治理补充",
+      "source_number": "0.2-2",
+      "source_page": 5,
+      "chapter": 0
+    },
+    {
+      "id": "HW-G-0.2-3",
+      "source_kind": "治理补充",
+      "source_number": "0.2-3",
+      "source_page": 5,
+      "chapter": 0
+    },
+    {
+      "id": "HW-G-0.3-application",
+      "source_kind": "治理补充",
+      "source_number": "0.3-application",
+      "source_page": 6,
+      "chapter": 0
+    },
+    {
+      "id": "HW-G-0.3-exceptions",
+      "source_kind": "治理补充",
+      "source_number": "0.3-exceptions",
+      "source_page": 6,
+      "chapter": 0
+    },
+    {
+      "id": "HW-G-0.4-levels",
+      "source_kind": "治理补充",
+      "source_number": "0.4-levels",
+      "source_page": 6,
+      "chapter": 0
+    },
+    {
+      "id": "HW-P-1.1",
+      "source_kind": "原则",
+      "source_number": "1.1",
+      "source_page": 7,
+      "chapter": 1
+    },
+    {
+      "id": "HW-P-1.2",
+      "source_kind": "原则",
+      "source_number": "1.2",
+      "source_page": 7,
+      "chapter": 1
+    },
+    {
+      "id": "HW-P-1.3",
+      "source_kind": "原则",
+      "source_number": "1.3",
+      "source_page": 8,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.1",
+      "source_kind": "规则",
+      "source_number": "1.1",
+      "source_page": 8,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.2",
+      "source_kind": "规则",
+      "source_number": "1.2",
+      "source_page": 9,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.3",
+      "source_kind": "规则",
+      "source_number": "1.3",
+      "source_page": 9,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.4",
+      "source_kind": "规则",
+      "source_number": "1.4",
+      "source_page": 9,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.5",
+      "source_kind": "规则",
+      "source_number": "1.5",
+      "source_page": 9,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.6",
+      "source_kind": "规则",
+      "source_number": "1.6",
+      "source_page": 10,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.7",
+      "source_kind": "规则",
+      "source_number": "1.7",
+      "source_page": 10,
+      "chapter": 1
+    },
+    {
+      "id": "HW-R-1.8",
+      "source_kind": "规则",
+      "source_number": "1.8",
+      "source_page": 10,
+      "chapter": 1
+    },
+    {
+      "id": "HW-S-1.1",
+      "source_kind": "建议",
+      "source_number": "1.1",
+      "source_page": 11,
+      "chapter": 1
+    },
+    {
+      "id": "HW-S-1.2",
+      "source_kind": "建议",
+      "source_number": "1.2",
+      "source_page": 11,
+      "chapter": 1
+    },
+    {
+      "id": "HW-S-1.3",
+      "source_kind": "建议",
+      "source_number": "1.3",
+      "source_page": 11,
+      "chapter": 1
+    },
+    {
+      "id": "HW-S-1.4",
+      "source_kind": "建议",
+      "source_number": "1.4",
+      "source_page": 12,
+      "chapter": 1
+    },
+    {
+      "id": "HW-P-2.1",
+      "source_kind": "原则",
+      "source_number": "2.1",
+      "source_page": 12,
+      "chapter": 2
+    },
+    {
+      "id": "HW-P-2.2",
+      "source_kind": "原则",
+      "source_number": "2.2",
+      "source_page": 13,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.1",
+      "source_kind": "规则",
+      "source_number": "2.1",
+      "source_page": 15,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.2",
+      "source_kind": "规则",
+      "source_number": "2.2",
+      "source_page": 15,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.3",
+      "source_kind": "规则",
+      "source_number": "2.3",
+      "source_page": 16,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.4",
+      "source_kind": "规则",
+      "source_number": "2.4",
+      "source_page": 16,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.5",
+      "source_kind": "规则",
+      "source_number": "2.5",
+      "source_page": 17,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.6",
+      "source_kind": "规则",
+      "source_number": "2.6",
+      "source_page": 18,
+      "chapter": 2
+    },
+    {
+      "id": "HW-R-2.7",
+      "source_kind": "规则",
+      "source_number": "2.7",
+      "source_page": 19,
+      "chapter": 2
+    },
+    {
+      "id": "HW-S-2.1",
+      "source_kind": "建议",
+      "source_number": "2.1",
+      "source_page": 19,
+      "chapter": 2
+    },
+    {
+      "id": "HW-S-2.2",
+      "source_kind": "建议",
+      "source_number": "2.2",
+      "source_page": 20,
+      "chapter": 2
+    },
+    {
+      "id": "HW-S-2.3",
+      "source_kind": "建议",
+      "source_number": "2.3",
+      "source_page": 20,
+      "chapter": 2
+    },
+    {
+      "id": "HW-S-2.4",
+      "source_kind": "建议",
+      "source_number": "2.4",
+      "source_page": 20,
+      "chapter": 2
+    },
+    {
+      "id": "HW-S-2.5",
+      "source_kind": "建议",
+      "source_number": "2.5",
+      "source_page": 20,
+      "chapter": 2
+    },
+    {
+      "id": "HW-S-2.6",
+      "source_kind": "建议",
+      "source_number": "2.6",
+      "source_page": 21,
+      "chapter": 2
+    },
+    {
+      "id": "HW-P-3.1",
+      "source_kind": "原则",
+      "source_number": "3.1",
+      "source_page": 21,
+      "chapter": 3
+    },
+    {
+      "id": "HW-P-3.2",
+      "source_kind": "原则",
+      "source_number": "3.2",
+      "source_page": 22,
+      "chapter": 3
+    },
+    {
+      "id": "HW-R-3.1",
+      "source_kind": "规则",
+      "source_number": "3.1",
+      "source_page": 22,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.1",
+      "source_kind": "建议",
+      "source_number": "3.1",
+      "source_page": 22,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.2",
+      "source_kind": "建议",
+      "source_number": "3.2",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.3",
+      "source_kind": "建议",
+      "source_number": "3.3",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.4",
+      "source_kind": "建议",
+      "source_number": "3.4",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.5",
+      "source_kind": "建议",
+      "source_number": "3.5",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.6",
+      "source_kind": "建议",
+      "source_number": "3.6",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-R-3.2",
+      "source_kind": "规则",
+      "source_number": "3.2",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-R-3.3",
+      "source_kind": "规则",
+      "source_number": "3.3",
+      "source_page": 23,
+      "chapter": 3
+    },
+    {
+      "id": "HW-R-3.4",
+      "source_kind": "规则",
+      "source_number": "3.4",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.7",
+      "source_kind": "建议",
+      "source_number": "3.7",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.8",
+      "source_kind": "建议",
+      "source_number": "3.8",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.9",
+      "source_kind": "建议",
+      "source_number": "3.9",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-S-3.10",
+      "source_kind": "建议",
+      "source_number": "3.10",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-R-3.5",
+      "source_kind": "规则",
+      "source_number": "3.5",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-R-3.6",
+      "source_kind": "规则",
+      "source_number": "3.6",
+      "source_page": 24,
+      "chapter": 3
+    },
+    {
+      "id": "HW-P-4.1",
+      "source_kind": "原则",
+      "source_number": "4.1",
+      "source_page": 25,
+      "chapter": 4
+    },
+    {
+      "id": "HW-P-4.2",
+      "source_kind": "原则",
+      "source_number": "4.2",
+      "source_page": 25,
+      "chapter": 4
+    },
+    {
+      "id": "HW-P-4.3",
+      "source_kind": "原则",
+      "source_number": "4.3",
+      "source_page": 26,
+      "chapter": 4
+    },
+    {
+      "id": "HW-R-4.1",
+      "source_kind": "规则",
+      "source_number": "4.1",
+      "source_page": 26,
+      "chapter": 4
+    },
+    {
+      "id": "HW-R-4.2",
+      "source_kind": "规则",
+      "source_number": "4.2",
+      "source_page": 26,
+      "chapter": 4
+    },
+    {
+      "id": "HW-R-4.3",
+      "source_kind": "规则",
+      "source_number": "4.3",
+      "source_page": 27,
+      "chapter": 4
+    },
+    {
+      "id": "HW-S-4.1",
+      "source_kind": "建议",
+      "source_number": "4.1",
+      "source_page": 27,
+      "chapter": 4
+    },
+    {
+      "id": "HW-S-4.2",
+      "source_kind": "建议",
+      "source_number": "4.2",
+      "source_page": 27,
+      "chapter": 4
+    },
+    {
+      "id": "HW-S-4.3",
+      "source_kind": "建议",
+      "source_number": "4.3",
+      "source_page": 27,
+      "chapter": 4
+    },
+    {
+      "id": "HW-S-4.4",
+      "source_kind": "建议",
+      "source_number": "4.4",
+      "source_page": 28,
+      "chapter": 4
+    },
+    {
+      "id": "HW-S-4.5",
+      "source_kind": "建议",
+      "source_number": "4.5",
+      "source_page": 28,
+      "chapter": 4
+    },
+    {
+      "id": "HW-R-5.1",
+      "source_kind": "规则",
+      "source_number": "5.1",
+      "source_page": 28,
+      "chapter": 5
+    },
+    {
+      "id": "HW-R-5.2",
+      "source_kind": "规则",
+      "source_number": "5.2",
+      "source_page": 29,
+      "chapter": 5
+    },
+    {
+      "id": "HW-R-5.3",
+      "source_kind": "规则",
+      "source_number": "5.3",
+      "source_page": 29,
+      "chapter": 5
+    },
+    {
+      "id": "HW-R-5.4",
+      "source_kind": "规则",
+      "source_number": "5.4",
+      "source_page": 30,
+      "chapter": 5
+    },
+    {
+      "id": "HW-S-5.1",
+      "source_kind": "建议",
+      "source_number": "5.1",
+      "source_page": 30,
+      "chapter": 5
+    },
+    {
+      "id": "HW-S-5.2",
+      "source_kind": "建议",
+      "source_number": "5.2",
+      "source_page": 30,
+      "chapter": 5
+    },
+    {
+      "id": "HW-S-5.3",
+      "source_kind": "建议",
+      "source_number": "5.3",
+      "source_page": 31,
+      "chapter": 5
+    },
+    {
+      "id": "HW-P-6.1",
+      "source_kind": "原则",
+      "source_number": "6.1",
+      "source_page": 32,
+      "chapter": 6
+    },
+    {
+      "id": "HW-P-6.2",
+      "source_kind": "原则",
+      "source_number": "6.2",
+      "source_page": 32,
+      "chapter": 6
+    },
+    {
+      "id": "HW-P-6.3",
+      "source_kind": "原则",
+      "source_number": "6.3",
+      "source_page": 33,
+      "chapter": 6
+    },
+    {
+      "id": "HW-P-6.4",
+      "source_kind": "原则",
+      "source_number": "6.4",
+      "source_page": 33,
+      "chapter": 6
+    },
+    {
+      "id": "HW-R-6.1",
+      "source_kind": "规则",
+      "source_number": "6.1",
+      "source_page": 33,
+      "chapter": 6
+    },
+    {
+      "id": "HW-R-6.2",
+      "source_kind": "规则",
+      "source_number": "6.2",
+      "source_page": 34,
+      "chapter": 6
+    },
+    {
+      "id": "HW-R-6.3",
+      "source_kind": "规则",
+      "source_number": "6.3",
+      "source_page": 34,
+      "chapter": 6
+    },
+    {
+      "id": "HW-R-6.4",
+      "source_kind": "规则",
+      "source_number": "6.4",
+      "source_page": 34,
+      "chapter": 6
+    },
+    {
+      "id": "HW-R-6.5",
+      "source_kind": "规则",
+      "source_number": "6.5",
+      "source_page": 35,
+      "chapter": 6
+    },
+    {
+      "id": "HW-S-6.1",
+      "source_kind": "建议",
+      "source_number": "6.1",
+      "source_page": 35,
+      "chapter": 6
+    },
+    {
+      "id": "HW-S-6.2",
+      "source_kind": "建议",
+      "source_number": "6.2",
+      "source_page": 35,
+      "chapter": 6
+    },
+    {
+      "id": "HW-S-6.3",
+      "source_kind": "建议",
+      "source_number": "6.3",
+      "source_page": 35,
+      "chapter": 6
+    },
+    {
+      "id": "HW-S-6.4",
+      "source_kind": "建议",
+      "source_number": "6.4",
+      "source_page": 36,
+      "chapter": 6
+    },
+    {
+      "id": "HW-P-7.1",
+      "source_kind": "原则",
+      "source_number": "7.1",
+      "source_page": 36,
+      "chapter": 7
+    },
+    {
+      "id": "HW-P-7.2",
+      "source_kind": "原则",
+      "source_number": "7.2",
+      "source_page": 37,
+      "chapter": 7
+    },
+    {
+      "id": "HW-S-7.1",
+      "source_kind": "建议",
+      "source_number": "7.1",
+      "source_page": 37,
+      "chapter": 7
+    },
+    {
+      "id": "HW-S-7.2",
+      "source_kind": "建议",
+      "source_number": "7.2",
+      "source_page": 38,
+      "chapter": 7
+    },
+    {
+      "id": "HW-S-7.3",
+      "source_kind": "建议",
+      "source_number": "7.3",
+      "source_page": 38,
+      "chapter": 7
+    },
+    {
+      "id": "HW-S-7.4",
+      "source_kind": "建议",
+      "source_number": "7.4",
+      "source_page": 39,
+      "chapter": 7
+    },
+    {
+      "id": "HW-P-8.1",
+      "source_kind": "原则",
+      "source_number": "8.1",
+      "source_page": 39,
+      "chapter": 8
+    },
+    {
+      "id": "HW-P-8.2",
+      "source_kind": "原则",
+      "source_number": "8.2",
+      "source_page": 39,
+      "chapter": 8
+    },
+    {
+      "id": "HW-P-8.3",
+      "source_kind": "原则",
+      "source_number": "8.3",
+      "source_page": 40,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.1",
+      "source_kind": "规则",
+      "source_number": "8.1",
+      "source_page": 41,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.2",
+      "source_kind": "规则",
+      "source_number": "8.2",
+      "source_page": 41,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.3",
+      "source_kind": "规则",
+      "source_number": "8.3",
+      "source_page": 41,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.4",
+      "source_kind": "规则",
+      "source_number": "8.4",
+      "source_page": 41,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.5",
+      "source_kind": "规则",
+      "source_number": "8.5",
+      "source_page": 42,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.6",
+      "source_kind": "规则",
+      "source_number": "8.6",
+      "source_page": 42,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.7",
+      "source_kind": "规则",
+      "source_number": "8.7",
+      "source_page": 42,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-8.8",
+      "source_kind": "规则",
+      "source_number": "8.8",
+      "source_page": 42,
+      "chapter": 8
+    },
+    {
+      "id": "HW-S-8.1",
+      "source_kind": "建议",
+      "source_number": "8.1",
+      "source_page": 43,
+      "chapter": 8
+    },
+    {
+      "id": "HW-S-8.2",
+      "source_kind": "建议",
+      "source_number": "8.2",
+      "source_page": 43,
+      "chapter": 8
+    },
+    {
+      "id": "HW-S-8.3",
+      "source_kind": "建议",
+      "source_number": "8.3",
+      "source_page": 43,
+      "chapter": 8
+    },
+    {
+      "id": "HW-R-9.1",
+      "source_kind": "规则",
+      "source_number": "9.1",
+      "source_page": 44,
+      "chapter": 9
+    },
+    {
+      "id": "HW-R-9.2",
+      "source_kind": "规则",
+      "source_number": "9.2",
+      "source_page": 44,
+      "chapter": 9
+    },
+    {
+      "id": "HW-R-9.3",
+      "source_kind": "规则",
+      "source_number": "9.3",
+      "source_page": 44,
+      "chapter": 9
+    },
+    {
+      "id": "HW-R-9.4",
+      "source_kind": "规则",
+      "source_number": "9.4",
+      "source_page": 45,
+      "chapter": 9
+    },
+    {
+      "id": "HW-R-9.5",
+      "source_kind": "规则",
+      "source_number": "9.5",
+      "source_page": 45,
+      "chapter": 9
+    },
+    {
+      "id": "HW-R-9.6",
+      "source_kind": "规则",
+      "source_number": "9.6",
+      "source_page": 45,
+      "chapter": 9
+    },
+    {
+      "id": "HW-S-9.1",
+      "source_kind": "建议",
+      "source_number": "9.1",
+      "source_page": 46,
+      "chapter": 9
+    },
+    {
+      "id": "HW-S-9.2",
+      "source_kind": "建议",
+      "source_number": "9.2",
+      "source_page": 46,
+      "chapter": 9
+    },
+    {
+      "id": "HW-R-10.1",
+      "source_kind": "规则",
+      "source_number": "10.1",
+      "source_page": 46,
+      "chapter": 10
+    },
+    {
+      "id": "HW-S-10.1",
+      "source_kind": "建议",
+      "source_number": "10.1",
+      "source_page": 47,
+      "chapter": 10
+    },
+    {
+      "id": "HW-S-10.2",
+      "source_kind": "建议",
+      "source_number": "10.2",
+      "source_page": 48,
+      "chapter": 10
+    },
+    {
+      "id": "HW-S-10.3",
+      "source_kind": "建议",
+      "source_number": "10.3",
+      "source_page": 48,
+      "chapter": 10
+    },
+    {
+      "id": "HW-S-10.4",
+      "source_kind": "建议",
+      "source_number": "10.4",
+      "source_page": 49,
+      "chapter": 10
+    },
+    {
+      "id": "HW-R-11.1",
+      "source_kind": "规则",
+      "source_number": "11.1",
+      "source_page": 49,
+      "chapter": 11
+    },
+    {
+      "id": "HW-R-11.2",
+      "source_kind": "规则",
+      "source_number": "11.2",
+      "source_page": 49,
+      "chapter": 11
+    },
+    {
+      "id": "HW-R-11.3",
+      "source_kind": "规则",
+      "source_number": "11.3",
+      "source_page": 49,
+      "chapter": 11
+    },
+    {
+      "id": "HW-R-11.4",
+      "source_kind": "规则",
+      "source_number": "11.4",
+      "source_page": 50,
+      "chapter": 11
+    },
+    {
+      "id": "HW-S-11.1",
+      "source_kind": "建议",
+      "source_number": "11.1",
+      "source_page": 50,
+      "chapter": 11
+    },
+    {
+      "id": "HW-P-12.1",
+      "source_kind": "原则",
+      "source_number": "12.1",
+      "source_page": 50,
+      "chapter": 12
+    },
+    {
+      "id": "HW-R-12.1",
+      "source_kind": "规则",
+      "source_number": "12.1",
+      "source_page": 50,
+      "chapter": 12
+    },
+    {
+      "id": "HW-R-12.2",
+      "source_kind": "规则",
+      "source_number": "12.2",
+      "source_page": 50,
+      "chapter": 12
+    },
+    {
+      "id": "HW-R-12.3",
+      "source_kind": "规则",
+      "source_number": "12.3",
+      "source_page": 50,
+      "chapter": 12
+    },
+    {
+      "id": "HW-R-12.4",
+      "source_kind": "规则",
+      "source_number": "12.4",
+      "source_page": 50,
+      "chapter": 12
+    },
+    {
+      "id": "HW-S-12.1",
+      "source_kind": "建议",
+      "source_number": "12.1",
+      "source_page": 51,
+      "chapter": 12
+    },
+    {
+      "id": "HW-P-13.1",
+      "source_kind": "原则",
+      "source_number": "13.1",
+      "source_page": 51,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.1",
+      "source_kind": "规则",
+      "source_number": "13.1",
+      "source_page": 51,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.2",
+      "source_kind": "规则",
+      "source_number": "13.2",
+      "source_page": 52,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.3",
+      "source_kind": "规则",
+      "source_number": "13.3",
+      "source_page": 52,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.4",
+      "source_kind": "规则",
+      "source_number": "13.4",
+      "source_page": 53,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.5",
+      "source_kind": "规则",
+      "source_number": "13.5",
+      "source_page": 55,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.6",
+      "source_kind": "规则",
+      "source_number": "13.6",
+      "source_page": 56,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.7",
+      "source_kind": "规则",
+      "source_number": "13.7",
+      "source_page": 56,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.8",
+      "source_kind": "规则",
+      "source_number": "13.8",
+      "source_page": 57,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.9",
+      "source_kind": "规则",
+      "source_number": "13.9",
+      "source_page": 58,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-13.10",
+      "source_kind": "规则",
+      "source_number": "13.10",
+      "source_page": 59,
+      "chapter": 13
+    },
+    {
+      "id": "HW-R-14.1",
+      "source_kind": "规则",
+      "source_number": "14.1",
+      "source_page": 59,
+      "chapter": 14
+    },
+    {
+      "id": "HW-S-14.1",
+      "source_kind": "建议",
+      "source_number": "14.1",
+      "source_page": 60,
+      "chapter": 14
+    },
+    {
+      "id": "HW-R-15.1",
+      "source_kind": "规则",
+      "source_number": "15.1",
+      "source_page": 60,
+      "chapter": 15
+    },
+    {
+      "id": "HW-S-15.1",
+      "source_kind": "建议",
+      "source_number": "15.1",
+      "source_page": 60,
+      "chapter": 15
+    },
+    {
+      "id": "HW-S-15.2",
+      "source_kind": "建议",
+      "source_number": "15.2",
+      "source_page": 60,
+      "chapter": 15
+    }
+  ]
+}

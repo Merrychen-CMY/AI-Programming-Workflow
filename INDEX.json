@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.2.0",
+  "workflow_version": "2.3.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -93,6 +93,11 @@
     "embedded_c_reference_change": [
       "standards/embedded-c/v1.3/reference-adoption.md",
       "policy/embedded-c.json"
+    ],
+    "huawei_clause_coverage": [
+      "standards/embedded-c/v1.3/huawei/README.md",
+      "standards/embedded-c/v1.3/huawei/coverage.json",
+      "standards/embedded-c/v1.3/huawei/coverage.md"
     ]
   },
   "full_reference": [

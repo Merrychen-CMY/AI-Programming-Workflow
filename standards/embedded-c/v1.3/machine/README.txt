@@ -275,3 +275,9 @@ python tests/test_readability_contracts.py
 本包更新时应与第十节两组回归一并运行。三组测试均不构建/烧录/操作真实设备。
 
 V1.3补充：READ-007区分超过3层/复杂条件的项目评审与新增函数50行/4层约束。禁止把后者统一解释成软建议；适用算法等例外须记录确认依据。原包测试只验证契约，不证明代码已达到这些要求。
+
+
+十二、华为逐条要求与现有契约
+
+V1.3规范性补充为../huawei/coverage.json及分章视图：139条编号要求加6项治理补充。来源编号、项目要求、适用性、检查与差异逐条维护。DOT首次接入建立适用性基线，任务只选择通用和受影响项；清单ADOPTED/ADAPTED不是产品PASS。
+requirements[].requirement_id可使用HW-S-2.5等ID，source指向具体条款文件/锚点，source_version仍为1.3，verification_method按实际方式填写。revision、commit、适用性和例外细节可放关联记录，不向现有Schema强塞额外字段。计划、审查和报告用同一条款ID关联证据。原结构校验不会替代逐条合规和授权核验。

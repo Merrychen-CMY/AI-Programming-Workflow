@@ -114,5 +114,13 @@
   ],
   "readability_checklist": "standards/embedded-c/v1.3/source/readability-checklist.txt",
   "machine_readme": "standards/embedded-c/v1.3/machine/README.txt",
-  "coding_reference": "standards/embedded-c/v1.3/reference-adoption.md"
+  "coding_reference": "standards/embedded-c/v1.3/reference-adoption.md",
+  "normative_supplement": {
+    "entrypoint": "standards/embedded-c/v1.3/huawei/README.md",
+    "catalog": "standards/embedded-c/v1.3/huawei/coverage.json",
+    "inventory": "standards/embedded-c/v1.3/huawei/source-inventory.json",
+    "numbered_clauses": 139,
+    "governance_supplements": 6,
+    "product_compliance_claimed": false
+  }
 }

@@ -1,7 +1,7 @@
 {
   "standard_version": "1.3",
   "document": "standards/embedded-c/v1.3/source/standard.txt",
-  "purpose": "V1.3项目规则索引；以当前正文及reference-adoption.md为准，原V1.2保留历史快照。",
+  "purpose": "V1.3项目规则索引；33项为分类，华为139条编号要求及6项治理补充见clause_coverage。当前正文、逐条清单和明确项目差异共同执行。",
   "rules": [
     {
       "id": "GOV-001",
@@ -301,5 +301,6 @@
       "failure_handling": "不满足完成条件不得 ACCEPTED"
     }
   ],
-  "coding_reference": "DKBA 2826-2011.5"
+  "coding_reference": "DKBA 2826-2011.5",
+  "clause_coverage": "standards/embedded-c/v1.3/huawei/coverage.json"
 }

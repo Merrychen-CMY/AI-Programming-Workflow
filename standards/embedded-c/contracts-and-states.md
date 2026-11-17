@@ -37,3 +37,8 @@ python standards/embedded-c/v1.3/machine/tools/validate_contracts.py --require-r
 退出0只表示结构/部分状态合法；退出1表示实例错误，2表示require-ready拒绝DRAFT，3表示工具/用法错误。FINAL且INCOMPLETE的报告可能返回0，绝不能据此验收通过。Schema只从本地注册，.invalid标识不是下载地址。
 
 在执行与验收前，DOT和实际执行器还必须按 [machine README第六节](v1.3/machine/README.txt) 检查跨文件ID、需求覆盖、实际发现/执行集合、计数、时间和尝试、真实文件哈希、最终版本、设备身份/授权/前提、预算、参数/校准及例外。原工具未实现这些检查，缺少所需核验能力时保持阻断或按项目认可方式独立核验，不能声称结构校验已覆盖。
+
+
+## 华为条款ID进入现有契约
+
+按 [逐条使用说明](v1.3/huawei/README.md) 将适用HW条款写入任务requirements和测试/审查映射。维持原Schema 1.1和规范1.3，不新增用户表单。清单采纳状态与产品执行结果分开；未判断适用性、无必要证据或规则例外未经认可时不能以目录完整或Schema通过宣称产品合规。
