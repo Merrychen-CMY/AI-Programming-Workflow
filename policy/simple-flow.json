@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "workflow_version": "2.0.0",
+  "default_mode": "simple",
+  "execution_authority": false,
+  "user_facing_roles": [
+    "L1",
+    "DOT"
+  ],
+  "entry_documents": [
+    "AGENTS.md",
+    "L1.md",
+    "DOT.md",
+    "templates/requirements.md"
+  ],
+  "user_approval_artifact": "single_versioned_requirements_document_with_execution_scope",
+  "implementation_requires_user_approval": true,
+  "routine_in_scope_work_requires_new_user_approval": false,
+  "internal_verification_plan_requires_separate_user_document": false,
+  "internal_role_mapping": {
+    "L1": "user_requirements_interface",
+    "L1-V": "internal_verification_plan",
+    "L2": "DOT_orchestration",
+    "L3": "implementation_worker",
+    "L4": "independent_verification_worker",
+    "L5": "DOT_acceptance_and_delivery_request"
+  },
+  "independent_verification_required": true,
+  "implementation_worker_can_issue_final_acceptance": false,
+  "issue_intake": "DOT_as_L2",
+  "direct_verifier_to_developer_dispatch": false,
+  "product_or_ac_change_requires_user_decision": true,
+  "plan_maintenance": {
+    "within_explicit_delegation": "verification_owner_records_new_plan_and_authorization",
+    "semantic_change": "new_plan_authorization_and_all_required_reverification",
+    "may_lower_acceptance_standard": false,
+    "outside_delegation": "L1_requests_user_decision"
+  },
+  "delivery": {
+    "execute_when_existing_authorization_covers_actual_action": true,
+    "check_actual_candidate_evidence_action_target": true,
+    "require_new_approval_when_scope_not_covered": true,
+    "DOT_may_self_authorize": false,
+    "preauthorization_must_bind": [
+      "actions",
+      "targets",
+      "candidate_conditions",
+      "evidence_conditions",
+      "expiry",
+      "use_limit"
+    ]
+  },
+  "three_checkpoints": [
+    "approved_requirements_and_scope",
+    "independent_candidate_verification",
+    "valid_delivery_authorization"
+  ],
+  "user_decision_triggers": [
+    "requirements_or_AC_change",
+    "scope_permission_or_budget_expansion",
+    "unresolved_blocker",
+    "delivery_not_covered_by_authorization"
+  ],
+  "user_visible_outputs": [
+    "requirements_for_review",
+    "decision_needed_with_options",
+    "delivery_result"
+  ],
+  "states": [
+    {
+      "id": "DISCOVERY",
+      "next": [
+        "REVIEW_PENDING"
+      ],
+      "guard": "L1 gathers facts and writes requirements; no product implementation"
+    },
+    {
+      "id": "REVIEW_PENDING",
+      "next": [
+        "DISCOVERY",
+        "EXECUTING"
+      ],
+      "guard": "Only real approval of exact version and scope permits execution"
+    },
+    {
+      "id": "EXECUTING",
+      "next": [
+        "VERIFYING",
+        "DECISION_PENDING",
+        "BLOCKED"
+      ],
+      "guard": "DOT dispatches within approved scope and budget"
+    },
+    {
+      "id": "VERIFYING",
+      "next": [
+        "EXECUTING",
+        "DELIVERY_READY",
+        "DECISION_PENDING",
+        "BLOCKED"
+      ],
+      "guard": "Failure enters DOT triage before repair; only independent evidence permits delivery readiness"
+    },
+    {
+      "id": "DELIVERY_READY",
+      "next": [
+        "DELIVERED",
+        "DECISION_PENDING",
+        "BLOCKED"
+      ],
+      "guard": "Check actual action and target against valid authorization, then execute and verify receipt"
+    },
+    {
+      "id": "DECISION_PENDING",
+      "next": [
+        "REVIEW_PENDING",
+        "EXECUTING",
+        "VERIFYING",
+        "DELIVERY_READY",
+        "BLOCKED"
+      ],
+      "guard": "L1 obtains decision; changed requirements need new version/approval; reevaluate impacts before resuming"
+    },
+    {
+      "id": "BLOCKED",
+      "next": [
+        "DISCOVERY",
+        "REVIEW_PENDING",
+        "EXECUTING",
+        "VERIFYING",
+        "DELIVERY_READY"
+      ],
+      "guard": "Cause resolved, authorization valid, old runs and side effects reconciled; budgets do not reset"
+    },
+    {
+      "id": "DELIVERED",
+      "next": [
+        "DISCOVERY"
+      ],
+      "guard": "New request keeps original delivery evidence intact"
+    }
+  ],
+  "advanced_reference": "docs/advanced-profile.md",
+  "existing_project_protections_remain_required": true,
+  "runtime_implemented_by_this_repository": false
+}

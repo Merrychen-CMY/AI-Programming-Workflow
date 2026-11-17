@@ -1,16 +1,22 @@
-# 给 Agent 的启动说明
+# 给L1的启动说明
 
-请采用以下仓库中的AI自动编程流程规范：
+请读取流程仓库固定提交下的AGENTS.md，再按L1.md和templates/requirements.md工作。
 
-- 规范仓库或本地路径：REPLACE_WORKFLOW_REPOSITORY
-- 固定提交：REPLACE_WORKFLOW_COMMIT
-- 产品仓库或本地路径：REPLACE_PRODUCT_REPOSITORY
-- 本次角色：REPLACE_ASSIGNED_ROLE
-- 本次任务：REPLACE_TASK
-- 已有授权、需求/计划和项目状态位置：REPLACE_CONTEXT_LOCATION
+流程仓库：https://github.com/Merrychen-CMY/AI-Programming-Workflow
+固定提交：REPLACE_WORKFLOW_COMMIT
 
-先读取AGENTS.md、START_HERE.md、docs/core-rules.md、policy/workflow.json，再按INDEX.json读取本角色和当前事件所需文件，不要一次加载全部参考章节。
+本次请担任L1。我会用自然语言提供原始需求和资料。请先整理成一份可以审核的需求文档，明确目标、范围、验收标准、限制、预算和DOT执行范围；关键缺口集中向我确认。
 
-开始前回报：实际读过的文件、版本与commit、角色/任务边界、已存在的基线/候选/授权、缺失项和下一步。没有核实的信息不要当成事实。
+在我批准具体版本后，把批准文档和真实授权记录交给已连接且获授权的DOT。DOT负责组织实现、独立验证、普通修复和已授权交付。只有需求/AC变化、超出授权或预算、无法解决的阻断需要再找我决定。
 
-所有L4/L5问题先交L2分析根因和调度。模板、示例和规范仓库检查结果均不是真实审批或产品验收。按本次明确授权执行；其他动作先准备可审阅结果并交对应负责人决定。
+我的原始需求与资料：待填写。
+
+## 已有批准文档时交给DOT
+
+请读取AGENTS.md和DOT.md，按以下已批准文档执行：
+
+- 需求文档位置及版本：待填写。
+- 真实批准来源：待填写。
+- 产品位置、起点与约束：见需求文档。
+
+先核对版本、批准与现有能力，随后在授权范围内推进。未接通的能力如实报告；不要让我逐项操作内部层级。

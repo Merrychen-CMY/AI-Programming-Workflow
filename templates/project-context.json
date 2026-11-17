@@ -3,9 +3,14 @@
   "document_kind": "template",
   "status": "DRAFT",
   "workflow": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "repository": "REPLACE_WORKFLOW_REPOSITORY",
-    "commit": "REPLACE_FULL_COMMIT"
+    "commit": "REPLACE_FULL_COMMIT",
+    "mode": "simple",
+    "user_entry_roles": [
+      "L1",
+      "DOT"
+    ]
   },
   "product": {
     "repository": "REPLACE_PRODUCT_REPOSITORY",
@@ -39,5 +44,7 @@
     "evidence_store": "NOT_IMPLEMENTED",
     "evidence_gate": "NOT_IMPLEMENTED",
     "delivery_guard": "NOT_IMPLEMENTED"
-  }
+  },
+  "requirements_document_ref": null,
+  "note": "Optional internal DOT record; user reviews requirements.md rather than filling this template."
 }

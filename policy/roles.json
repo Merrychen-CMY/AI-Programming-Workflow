@@ -43,5 +43,6 @@
       "responsibilities": "汇总逐项验收结论、失败历史和风险；评估交付可行性，准备申请、目标与回退方案并核对回执。",
       "prohibitions": "不绕过 L2 下达修复任务；不批准自己的交付申请、不豁免必需检查、不把门3 PASS 当作交付授权。"
     }
-  ]
+  ],
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md."
 }

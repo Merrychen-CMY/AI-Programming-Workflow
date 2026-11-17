@@ -41,5 +41,6 @@
       "candidate_and_baseline": "新问题关联旧交付；修复新候选；回退对象及授权单独绑定",
       "required_actions": "修复按完整主线；回退按预批准条件核验并保存实际回执"
     }
-  ]
+  ],
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md."
 }

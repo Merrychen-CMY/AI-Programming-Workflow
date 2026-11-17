@@ -1,47 +1,51 @@
-# AI 自动编程流程规范
+# AI 自动编程流程：L1 → 审核 → DOT
 
-把双 L1、L2 统一回流调度、独立验证和受控交付整理为 Agent 可以按需读取的项目。版本 **1.0.0**，基线日期 **2026-11-17**。
+**你描述需求，L1整理成文档；你审核批准后，由DOT组织开发、验证和交付。** 默认版本 **2.0.0**。
 
-核心规则：**L4/L5 → L2 接收、分析根因、分类与调度 → 对应处理层**。代码缺陷由 L2 派发 L3；需求/AC 交 L1；任务拆分/方案问题由 L2 协调；测试计划/用例交 L1-V；测试设施交 L4；交付目标/授权由 L5 整理并按权限重新审批。
+```mermaid
+flowchart LR
+  U[你：原始需求与资料] --> L[L1：需求文档]
+  L --> A[你：审核批准]
+  A --> D[DOT：组织实现与独立验证]
+  D --> R[交付结果]
+  D -->|需要产品决策或超出授权| L
+```
 
-## 给 Agent 的入口
+## 从这里开始
 
-先读 [AGENTS.md](AGENTS.md)，再读 [START_HERE.md](START_HERE.md)。阅读你被分配的角色和当前任务所需的文件即可。不要把所有文档一次装入上下文。
-
-机器导航见 [INDEX.json](INDEX.json)，核心结构化策略见 [policy/workflow.json](policy/workflow.json)。GitHub 链接不能保证所有 Agent 自动读到仓库内容；给 Agent 固定提交的链接或本地检出路径，并要求它报告实际读到的文件。
-
-## 内容结构
-
-| 路径 | 内容 |
+| 文件 | 用途 |
 | --- | --- |
-| `AGENTS.md` | 最短入口、操作边界和禁止事项 |
-| `roles/` | L1、L1-V、L2、L3、L4、L5 的独立角色说明 |
-| `policy/` | 路由、门禁、状态机、16类L4与12类L5场景、重验和48项拒绝测试 |
-| `docs/` | 核心规则、架构、术语和实施指南 |
-| `docs/reference/` | 完整教程的21章，保留技术内容并按章读取 |
-| `templates/` | 产品基线、验证计划、项目上下文、问题与任务交接模板 |
-| `examples/contracts/` | 原教程JSON/YAML示例，不能作为真实授权或证据 |
-| `scripts/`、`tests/` | 无第三方Python依赖的静态检查及其单元测试 |
-| `.github/workflows/` | 仓库规范检查，不是产品验收CI |
+| [AGENTS.md](AGENTS.md) | Agent最短入口和共同规则 |
+| [L1.md](L1.md) | 需求沟通、生成文档、审核与交接 |
+| [DOT.md](DOT.md) | 开发调度、验证、失败修复与交付 |
+| [templates/requirements.md](templates/requirements.md) | 用户只需审核的统一需求文档 |
 
-## 开始使用
+先把仓库固定提交的入口交给负责L1的Agent，再用自然语言说明需求即可。启动文字见 [agent-start.md](templates/agent-start.md)。获批准后，L1交给已连接且获授权的DOT执行；未接通时输出同一份交接资料和连接缺口，不冒称已运行。
 
-1. 按 [上传指南](docs/guides/github-upload.md) 上传本目录的内容到 GitHub。
-2. 让 Agent 从 [启动提示模板](templates/agent-start.md) 开始，先识别版本、角色和项目状态。
-3. 按 [项目接入指南](docs/guides/adopt-project.md) 建立真实产品的上下文和双 L1 基线。
-4. 按 [首次闭环](docs/guides/first-run.md) 做单任务试点，演练实现、用例、设施及交付问题回流。
+## DOT自行处理什么
 
-## 本地检查
+任务拆分、方案协调、开发、普通修复、测试计划维护、环境恢复和证据整理，都在已批准范围与预算内推进。需求/AC变化、扩大权限或预算、无法解决的阻断，以及未获授权的交付，才集中交给用户决定。
 
-需要 Python 3.10 或更高版本，只使用标准库。在本仓库根目录运行：
+保留三个检查点：**开工前确认需求与范围；完成前独立验证；交付时核对授权**。三个检查点不等于三次人工审批。
+
+## 内部规则按需查
+
+原双L1和L2～L5作为内部职责保留：DOT承担L2编排与L5汇总，验证计划职责保留L1-V含义，开发与独立验证保留职责隔离。不要求六个独立对话，也不把全部资料一次装进上下文。
+
+- [阅读导航](START_HERE.md) / [机器索引](INDEX.json)
+- [简化流程策略](policy/simple-flow.json) / [核心规则](docs/core-rules.md)
+- [首次跑通](docs/guides/first-run.md) / [进阶技术参考的适用范围](docs/advanced-profile.md)
+- `docs/reference/`保留21章原技术内容；`policy/`保留16类L4、12类L5回流场景和48项真实系统拒绝测试清单。
+
+这是流程规范与模板仓库，不包含已经接通的DOT、执行控制器或部署服务。根据项目能力选择接入；已有安全保护和正式门禁照常生效。
+
+## 仓库检查
+
+Python 3.10+，仅标准库：
 
 ```powershell
 python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 ```
 
-这些命令检查 JSON、内部链接、文件清单、源章节覆盖和核心策略约束。成功只代表**规范仓库静态检查通过**，不会运行产品测试、验证签名、批准任务或执行交付。48项真实拒绝测试的初始状态均为 NOT_RUN。
-
-## 维护
-
-按 [CONTRIBUTING.md](CONTRIBUTING.md) 同步修改规则、角色说明、参考章节和测试。发布前更新 VERSION、CHANGELOG、INDEX 及内容清单。适用文件有冲突时暂停受影响操作并报告，不能自行选一个较宽松版本继续。
+检查链接、结构化规则、内容清单及关键反例，不执行产品/HIL验收。48项真实系统测试仍为NOT_RUN。维护见 [CONTRIBUTING.md](CONTRIBUTING.md)，变化见 [CHANGELOG.md](CHANGELOG.md)。

@@ -1,20 +1,15 @@
 {
   "schema_version": 1,
-  "workflow_version": "1.0.0",
+  "workflow_version": "2.0.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
-    "AGENTS.md",
-    "START_HERE.md",
-    "docs/core-rules.md",
-    "policy/workflow.json"
+    "AGENTS.md"
   ],
   "role_reading": {
     "L1": [
-      "roles/product-l1.md",
-      "docs/reference/05-product-l1.md",
-      "docs/reference/17-dual-l1.md",
-      "docs/reference/20-reflow.md"
+      "L1.md",
+      "templates/requirements.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -50,6 +45,10 @@
       "docs/reference/12-delivery.md",
       "docs/reference/20-reflow.md",
       "docs/reference/21-acceptance.md"
+    ],
+    "DOT": [
+      "DOT.md",
+      "policy/simple-flow.json"
     ]
   },
   "event_reading": {
@@ -79,6 +78,9 @@
     "production_readiness": [
       "policy/rejection-tests.json",
       "docs/reference/21-acceptance.md"
+    ],
+    "formal_automation_adoption": [
+      "docs/advanced-profile.md"
     ]
   },
   "full_reference": [
@@ -205,12 +207,14 @@
     "core_rules": "短版规范",
     "reference": "完整技术条件",
     "templates_and_examples": "无执行效力的草案/示例",
-    "on_conflict": "停止受影响操作并报告，不静默选择宽松规则"
+    "on_conflict": "停止受影响操作并报告，不静默选择宽松规则",
+    "scope": "Default simple workflow plus explicitly adopted formal integrations; existing protections cannot be downgraded."
   },
   "source": {
     "name": "AI自动编程流程配置教程_统一回流架构完整版.docx",
     "sha256": "3bb9ae41bb37fb9059237f8b15590024ca2ba67e6d0bb676fe5a0cc703b1609e",
-    "included_binary": false
+    "included_binary": false,
+    "usage": "Preserved advanced technical chapters; v2 user workflow and profile scope are defined in primary documents."
   },
   "capabilities": {
     "static_repo_validation": true,
@@ -219,5 +223,13 @@
     "product_tests_executed": false,
     "hil_tests_executed": false,
     "delivery_executor": false
-  }
+  },
+  "default_mode": "simple",
+  "primary_documents": [
+    "AGENTS.md",
+    "L1.md",
+    "DOT.md",
+    "templates/requirements.md"
+  ],
+  "reference_scope": "docs/advanced-profile.md"
 }

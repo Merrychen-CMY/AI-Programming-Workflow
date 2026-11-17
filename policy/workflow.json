@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "policy_version": "1.0.0",
+  "policy_version": "2.0.0",
   "status": "reference_specification",
   "execution_authority": false,
-  "description": "可读流程规范和静态检查；不是运行中的调度器、审批服务或产品验收器。",
+  "description": "内部职责与回流不变量；默认用户入口为L1和DOT，正式控制器契约按进阶接入范围适用。",
   "roles": [
     "L1",
     "L1-V",
@@ -106,10 +106,13 @@
   "approval_rules": {
     "G1": "authenticated_execution_authorization",
     "V0": "validate_candidate_package_against_explicit_authorization",
-    "G4": "authenticated_exact_candidate_evidence_action_target_authorization",
+    "G4": "exact_candidate_evidence_action_target_authorization_or_validation_against_explicit_bounded_preauthorization",
     "L5_can_approve_delivery": false,
     "merge_implies_release": false,
-    "example_is_authorization": false
+    "example_is_authorization": false,
+    "simple_mode": "record_real_user_approval_of_version_and_scope; preserve_existing_project_approval_controls",
+    "formal_gate_contract_scope": "when_formal_approval_and_gate_services_are_adopted",
+    "delegated_plan_maintenance": "new_version_and_authorization_by_verification_owner_within_explicit_scope; otherwise_user_decision"
   },
   "closure": {
     "implementation_or_verification": "independent_L4_reverification_and_trusted_verdict_then_L2_close",
@@ -128,5 +131,14 @@
     "reset_on_restart": false
   },
   "conflict_action": "BLOCKED_and_report_to_L2_or_user_no_silent_override",
-  "project_adoption": "requires_explicit_user_assignment_scope_and_project_baselines"
+  "project_adoption": "requires_explicit_user_assignment_scope_and_project_baselines",
+  "default_user_flow": "policy/simple-flow.json",
+  "user_interface": {
+    "L1": "requirements_and_user_decisions",
+    "DOT": [
+      "L2",
+      "L5"
+    ],
+    "six_separate_conversations_required": false
+  }
 }

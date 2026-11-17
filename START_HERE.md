@@ -1,36 +1,29 @@
-# 按需阅读导航
+# 按需阅读，不要全量加载
 
-## 所有 Agent 必读
+## 默认入口
 
-[AGENTS.md](AGENTS.md) → [核心规则](docs/core-rules.md) → [workflow.json](policy/workflow.json) → 分配给你的角色文件。阅读规则不会自动给你分配角色或任务。
+先读 [AGENTS.md](AGENTS.md)，然后只读当前工作需要的文件：
 
-## 按角色继续
-
-| 角色 | 阅读入口 | 本次工作的产出 |
-| --- | --- | --- |
-| L1 | [产品需求](roles/product-l1.md) | 产品基线、AC、变更决定 |
-| L1-V | [验证基线](roles/verification-l1v.md) | 验收计划、用例治理、候选验证包 |
-| L2 | [调度](roles/orchestrator-l2.md) | 任务图、根因分析、处理任务及回流记录 |
-| L3 | [实现](roles/implementer-l3.md) | 授权代码、自测和候选提交 |
-| L4 | [独立验证](roles/verifier-l4.md) | 实际验证结果、环境身份和原始证据 |
-| L5 | [交付](roles/delivery-l5.md) | 验收汇总、风险评估、交付申请和回执 |
-
-## 按事件补读
-
-| 事件 | 文件 |
+| 正在做什么 | 读什么 |
 | --- | --- |
-| 首次接入项目 | [接入指南](docs/guides/adopt-project.md)、[首次闭环](docs/guides/first-run.md) |
-| L4测试失败 | [L4矩阵](policy/l4-failures.json)、[回流操作](docs/guides/handle-issue.md) |
-| L5退回或交付失败 | [L5矩阵](policy/l5-delivery.json)、[交付章节](docs/reference/12-delivery.md) |
-| 需求/计划/候选/设施变化 | [重验规则](policy/reverification.json)、[双L1](docs/reference/17-dual-l1.md) |
-| 超预算、同因失败、根因争议 | [升级规则](policy/escalation.json) |
-| 超时、重启或状态未知 | [状态机](policy/state-machine.json)、[完整状态说明](docs/reference/13-state-machine.md) |
-| 接入ESP32/HIL | [HIL技术配置](docs/reference/09-esp32-hil.md) |
-| 接入门禁/CI/证据 | [适配器](docs/reference/14-adapters.md)、[证据](docs/reference/08-software-evidence.md)、[govrail](docs/reference/10-govrail.md)、[CI](docs/reference/11-ci-protection.md) |
-| 准备启用自动化权限 | [拒绝测试清单](policy/rejection-tests.json)、[完整上线验收](docs/reference/21-acceptance.md) |
+| 和用户整理原始需求 | [L1.md](L1.md)、[需求模板](templates/requirements.md) |
+| 已收到批准需求，准备执行 | [DOT.md](DOT.md)、[简化策略](policy/simple-flow.json) |
+| 受DOT指派做开发或验证 | 已批准任务及 [内部职责映射](policy/roles.json) 中对应角色 |
 
-## 上下文不足时
+记录需求版本、规范commit与真实授权。用户通常不用查看内部基线、任务包或门禁JSON。
 
-先列出已有对象和缺失对象。当前角色、目标仓库或AC缺失时，不猜测任务范围；没有真实授权时准备草案，不执行依赖该授权的动作。Agent重启后从控制器/项目状态恢复，不把自己的上次摘要视为唯一事实来源。
+## 出现问题时再补读
 
-所有路径及完整章节覆盖见 [INDEX.json](INDEX.json)。
+| 事件 | 参考 |
+| --- | --- |
+| 首次接入 | [接入指南](docs/guides/adopt-project.md)、[首次闭环](docs/guides/first-run.md) |
+| 测试失败 | [L4矩阵](policy/l4-failures.json)、[问题处理](docs/guides/handle-issue.md) |
+| 交付退回或失败 | [L5矩阵](policy/l5-delivery.json)、DOT的交付规则 |
+| 需求/计划/候选/设施变化 | [重新验证](policy/reverification.json) |
+| 重试上限、根因争议 | [升级规则](policy/escalation.json) |
+| 超时、重启、运行状态未知 | [内部状态机](policy/state-machine.json) |
+| 正式门禁、HIL或自动执行器接入 | 先读 [进阶范围](docs/advanced-profile.md)，再按 [INDEX](INDEX.json) 选相应章节 |
+
+所有L4/L5发现统一回DOT的L2职责，保留根因、派工和独立重验记录。产品决策由L1请用户审核，普通内部修复不增加用户审批。
+
+资料不足时先使用已有上下文；只有影响当前动作的关键缺口才汇总提问。恢复执行先核对真实状态，不能把Agent自己的旧总结当成唯一证据。

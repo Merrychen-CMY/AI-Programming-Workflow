@@ -41,5 +41,6 @@
       "l2_action": "立即阻断，交授权安全/交付负责人；保留审计",
       "resume_condition": "风险处置及恢复批准完成，再执行必要独立重验"
     }
-  ]
+  ],
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md."
 }

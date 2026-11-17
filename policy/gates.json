@@ -31,5 +31,7 @@
       "decision_owner": "授权审批人",
       "failure_path": "L5 记录待审或退回；有问题则交 L2 分诊"
     }
-  ]
+  ],
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
+  "formal_integration_scope": "Controller, approval service and named gate executors are formal integration contracts, not mandatory tools for initial requirements review."
 }

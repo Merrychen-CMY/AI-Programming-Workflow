@@ -117,5 +117,6 @@
       "handler_after_l2_triage": "L2 协调诊断并按边界升级",
       "resume_or_close_conditions": "各根因有证据及处理结果；阻断子单均通过重验"
     }
-  ]
+  ],
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md."
 }

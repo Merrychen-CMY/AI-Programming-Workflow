@@ -96,6 +96,52 @@ def validate_policy(policy):
     return errors
 
 
+def validate_simple_flow(flow):
+    """Check declared boundaries; this is not an executable controller."""
+    errors = []
+    expected = {
+        'default_mode': 'simple',
+        'execution_authority': False,
+        'user_facing_roles': ['L1', 'DOT'],
+        'implementation_requires_user_approval': True,
+        'routine_in_scope_work_requires_new_user_approval': False,
+        'internal_verification_plan_requires_separate_user_document': False,
+        'independent_verification_required': True,
+        'implementation_worker_can_issue_final_acceptance': False,
+        'issue_intake': 'DOT_as_L2',
+        'direct_verifier_to_developer_dispatch': False,
+        'product_or_ac_change_requires_user_decision': True,
+        'plan_maintenance.may_lower_acceptance_standard': False,
+        'delivery.execute_when_existing_authorization_covers_actual_action': True,
+        'delivery.check_actual_candidate_evidence_action_target': True,
+        'delivery.require_new_approval_when_scope_not_covered': True,
+        'delivery.DOT_may_self_authorize': False,
+        'internal_role_mapping.L2': 'DOT_orchestration',
+        'internal_role_mapping.L5': 'DOT_acceptance_and_delivery_request',
+        'existing_project_protections_remain_required': True,
+        'runtime_implemented_by_this_repository': False,
+        'three_checkpoints': ['approved_requirements_and_scope', 'independent_candidate_verification', 'valid_delivery_authorization'],
+    }
+    for path, wanted in expected.items():
+        value = flow
+        for key in path.split('.'):
+            value = value.get(key) if isinstance(value, dict) else None
+        if type(value) is not type(wanted) or value != wanted:
+            errors.append(f'Simple flow boundary {path}: expected {wanted!r}, got {value!r}')
+    required_bindings = {'actions', 'targets', 'candidate_conditions', 'evidence_conditions', 'expiry', 'use_limit'}
+    if not required_bindings.issubset(flow.get('delivery', {}).get('preauthorization_must_bind', [])):
+        errors.append('Delivery preauthorization must be bounded and bind actual candidate/evidence conditions')
+    states = flow.get('states', [])
+    ids = [state.get('id') for state in states]
+    required_states = {'DISCOVERY', 'REVIEW_PENDING', 'EXECUTING', 'VERIFYING', 'DELIVERY_READY', 'DECISION_PENDING', 'BLOCKED', 'DELIVERED'}
+    if set(ids) != required_states or len(set(ids)) != len(ids):
+        errors.append('Simple flow states are incomplete or duplicated')
+    for state in states:
+        if not state.get('guard') or any(target not in required_states for target in state.get('next', [])):
+            errors.append(f'Invalid simple flow transition: {state.get("id")}')
+    return errors
+
+
 def check_local_link(root, source, target):
     target = target.strip().strip('<>')
     parsed = urlsplit(target)
@@ -122,7 +168,8 @@ def validate_repository(root):
             content = re.sub(r'^```[^\n]*\n.*?^```\s*$', '', content, flags=re.M | re.S)
             for target in re.findall(r'!?\[[^\]\n]*\]\(([^)\n]+)\)', content):
                 errors.extend(check_local_link(root, file, target))
-    required = ['AGENTS.md', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
+    required = ['AGENTS.md', 'L1.md', 'DOT.md', 'templates/requirements.md',
+                'policy/simple-flow.json', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
                 'docs/core-rules.md', '.github/workflows/validate.yml',
                 'policy/workflow.json', 'policy/roles.json', 'policy/rejection-tests.json',
                 'policy/l4-failures.json', 'policy/l5-delivery.json']
@@ -131,10 +178,21 @@ def validate_repository(root):
         return errors
     policy, index = documents['policy/workflow.json'], documents['INDEX.json']
     errors.extend(validate_policy(policy))
+    simple = documents['policy/simple-flow.json']
+    errors.extend(validate_simple_flow(simple))
     version = (root / 'VERSION').read_text(encoding='utf-8').strip()
     if version != policy.get('policy_version') or version != index.get('workflow_version'):
         errors.append('VERSION, INDEX and policy versions differ')
+    if version != simple.get('workflow_version') or version != documents['templates/project-context.json']['workflow']['version']:
+        errors.append('Simple flow or context template version differs from VERSION')
+    primary = ['AGENTS.md', 'L1.md', 'DOT.md', 'templates/requirements.md']
+    if index.get('primary_documents') != primary or simple.get('entry_documents') != primary:
+        errors.append('Default entry documents must be the compact L1/DOT workflow')
+    if index.get('always_read') != ['AGENTS.md'] or index.get('default_mode') != 'simple':
+        errors.append('Default startup must not require full technical reference loading')
     paths = [index['entrypoint'], *index['always_read'], *index['original_examples']]
+    paths.extend(primary)
+    paths.extend([index['reference_scope'], simple['advanced_reference'], policy['default_user_flow']])
     for group in ('role_reading', 'event_reading'):
         for entries in index[group].values():
             paths.extend(entries)

@@ -71,5 +71,7 @@
       "transition": "L5 保存回执；后续问题新建关联问题单交 L2",
       "guard": "不回写旧验收；回退只执行预先批准且仍有效的动作"
     }
-  ]
+  ],
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
+  "formal_integration_scope": "Controller, approval service and named gate executors are formal integration contracts, not mandatory tools for initial requirements review."
 }
