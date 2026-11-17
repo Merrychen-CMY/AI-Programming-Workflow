@@ -27,13 +27,13 @@ DOT的实现总尝试包含初次；原模板automatic_fix_attempts由项目适�
 
 ## 校验器边界
 
-Python 3.11+。在独立开发环境安装 [固定依赖](v1.2/machine/tools/requirements-validation.txt)，再用 [原只读工具](v1.2/machine/tools/validate_contracts.py) 校验实例。依赖仅用于流程契约，不属于固件。
+Python 3.11+。在独立开发环境安装 [固定依赖](v1.3/machine/tools/requirements-validation.txt)，再用 [原只读工具](v1.3/machine/tools/validate_contracts.py) 校验实例。依赖仅用于流程契约，不属于固件。
 
 ```powershell
-python -m pip install -r standards/embedded-c/v1.2/machine/tools/requirements-validation.txt
-python standards/embedded-c/v1.2/machine/tools/validate_contracts.py --require-ready PATH_TO_TASK_JSON PATH_TO_PLAN_JSON
+python -m pip install -r standards/embedded-c/v1.3/machine/tools/requirements-validation.txt
+python standards/embedded-c/v1.3/machine/tools/validate_contracts.py --require-ready PATH_TO_TASK_JSON PATH_TO_PLAN_JSON
 ```
 
 退出0只表示结构/部分状态合法；退出1表示实例错误，2表示require-ready拒绝DRAFT，3表示工具/用法错误。FINAL且INCOMPLETE的报告可能返回0，绝不能据此验收通过。Schema只从本地注册，.invalid标识不是下载地址。
 
-在执行与验收前，DOT和实际执行器还必须按 [machine README第六节](v1.2/machine/README.txt) 检查跨文件ID、需求覆盖、实际发现/执行集合、计数、时间和尝试、真实文件哈希、最终版本、设备身份/授权/前提、预算、参数/校准及例外。原工具未实现这些检查，缺少所需核验能力时保持阻断或按项目认可方式独立核验，不能声称结构校验已覆盖。
+在执行与验收前，DOT和实际执行器还必须按 [machine README第六节](v1.3/machine/README.txt) 检查跨文件ID、需求覆盖、实际发现/执行集合、计数、时间和尝试、真实文件哈希、最终版本、设备身份/授权/前提、预算、参数/校准及例外。原工具未实现这些检查，缺少所需核验能力时保持阻断或按项目认可方式独立核验，不能声称结构校验已覆盖。

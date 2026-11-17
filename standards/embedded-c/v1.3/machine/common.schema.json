@@ -1,0 +1,1318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://embedded-workflow.invalid/schemas/v1.1/common.schema.json",
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "risk": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "role": {
+          "enum": [
+            "SOURCE",
+            "PATCH",
+            "CONFIG",
+            "TOOLCHAIN",
+            "FIRMWARE",
+            "LOG",
+            "REPORT",
+            "MEASUREMENT",
+            "TEST_PLAN",
+            "OTHER"
+          ]
+        }
+      },
+      "required": [
+        "artifact_id",
+        "path",
+        "sha256",
+        "size_bytes",
+        "role"
+      ],
+      "description": "已存在证据文件的身份；path可为包内相对路径或归档URI。不得为未生成文件填造哈希。"
+    },
+    "source_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "worktree_clean": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "dirty_patch": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/artifact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "untracked_artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "minItems": 0
+        },
+        "source_manifest": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/artifact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "repository",
+        "revision",
+        "worktree_clean",
+        "dirty_patch",
+        "untracked_artifacts",
+        "source_manifest"
+      ],
+      "description": "source_manifest必须覆盖参与构建的实际源码，包含未提交与未跟踪文件；revision本身不足以绑定交付。"
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "working_directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_tool_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "argv",
+        "working_directory",
+        "environment_profile",
+        "expected_tool_version"
+      ],
+      "description": "显式参数列表；不以命令字符串隐式经shell解释。不包含凭据值。环境profile应绑定固定工具链。"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grant_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "READ_FILES",
+              "EDIT_OWNED_SOURCE",
+              "BUILD",
+              "HOST_TEST",
+              "READ_CAPTURED_LOGS",
+              "FLASH",
+              "RESET",
+              "TARE",
+              "CHANGE_CALIBRATION",
+              "FAULT_INJECTION",
+              "ACTUATE_HARDWARE"
+            ]
+          },
+          "minItems": 1
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 0
+        },
+        "authorization_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valid_until": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "grant_id",
+        "actions",
+        "scope",
+        "device_ids",
+        "authorization_evidence",
+        "valid_until",
+        "preconditions"
+      ],
+      "description": "授权依据必须来自用户或项目已批准策略；已授权且条件仍成立时无需重复询问。空device_ids不能被解释为允许所有设备。"
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "configuration_artifact": {
+          "$ref": "common.schema.json#/$defs/artifact"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version",
+        "configuration_artifact"
+      ]
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "board_model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "board_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stable_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime_endpoint_discovery": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exclusive_lock_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "power_and_fixture_preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "safe_state_and_recovery": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "device_id",
+        "board_model",
+        "board_revision",
+        "stable_identity",
+        "identity_method",
+        "runtime_endpoint_discovery",
+        "exclusive_lock_method",
+        "capabilities",
+        "power_and_fixture_preconditions",
+        "safe_state_and_recovery"
+      ],
+      "description": "设备稳定身份不得仅使用易变的COM号；发现当前端口后仍须核对设备身份。"
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "quick",
+            "full",
+            "hil",
+            "soak"
+          ]
+        },
+        "configuration_state": {
+          "enum": [
+            "UNCONFIGURED",
+            "CONFIGURED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "entrypoint": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/command"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timeout_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "configuration_state",
+        "entrypoint",
+        "timeout_seconds",
+        "reason"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "configuration_state": {
+                "const": "CONFIGURED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "entrypoint": {
+                "$ref": "common.schema.json#/$defs/command"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "configuration_state": {
+                "const": "NOT_APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "entrypoint": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requirement_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verification_method": {
+          "enum": [
+            "AUTOMATED_TEST",
+            "MANUAL_TEST",
+            "REVIEW",
+            "INSTRUMENT_MEASUREMENT",
+            "COMBINATION"
+          ]
+        }
+      },
+      "required": [
+        "requirement_id",
+        "statement",
+        "source",
+        "source_version",
+        "verification_method"
+      ]
+    },
+    "oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "APPROVED_REQUIREMENT",
+            "DATASHEET",
+            "INDEPENDENT_REFERENCE",
+            "CONFIRMED_MEASUREMENT",
+            "REVIEWED_DATASET"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "reference",
+        "version",
+        "rationale"
+      ],
+      "description": "判据需独立于待测实现；旧实现输出仅能做行为比较，除非另有证据确认正确。"
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "criterion_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "requirement_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 1
+        },
+        "observable_behavior": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pass_condition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "oracle": {
+          "$ref": "common.schema.json#/$defs/oracle"
+        },
+        "units_and_tolerance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_test_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "criterion_id",
+        "requirement_ids",
+        "observable_behavior",
+        "pass_condition",
+        "oracle",
+        "units_and_tolerance",
+        "required_test_ids"
+      ]
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "enum": [
+            "SOURCE",
+            "COMMENT",
+            "FORMAT",
+            "CONFIG",
+            "BUILD",
+            "TEST",
+            "DOCUMENTATION",
+            "PARAMETER",
+            "CALIBRATION"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "behavior_effect": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "path",
+        "category",
+        "purpose",
+        "behavior_effect",
+        "requirement_ids"
+      ]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "automatic_fix_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "test_retry_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hardware_write_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stop_on_repeated_failure_without_new_evidence": {
+          "const": true
+        }
+      },
+      "required": [
+        "task_seconds",
+        "automatic_fix_attempts",
+        "test_retry_attempts",
+        "hardware_write_attempts",
+        "stop_on_repeated_failure_without_new_evidence"
+      ]
+    },
+    "test_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 1
+        },
+        "criterion_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 1
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "quick",
+              "full",
+              "hil",
+              "soak"
+            ]
+          },
+          "minItems": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "applicability": {
+          "enum": [
+            "APPLICABLE",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "applicability_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "applicability_decision_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "test_kind": {
+          "enum": [
+            "STATIC",
+            "BUILD",
+            "DOCUMENTATION",
+            "HOST_BEHAVIOR",
+            "HIL",
+            "SOAK",
+            "MANUAL_REVIEW"
+          ]
+        },
+        "execution_environment": {
+          "enum": [
+            "HOST",
+            "DEVICE"
+          ]
+        },
+        "execution_mode": {
+          "enum": [
+            "AUTOMATED",
+            "MANUAL",
+            "HYBRID"
+          ]
+        },
+        "entrypoint": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/command"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_paths": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1
+            },
+            "production_c_implementation": {
+              "type": "boolean"
+            },
+            "build_target_or_binary": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "test_substitutes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "implementation_evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "source_paths",
+            "production_c_implementation",
+            "build_target_or_binary",
+            "test_substitutes",
+            "implementation_evidence"
+          ]
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "stimulus_and_steps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "assertions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "assertion_id": {
+                "$ref": "common.schema.json#/$defs/identifier"
+              },
+              "condition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "units_and_tolerance": {
+                "type": "string",
+                "minLength": 1
+              },
+              "oracle": {
+                "$ref": "common.schema.json#/$defs/oracle"
+              }
+            },
+            "required": [
+              "assertion_id",
+              "condition",
+              "units_and_tolerance",
+              "oracle"
+            ]
+          },
+          "minItems": 1
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retry_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maximum_retries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "allowed_reasons": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "TRANSIENT_INFRASTRUCTURE"
+                ]
+              },
+              "minItems": 0
+            },
+            "retain_every_attempt": {
+              "const": true
+            },
+            "test_failure_may_retry_as_infrastructure": {
+              "const": false
+            }
+          },
+          "required": [
+            "maximum_retries",
+            "allowed_reasons",
+            "retain_every_attempt",
+            "test_failure_may_retry_as_infrastructure"
+          ]
+        },
+        "skip_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowed_environment_reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "framework_supports_exit_77": {
+              "type": "boolean"
+            },
+            "required_skip_blocks_acceptance": {
+              "const": true
+            },
+            "failure_timeout_or_compile_error_can_skip": {
+              "const": false
+            }
+          },
+          "required": [
+            "allowed_environment_reasons",
+            "framework_supports_exit_77",
+            "required_skip_blocks_acceptance",
+            "failure_timeout_or_compile_error_can_skip"
+          ]
+        },
+        "device_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 0
+        },
+        "authorization_grant_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 0
+        },
+        "manual_steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "step_id": {
+                "$ref": "common.schema.json#/$defs/identifier"
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "completion_evidence": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dependent_execution_waits": {
+                "const": true
+              }
+            },
+            "required": [
+              "step_id",
+              "action",
+              "completion_evidence",
+              "dependent_execution_waits"
+            ]
+          },
+          "minItems": 0
+        },
+        "expected_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "cleanup_and_safe_state": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "test_id",
+        "title",
+        "requirement_ids",
+        "criterion_ids",
+        "profiles",
+        "required",
+        "applicability",
+        "applicability_reason",
+        "applicability_decision_reference",
+        "test_kind",
+        "execution_environment",
+        "execution_mode",
+        "entrypoint",
+        "subject",
+        "preconditions",
+        "stimulus_and_steps",
+        "assertions",
+        "timeout_seconds",
+        "retry_policy",
+        "skip_policy",
+        "device_ids",
+        "authorization_grant_ids",
+        "manual_steps",
+        "expected_evidence",
+        "cleanup_and_safe_state"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "const": "NOT_APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "applicability_reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "applicability_decision_reference": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "execution_mode": {
+                "enum": [
+                  "AUTOMATED",
+                  "HYBRID"
+                ]
+              },
+              "applicability": {
+                "const": "APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "entrypoint": {
+                "$ref": "common.schema.json#/$defs/command"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "test_kind": {
+                "const": "HOST_BEHAVIOR"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "subject": {
+                "properties": {
+                  "production_c_implementation": {
+                    "const": true
+                  },
+                  "build_target_or_binary": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "execution_mode": {
+                "enum": [
+                  "MANUAL",
+                  "HYBRID"
+                ]
+              },
+              "applicability": {
+                "const": "APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "manual_steps": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "test_kind": {
+                "const": "HIL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "execution_environment": {
+                "const": "DEVICE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "execution_environment": {
+                "const": "DEVICE"
+              },
+              "applicability": {
+                "const": "APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "device_ids": {
+                "minItems": 1
+              },
+              "authorization_grant_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "applicability": {
+          "enum": [
+            "APPLICABLE",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "applicability_decision_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "result": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "SKIP",
+            "BLOCKED",
+            "ERROR",
+            "NOT_RUN"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "attempt_number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "started_at": {
+                "$ref": "common.schema.json#/$defs/timestamp"
+              },
+              "finished_at": {
+                "$ref": "common.schema.json#/$defs/timestamp"
+              },
+              "result": {
+                "enum": [
+                  "PASS",
+                  "FAIL",
+                  "SKIP",
+                  "BLOCKED",
+                  "ERROR"
+                ]
+              },
+              "exit_code": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "evidence_artifact_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/identifier"
+                },
+                "minItems": 1
+              },
+              "retry_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              }
+            },
+            "required": [
+              "attempt_number",
+              "started_at",
+              "finished_at",
+              "result",
+              "exit_code",
+              "evidence_artifact_ids",
+              "retry_reason"
+            ]
+          },
+          "minItems": 0
+        },
+        "assertion_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "assertion_id": {
+                "$ref": "common.schema.json#/$defs/identifier"
+              },
+              "result": {
+                "enum": [
+                  "PASS",
+                  "FAIL",
+                  "NOT_RUN"
+                ]
+              },
+              "observed": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "evidence_artifact_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/identifier"
+                },
+                "minItems": 0
+              }
+            },
+            "required": [
+              "assertion_id",
+              "result",
+              "observed",
+              "evidence_artifact_ids"
+            ]
+          },
+          "minItems": 0
+        },
+        "evidence_artifact_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "test_id",
+        "required",
+        "applicability",
+        "applicability_decision_reference",
+        "result",
+        "reason",
+        "attempts",
+        "assertion_results",
+        "evidence_artifact_ids"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "PASS"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attempts": {
+                "minItems": 1
+              },
+              "assertion_results": {
+                "minItems": 1,
+                "items": {
+                  "properties": {
+                    "result": {
+                      "const": "PASS"
+                    },
+                    "evidence_artifact_ids": {
+                      "minItems": 1
+                    }
+                  }
+                }
+              },
+              "evidence_artifact_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "enum": [
+                  "FAIL",
+                  "SKIP",
+                  "BLOCKED",
+                  "ERROR",
+                  "NOT_RUN"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "const": "NOT_APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "const": "SKIP"
+              },
+              "applicability_decision_reference": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

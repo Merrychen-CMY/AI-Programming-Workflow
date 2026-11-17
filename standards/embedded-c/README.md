@@ -1,6 +1,6 @@
 # 嵌入式C规范：接入L1与DOT
 
-采用用户提供的《嵌入式C项目通用开发规范与工作流程》**V1.2**。它是嵌入式C项目的编码、测试和交付要求，不改变“L1整理一份需求、用户批准、DOT推进”的主流程。机器契约结构版本仍为 **1.1**，不要与规范1.2或工作流版本混用。
+采用仓库修订的《嵌入式C项目通用开发规范与工作流程》**V1.3**，以用户提供的华为**DKBA 2826-2011.5**替换原编码参考。来源条款与项目差异见 [参考采用说明](v1.3/reference-adoption.md)。它是嵌入式C项目的编码、测试和交付要求，不改变“L1整理一份需求、用户批准、DOT推进”的主流程。机器契约结构版本仍为 **1.1**，不要与规范1.3或工作流版本混用。
 
 ## 用户与内部职责
 
@@ -18,16 +18,16 @@
 
 ## 按需读取
 
-- 开发前：第 [1](v1.2/reference/01-governance.md)、[2](v1.2/reference/02-risk.md)、[3](v1.2/reference/03-c-style.md)、[3.1](v1.2/reference/03-1-readability.md)、[3.2](v1.2/reference/03-2-review-and-refactoring.md)、[8](v1.2/reference/08-agent-tasks.md) 节及 [可读性清单](v1.2/source/readability-checklist.txt)。
-- 接口、并发、资源、日志或校准变化：按 [分节索引](v1.2/INDEX.json) 补读第4～7节。
-- 验证和交付：第 [9](v1.2/reference/09-test-design.md)、[10](v1.2/reference/10-hil-replay.md)、[11](v1.2/reference/11-acceptance.md) 节；工具接入读第 [12](v1.2/reference/12-adoption.md)。
-- 四份JSON及字段说明： [machine/README.txt](v1.2/machine/README.txt)。完整规范仍可 [全文检索](v1.2/source/standard.txt)，无需每次全量加载。
+- 开发前：第 [1](v1.3/reference/01-governance.md)、[2](v1.3/reference/02-risk.md)、[3](v1.3/reference/03-c-style.md)、[3.1](v1.3/reference/03-1-readability.md)、[3.2](v1.3/reference/03-2-review-and-refactoring.md)、[8](v1.3/reference/08-agent-tasks.md) 节及 [可读性清单](v1.3/source/readability-checklist.txt)。
+- 接口、并发、资源、日志或校准变化：按 [分节索引](v1.3/INDEX.json) 补读第4～7节。
+- 验证和交付：第 [9](v1.3/reference/09-test-design.md)、[10](v1.3/reference/10-hil-replay.md)、[11](v1.3/reference/11-acceptance.md) 节；工具接入读第 [12](v1.3/reference/12-adoption.md)。
+- 四份JSON及字段说明： [machine/README.txt](v1.3/machine/README.txt)。完整规范仍可 [全文检索](v1.3/source/standard.txt)，无需每次全量加载。
 
 ## 必须正确理解的要求
 
-- 自有C代码采用规定的内核风格变体：Tab宽8、80列目标、控制语句加花括号、禁止goto；保留平台API和错误码。SDK保持上游规范，生成文件改生成源，AI写的普通源码不属于生成代码豁免。
+- 自有C代码采用华为参考及明确项目适配：每级4空格、项目默认80列目标、控制语句加花括号、禁止goto；保留平台API和错误码。SDK保持上游规范，生成文件改生成源，AI写的普通源码不属于生成代码豁免。
 - 公共API用Doxygen明确参数、单位、失败状态、并发、阻塞、所有权和生命周期。不要只补空注释骨架。
-- 可读性审查关注业务主线、条件含义、查询副作用和真实职责拆分。嵌套超过3层、条件超过3个原子判断或混用与/或、函数超过60个非空非纯注释行是评审触发线；触发后必须记录处理或保留理由，不是机械硬限。
+- 可读性审查关注业务主线、条件含义、查询副作用和真实职责拆分。嵌套超过3层、条件超过3个原子判断或混用与/或触发项目评审；新增函数还须满足50个非空非纯注释行、4层嵌套的规则，超出应整改或取得明确例外，不能仅写保留理由。避免机械拆分。
 - 声称行为不变的实现重构仍按影响归R1/R2；核对路由、返回值、短路求值、MMIO读取、临界区、资源清理和时序。不能仅凭编译成功或另一份模型通过证明正确。
 - 按影响选择quick/full/hil/soak；不是每个小任务都跑全部项目。必需项没执行、证据缺失或实机条件不足时如实阻断，不得以低风险为由写通过。
 - 最终源码含未提交/未跟踪变动，配置、工具链、固件、设备及证据要关联。修改后重跑受影响检查；FINAL/CLOSED不是ACCEPTED，ACCEPTED也不是已获部署授权或已交付。
@@ -44,4 +44,4 @@ MUST必须满足；SHOULD偏离需说明；MAY按需。例外记录规则ID、�
 
 参见 [契约与流程映射](contracts-and-states.md) 和 [接入清单](adoption.md)。DOT从已批准需求派生内部契约，用户不重复填写Word和JSON。自动化不足时保留必要人工/独立审查记录，不能填true冒充检查。
 
-已带入5份Schema、4份DRAFT模板及原只读校验工具/测试。它们不执行固件、不检查全部33条源码规则，也不实现跨文件/运行期语义核验。来源及逐文件哈希见 [SOURCE.json](v1.2/SOURCE.json)；原历史验证报告不作为本次或任何产品验收证据。
+已带入5份Schema、4份DRAFT模板及原只读校验工具/测试。它们不执行固件、不检查全部33条源码规则，也不实现跨文件/运行期语义核验。当前修订来源及逐文件哈希见 [SOURCE.json](v1.3/SOURCE.json)；原历史验证报告不作为本次或任何产品验收证据。

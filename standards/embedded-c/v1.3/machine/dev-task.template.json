@@ -1,0 +1,52 @@
+{
+  "schema_ref": "dev-task.schema.json",
+  "schema_version": "1.1",
+  "document_type": "DEV_TASK",
+  "document_id": null,
+  "status": "DRAFT",
+  "project_id": null,
+  "description": null,
+  "project_profile_reference": null,
+  "objective": null,
+  "change_mode": null,
+  "risk": null,
+  "risk_rationale": null,
+  "starting_source": {
+    "repository": null,
+    "revision": null,
+    "worktree_clean": null,
+    "dirty_patch": null,
+    "untracked_artifacts": [],
+    "source_manifest": null
+  },
+  "scope": {
+    "allowed_paths": [],
+    "excluded_paths": [],
+    "allowed_modules": [],
+    "unchanged_behaviors": []
+  },
+  "requirements": [],
+  "acceptance_criteria": [],
+  "interface_state_and_data_contracts": [],
+  "hardware_parameter_calibration_impacts": [],
+  "required_test_profiles": [],
+  "test_plan_reference": null,
+  "authorization_grant_ids": [],
+  "budgets": {
+    "task_seconds": null,
+    "automatic_fix_attempts": 0,
+    "test_retry_attempts": 0,
+    "hardware_write_attempts": 0,
+    "stop_on_repeated_failure_without_new_evidence": true
+  },
+  "change_manifest": [],
+  "completion_conditions": {
+    "all_required_checks_on_final_identity": true,
+    "scope_and_invariants_reviewed": true,
+    "unexecuted_required_checks_block_completion": true,
+    "evidence_and_manifest_required": true,
+    "delivery_report_required": true
+  },
+  "open_decisions": [],
+  "activation_review": null
+}

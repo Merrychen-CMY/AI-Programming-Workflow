@@ -32,4 +32,4 @@ L2正式任务、允许路径、代码起点、AC、自测要求；修复任务�
 
 [返回导航](../START_HERE.md)
 
-嵌入式C任务按 [用户规范V1.2](../standards/embedded-c/README.md) 和 [职责映射](../policy/embedded-c.json) 补读本职责所需章节，维护规范规则到任务/验证证据的关联。
+嵌入式C任务按 [用户规范V1.3](../standards/embedded-c/README.md) 和 [职责映射](../policy/embedded-c.json) 补读本职责所需章节，维护规范规则到任务/验证证据的关联。

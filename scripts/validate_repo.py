@@ -146,18 +146,28 @@ def validate_embedded_c_policy(policy, source_rules):
     """Check integration boundaries and faithful mapping, not real C compliance."""
     errors = []
     expected = {
-        'standard_version': '1.2', 'contract_schema_version': '1.1',
+        'standard_version': '1.3', 'contract_schema_version': '1.1',
+        'coding_reference.document_id': 'DKBA 2826-2011.5',
         'default_for_applicable_projects': True, 'extra_user_documents_required': False,
         'AI_written_source_is_generated_code_exception': False,
         'source_ESP32_comment_only_restriction_is_global': False,
         'rule_checkers_all_implemented': False,
         'coding.goto_allowed': False, 'coding.control_statement_braces_required': True,
-        'coding.indentation': 'tab', 'coding.tab_width': 8,
+        'coding.indentation': 'spaces', 'coding.indent_width': 4,
+        'coding.tab_indentation_allowed': False,
+        'coding.goto_prohibition_origin': 'retained_project_requirement_stricter_than_Huawei_suggestion_6.3',
+        'coding.column_target_origin': 'project_choice_allowed_by_Huawei_rule_9.3',
         'coding.column_target': 80, 'coding.column_target_is_hard_limit': False,
-        'readability.thresholds_are_hard_limits': False,
+        'readability.review_triggers_are_hard_limits': False,
         'readability.trigger_requires_recorded_review': True,
         'readability.mechanical_split_counts_as_fix': False,
         'readability.preserve_short_circuit_MMIO_atomicity_cleanup': True,
+        'readability.review_triggers.function_nonblank_noncomment_lines_greater_than': 50,
+        'readability.new_function_constraints.max_nonblank_noncomment_lines': 50,
+        'readability.new_function_constraints.max_nesting_depth': 4,
+        'readability.new_function_constraints.exception_requires_record_and_authorized_review': True,
+        'readability.new_function_constraints.routine_review_note_is_exception_approval': False,
+        'readability.new_function_constraints.automatically_rewrite_legacy_code': False,
         'risk.behavior_preserving_implementation_refactor_may_be_R0': False,
         'risk.all_profiles_required_for_every_task': False,
         'verification.host_behavior_links_real_C': True,
@@ -180,7 +190,7 @@ def validate_embedded_c_policy(policy, source_rules):
     original = {rule['id']: rule for rule in source_rules}
     mapped = policy.get('rules', [])
     if len(original) != 33 or len(mapped) != 33 or {r.get('id') for r in mapped} != set(original):
-        errors.append('All 33 original embedded C rules must be mapped exactly once')
+        errors.append('All 33 current embedded C rules must be mapped exactly once')
     for rule in mapped:
         source = original.get(rule.get('id'), {})
         if any(rule.get(key) != source.get(key) for key in ('level', 'title', 'scope', 'sections', 'verification', 'failure_handling')):
@@ -252,12 +262,17 @@ def validate_repository(root):
         paths.extend([standard['index'], standard['policy']])
     for rule in embedded['rules']:
         paths.extend(rule['references'])
-    embedded_root = 'standards/embedded-c/v1.2/'
+    embedded_root = embedded['reference_root']
+    paths.append(embedded['coding_reference']['adoption'])
     source_record = documents[embedded_root + 'SOURCE.json']
-    for record in source_record['imported_files']:
+    records = source_record['derived_files'][:]
+    for snapshot in embedded['historical_source_snapshots']:
+        paths.append(snapshot)
+        records.extend(documents[snapshot]['imported_files'])
+    for record in records:
         path = root / record['path']
         if not path.is_file() or digest(path) != record['repository_sha256']:
-            errors.append(f'Imported source drift: {record["path"]}')
+            errors.append(f'Source or derived-file drift: {record["path"]}')
     source_text = (root / embedded_root / 'source/standard.txt').read_text(encoding='utf-8').splitlines()
     sections = documents[embedded_root + 'INDEX.json']['sections']
     if len(sections) != 18:
@@ -327,7 +342,7 @@ def main():
             print(f'ERROR: {error}')
         return 1
     print(f'STATIC_SPEC_CHECKS_PASS: {len(repository_files(ROOT))} files; 21 chapters; 16 L4 + 12 L5 scenarios.')
-    print('Embedded C V1.2: 33 mapped rules, 18 reference sections and imported-source hashes verified; not product C compliance.')
+    print('Embedded C V1.3 / Huawei reference: 33 mapped rules, 18 sections and provenance verified; not product C compliance.')
     print('48 product/HIL acceptance scenarios remain NOT_RUN. No execution, approval or delivery authority is granted.')
     return 0
 

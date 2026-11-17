@@ -3,7 +3,7 @@
   "document_kind": "template",
   "status": "DRAFT",
   "workflow": {
-    "version": "2.1.0",
+    "version": "2.2.0",
     "repository": "REPLACE_WORKFLOW_REPOSITORY",
     "commit": "REPLACE_FULL_COMMIT",
     "mode": "simple",

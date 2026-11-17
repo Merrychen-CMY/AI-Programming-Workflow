@@ -1,0 +1,60 @@
+{
+  "schema_ref": "delivery-report.schema.json",
+  "schema_version": "1.1",
+  "document_type": "DELIVERY_REPORT",
+  "document_id": null,
+  "status": "DRAFT",
+  "project_id": null,
+  "description": null,
+  "task_id": null,
+  "test_plan_artifact": null,
+  "acceptance_status": "INCOMPLETE",
+  "acceptance_reason": null,
+  "generated_at": null,
+  "final_identity": {
+    "source": {
+      "repository": null,
+      "revision": null,
+      "worktree_clean": null,
+      "dirty_patch": null,
+      "untracked_artifacts": [],
+      "source_manifest": null
+    },
+    "configuration_artifacts": [],
+    "parameter_and_calibration_artifacts": [],
+    "toolchain_artifacts": [],
+    "firmware_applicability": "UNDECIDED",
+    "firmware_not_applicable_reason": null,
+    "firmware_artifacts": [],
+    "diagnostic_release_differences": null
+  },
+  "change_manifest": [],
+  "identity_checks": {
+    "evidence_matches_final_source_and_config": null,
+    "firmware_matches_build": null,
+    "flashed_firmware_matches_artifact": null,
+    "hardware_not_used_reason": null,
+    "checks_after_last_affected_change": null,
+    "evidence_reference": null
+  },
+  "execution_summary": {
+    "discovered": 0,
+    "executed": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "blocked": 0,
+    "errors": 0,
+    "not_run": 0,
+    "missing_required": 0,
+    "required_incomplete": 0,
+    "zero_tests_is_error": true
+  },
+  "test_results": [],
+  "evidence_artifacts": [],
+  "device_observations": [],
+  "limitations_and_unverified_items": [],
+  "recovery_or_rollback": null,
+  "independent_review": null,
+  "acceptance_evidence": null
+}

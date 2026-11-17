@@ -35,7 +35,7 @@ class EmbeddedCIntegrationTests(unittest.TestCase):
         self.reject('rules', rules)
 
     def test_readability_is_review_not_mechanical_rewrite(self):
-        self.reject('readability.thresholds_are_hard_limits', True)
+        self.reject('readability.review_triggers_are_hard_limits', True)
         self.reject('readability.trigger_requires_recorded_review', False)
         self.reject('readability.mechanical_split_counts_as_fix', True)
 
@@ -66,6 +66,26 @@ class EmbeddedCIntegrationTests(unittest.TestCase):
 
     def test_user_does_not_get_additional_forms(self):
         self.reject('extra_user_documents_required', True)
+
+    def test_previous_kernel_indentation_is_not_current_policy(self):
+        self.reject('coding.indentation', 'tab')
+        self.reject('coding.indent_width', 8)
+        self.reject('coding.tab_indentation_allowed', True)
+
+    def test_new_function_rules_are_not_old_sixty_line_advice(self):
+        self.reject('readability.new_function_constraints.max_nonblank_noncomment_lines', 60)
+        self.reject('readability.new_function_constraints.max_nesting_depth', 5)
+
+    def test_review_note_does_not_approve_rule_exception(self):
+        self.reject('readability.new_function_constraints.exception_requires_record_and_authorized_review', False)
+        self.reject('readability.new_function_constraints.routine_review_note_is_exception_approval', True)
+
+    def test_reference_change_does_not_authorize_legacy_rewrite(self):
+        self.reject('readability.new_function_constraints.automatically_rewrite_legacy_code', True)
+
+    def test_project_choices_are_not_misattributed_to_vendor(self):
+        self.reject('coding.goto_prohibition_origin', 'Huawei_bans_all_goto')
+        self.reject('coding.column_target_origin', 'Huawei_mandates_80_columns')
 
 
 if __name__ == '__main__':

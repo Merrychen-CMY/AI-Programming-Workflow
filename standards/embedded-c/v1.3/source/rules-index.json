@@ -1,0 +1,305 @@
+{
+  "standard_version": "1.3",
+  "document": "standards/embedded-c/v1.3/source/standard.txt",
+  "purpose": "V1.3项目规则索引；以当前正文及reference-adoption.md为准，原V1.2保留历史快照。",
+  "rules": [
+    {
+      "id": "GOV-001",
+      "level": "MUST",
+      "sections": "1、2",
+      "title": "规范入口与范围",
+      "scope": "全部项目",
+      "verification": "文档及版本检查",
+      "failure_handling": "解决冲突、范围和例外后执行"
+    },
+    {
+      "id": "GOV-002",
+      "level": "SHOULD",
+      "sections": "12",
+      "title": "分阶段落地与成本",
+      "scope": "流程建设",
+      "verification": "任务成本与缺陷记录复核",
+      "failure_handling": "偏离时记录理由，不机械扩张检查"
+    },
+    {
+      "id": "C-001",
+      "level": "MUST",
+      "sections": "3",
+      "title": "华为编码参考及项目风格约束",
+      "scope": "自有 C 源码",
+      "verification": "固定格式检查、词法或语法规则、审查",
+      "failure_handling": "新增违规阻断；旧代码按已确定迁移边界处理"
+    },
+    {
+      "id": "READ-001",
+      "level": "MUST",
+      "sections": "3.1",
+      "title": "抽象层次与业务主线",
+      "scope": "复杂流程和上层协调",
+      "verification": "阶段提纲与代码主线审查",
+      "failure_handling": "职责混杂需拆分或说明；不删除准入规则"
+    },
+    {
+      "id": "READ-002",
+      "level": "MUST",
+      "sections": "3.1",
+      "title": "条件表达与业务分组",
+      "scope": "复合条件",
+      "verification": "领域分组、括号、否定与短路审查",
+      "failure_handling": "不清晰分组需修正且保持求值语义"
+    },
+    {
+      "id": "READ-003",
+      "level": "MUST",
+      "sections": "3.1",
+      "title": "提前返回与清理",
+      "scope": "多分支及资源退出",
+      "verification": "每条资源路径、失败注入与恢复检查",
+      "failure_handling": "未履行清理或使用 goto 需修正"
+    },
+    {
+      "id": "READ-004",
+      "level": "MUST",
+      "sections": "3.1",
+      "title": "查询与动作分离",
+      "scope": "状态查询及 MMIO 访问",
+      "verification": "副作用、调用上下文和耗时审查",
+      "failure_handling": "隐藏动作需显式表达；平台例外须说明"
+    },
+    {
+      "id": "READ-005",
+      "level": "MUST",
+      "sections": "3.1",
+      "title": "命名及操作和结果语义",
+      "scope": "操作 结果 拒绝原因",
+      "verification": "领域命名、返回值映射与 ABI 核对",
+      "failure_handling": "不得借命名变化改变旧接口行为"
+    },
+    {
+      "id": "READ-006",
+      "level": "MUST",
+      "sections": "3.1",
+      "title": "有意义辅助函数及冗余分支",
+      "scope": "函数拆分与条件整理",
+      "verification": "职责、可达性、重复检查及语义审查",
+      "failure_handling": "无语义包装不算整改；删除前核对上下文"
+    },
+    {
+      "id": "READ-007",
+      "level": "MUST",
+      "sections": "3.2",
+      "title": "可读性评审与新增函数约束",
+      "scope": "新代码和获准整改范围",
+      "verification": "按项目口径识别触发项并记录处理及保留理由",
+      "failure_handling": "评审触发项必须记录；新增函数50行/4层规则须满足或获准例外，禁止机械拆分"
+    },
+    {
+      "id": "READ-008",
+      "level": "MUST",
+      "sections": "3.2、9",
+      "title": "重构语义与时序保持",
+      "scope": "声称行为不变的实现重构",
+      "verification": "实际 C 路径、调用轨迹、临界区及适用实机验证",
+      "failure_handling": "证据不足不得宣称行为不变；按 R1/R2 验证"
+    },
+    {
+      "id": "HEADER-001",
+      "level": "MUST",
+      "sections": "3",
+      "title": "头文件自包含及边界",
+      "scope": "自有公共头文件",
+      "verification": "守卫检查、独立包含编译、接口审查",
+      "failure_handling": "影响接口一致性的问题阻断"
+    },
+    {
+      "id": "DOC-001",
+      "level": "MUST",
+      "sections": "4",
+      "title": "Doxygen 契约与同步",
+      "scope": "自有 API 和相关说明",
+      "verification": "Doxygen 检查及契约审查",
+      "failure_handling": "缺失或错误契约需修正"
+    },
+    {
+      "id": "API-001",
+      "level": "MUST",
+      "sections": "4",
+      "title": "接口错误 并发与生命周期",
+      "scope": "公共接口",
+      "verification": "示例、边界、异步与错误路径测试",
+      "failure_handling": "语义或行为不符阻断"
+    },
+    {
+      "id": "ARCH-001",
+      "level": "MUST",
+      "sections": "5",
+      "title": "职责分层与可测试边界",
+      "scope": "自有模块",
+      "verification": "依赖规则及架构审查",
+      "failure_handling": "循环依赖或越界访问需处理"
+    },
+    {
+      "id": "RES-001",
+      "level": "MUST",
+      "sections": "5",
+      "title": "资源与 DMA 生命周期",
+      "scope": "资源分配 任务 中断 DMA",
+      "verification": "失败注入、内存检查及硬件生命周期验证",
+      "failure_handling": "安全回收不能证明时不得释放或宣称通过"
+    },
+    {
+      "id": "TIME-001",
+      "level": "MUST",
+      "sections": "5",
+      "title": "时间预算及数据交付",
+      "scope": "实时路径和异步通路",
+      "verification": "节拍、延迟、队列、资源与丢弃统计",
+      "failure_handling": "未满足必需时序或数据要求阻断"
+    },
+    {
+      "id": "DATA-001",
+      "level": "MUST",
+      "sections": "6",
+      "title": "数据语义 新鲜度与显示保持",
+      "scope": "测量与展示数据",
+      "verification": "接口和真实数据回放测试",
+      "failure_handling": "陈旧或保持值冒充测量值阻断"
+    },
+    {
+      "id": "STATE-001",
+      "level": "MUST",
+      "sections": "6",
+      "title": "状态转换与补偿前提",
+      "scope": "有状态和补偿算法",
+      "verification": "转换表、异常、独立数据及业务变化测试",
+      "failure_handling": "转换或适用前提未验证不得完成"
+    },
+    {
+      "id": "CAL-001",
+      "level": "MUST",
+      "sections": "6",
+      "title": "硬件 校准与参数绑定",
+      "scope": "依赖硬件参数的测量",
+      "verification": "来源、版本、失效规则和持久化恢复验证",
+      "failure_handling": "不适用校准不能静默生效"
+    },
+    {
+      "id": "LOG-001",
+      "level": "MUST",
+      "sections": "7",
+      "title": "模块日志与实时输出",
+      "scope": "日志和诊断通路",
+      "verification": "字段、过滤、异步生命周期与开销检查",
+      "failure_handling": "影响关键流程或掩盖丢失需修正"
+    },
+    {
+      "id": "ERR-001",
+      "level": "MUST",
+      "sections": "7",
+      "title": "异常状态与有界恢复",
+      "scope": "设备与系统异常",
+      "verification": "故障矩阵及恢复测试",
+      "failure_handling": "无界重试或伪正常输出阻断"
+    },
+    {
+      "id": "TASK-001",
+      "level": "MUST",
+      "sections": "2、8",
+      "title": "任务约定与范围",
+      "scope": "每次开发任务",
+      "verification": "任务结构与语义核对",
+      "failure_handling": "关键判据或范围缺失不得执行依赖工作"
+    },
+    {
+      "id": "AI-001",
+      "level": "MUST",
+      "sections": "8",
+      "title": "自主范围和停止条件",
+      "scope": "AI 执行任务",
+      "verification": "授权、预算、变动及尝试记录",
+      "failure_handling": "超范围或预算停止相关操作"
+    },
+    {
+      "id": "TEST-001",
+      "level": "MUST",
+      "sections": "9",
+      "title": "测试适用性与必需集合",
+      "scope": "每份测试计划",
+      "verification": "需求、风险和用例映射检查",
+      "failure_handling": "遗漏必需项不能验收"
+    },
+    {
+      "id": "TEST-002",
+      "level": "MUST",
+      "sections": "9",
+      "title": "独立判据与实际实现",
+      "scope": "行为与算法测试",
+      "verification": "判据出处、被测构建目标及测试审查",
+      "failure_handling": "仅复述实现或测试替代算法不能验收"
+    },
+    {
+      "id": "TEST-003",
+      "level": "MUST",
+      "sections": "9",
+      "title": "检查入口拒绝空跑",
+      "scope": "统一检查入口",
+      "verification": "零用例、错配置和缺失结果自测",
+      "failure_handling": "空跑或未发现必需测试阻断"
+    },
+    {
+      "id": "TEST-004",
+      "level": "MUST",
+      "sections": "9、10",
+      "title": "失败 超时与跳过区分",
+      "scope": "检查适配层",
+      "verification": "退出码、尝试、超时及结果映射测试",
+      "failure_handling": "错误不得包装为跳过"
+    },
+    {
+      "id": "TEST-005",
+      "level": "MUST",
+      "sections": "12",
+      "title": "检查工具自身验证",
+      "scope": "检查工具新增或修改",
+      "verification": "成功、失败、阻塞和版本关联自测",
+      "failure_handling": "未验证关键判定不能作为可信验收入口"
+    },
+    {
+      "id": "HIL-001",
+      "level": "MUST",
+      "sections": "10",
+      "title": "设备独占与真实物理证据",
+      "scope": "实机及仪器操作",
+      "verification": "身份、前提、授权、观察与恢复核对",
+      "failure_handling": "未知设备或人工条件不足时阻塞"
+    },
+    {
+      "id": "REPLAY-001",
+      "level": "MUST",
+      "sections": "10",
+      "title": "故障现场与回放完整性",
+      "scope": "现场诊断和回放",
+      "verification": "时间、序号、段落、状态及真实操作核对",
+      "failure_handling": "证据不足不得扩大结论范围"
+    },
+    {
+      "id": "EVID-001",
+      "level": "MUST",
+      "sections": "11",
+      "title": "最终版本与证据绑定",
+      "scope": "所有验收",
+      "verification": "源码差异、配置、固件与证据校验",
+      "failure_handling": "受影响修改后证据过期需重测"
+    },
+    {
+      "id": "DEL-001",
+      "level": "MUST",
+      "sections": "11",
+      "title": "交付与验收结论",
+      "scope": "所有交付",
+      "verification": "必需项、审查、清单和恢复说明",
+      "failure_handling": "不满足完成条件不得 ACCEPTED"
+    }
+  ],
+  "coding_reference": "DKBA 2826-2011.5"
+}

@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://embedded-workflow.invalid/schemas/v1.1/test-plan.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_ref": {
+      "const": "test-plan.schema.json"
+    },
+    "schema_version": {
+      "const": "1.1"
+    },
+    "document_type": {
+      "const": "TEST_PLAN"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "READY",
+        "ACTIVE",
+        "CLOSED"
+      ]
+    },
+    "project_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "task_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "project_profile_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "planned_source": {
+      "$ref": "common.schema.json#/$defs/source_identity"
+    },
+    "requirement_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/identifier"
+      },
+      "minItems": 0
+    },
+    "criterion_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/identifier"
+      },
+      "minItems": 0
+    },
+    "selected_profiles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "quick",
+          "full",
+          "hil",
+          "soak"
+        ]
+      },
+      "minItems": 0
+    },
+    "selection_rationale": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "coverage_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "zero_discovered_tests": {
+          "const": "ERROR"
+        },
+        "missing_required_cases": {
+          "const": "BLOCK_ACCEPTANCE"
+        },
+        "mandatory_cases_cannot_be_removed_by_agent": {
+          "const": true
+        },
+        "required_skip_or_blocked_or_not_run": {
+          "const": "INCOMPLETE"
+        },
+        "no_silent_expected_value_tolerance_or_rule_changes": {
+          "const": true
+        }
+      },
+      "required": [
+        "zero_discovered_tests",
+        "missing_required_cases",
+        "mandatory_cases_cannot_be_removed_by_agent",
+        "required_skip_or_blocked_or_not_run",
+        "no_silent_expected_value_tolerance_or_rule_changes"
+      ]
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/test_case"
+      },
+      "minItems": 0
+    },
+    "shared_datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "artifact": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "independent_expected_results": {
+            "$ref": "common.schema.json#/$defs/artifact"
+          },
+          "sampling_time_and_gap_notes": {
+            "type": "string",
+            "minLength": 1
+          },
+          "physical_test_limits": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "dataset_id",
+          "artifact",
+          "independent_expected_results",
+          "sampling_time_and_gap_notes",
+          "physical_test_limits"
+        ]
+      },
+      "minItems": 0
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "oracle_and_coverage_review": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "hardware_scope_review": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "changes_to_accepted_plan_require_record": {
+          "const": true
+        }
+      },
+      "required": [
+        "oracle_and_coverage_review",
+        "hardware_scope_review",
+        "changes_to_accepted_plan_require_record"
+      ]
+    },
+    "activation_review": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_ref",
+    "schema_version",
+    "document_type",
+    "document_id",
+    "status",
+    "project_id",
+    "description",
+    "task_reference",
+    "project_profile_reference",
+    "planned_source",
+    "requirement_ids",
+    "criterion_ids",
+    "selected_profiles",
+    "selection_rationale",
+    "coverage_contract",
+    "cases",
+    "shared_datasets",
+    "review",
+    "activation_review"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "READY",
+              "ACTIVE",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "document_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "project_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "project_profile_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "planned_source": {
+            "properties": {
+              "source_manifest": {
+                "$ref": "common.schema.json#/$defs/artifact"
+              }
+            }
+          },
+          "requirement_ids": {
+            "minItems": 1
+          },
+          "criterion_ids": {
+            "minItems": 1
+          },
+          "selected_profiles": {
+            "minItems": 1
+          },
+          "selection_rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cases": {
+            "minItems": 1,
+            "contains": {
+              "properties": {
+                "required": {
+                  "const": true
+                },
+                "applicability": {
+                  "const": "APPLICABLE"
+                }
+              }
+            },
+            "minContains": 1
+          },
+          "review": {
+            "properties": {
+              "oracle_and_coverage_review": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hardware_scope_review": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "activation_review": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

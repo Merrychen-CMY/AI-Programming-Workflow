@@ -1,0 +1,183 @@
+{
+  "provenance_kind": "repository_revision_not_vendor_publication",
+  "base_snapshot": "standards/embedded-c/v1.2/SOURCE.json",
+  "standard_version": "1.3",
+  "coding_reference": {
+    "file_name": "华为编程规范.pdf",
+    "document_id": "DKBA 2826-2011.5",
+    "publication_date": "2011-05-09",
+    "pages": 61,
+    "sha256": "4de7381858f8e47f3c04b6f1950bcebdb41b289bf8fedf67990ff0180ef6efba",
+    "binary_or_fulltext_included": false
+  },
+  "adaptation": "standards/embedded-c/v1.3/reference-adoption.md",
+  "derived_files": [
+    {
+      "path": "standards/embedded-c/v1.3/INDEX.json",
+      "repository_sha256": "80833b163e27d723b232f93fa8740e38bee972942fca617cd5eda31a362e5605"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/common.schema.json",
+      "repository_sha256": "0547ca0eaad79cdeba9c62b212833b394b5e5d20f1eb1dc1e779efc7592878f1"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/delivery-report.schema.json",
+      "repository_sha256": "4520f64b195cdb77df59ad8fa5c483186deb7152a04b03b8eb46813203133ffa"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/delivery-report.template.json",
+      "repository_sha256": "282ac93020ee1f9fc89807d222067c0ba8fb06d66985d1b8df2b8c62c93ba2e2"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/dev-task.schema.json",
+      "repository_sha256": "3a3405351f3a8ec8b174ec21136d3751f876a68559c6f1c43993782a1a59dca1"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/dev-task.template.json",
+      "repository_sha256": "4a9a296885bcb9b23a3f98f3be79f9f673e39201bad954bae31ca3091ca0d36a"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/project-profile.schema.json",
+      "repository_sha256": "748b4c614dd73bab837d3dfdfe74d8f33df1c1f1ec03af376c49be9417557f02"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/project-profile.template.json",
+      "repository_sha256": "dcd94b20be28fc27024a70e39c8c05418a1a42286af811df3ef0155f98ef1120"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/README.txt",
+      "repository_sha256": "7f21fb40c4189e08b0c29e9d037a7d9a2a3b8c6468fd7ba0a9a407b11618a4b1"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/test-plan.schema.json",
+      "repository_sha256": "a9d77b09658d8ab56b9831dc56173c7f1876a2aa9156c7a84092f25f5176a4bf"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/test-plan.template.json",
+      "repository_sha256": "f2be7eeb704d36abc5fafc68b46a1f239e42fac8c4e1c0fe944b9824884971ac"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/tests/test_contract_schemas.py",
+      "repository_sha256": "b310db37718a342c9af61d0faf0544fab278aa5290c2500dd130fb1ea0d6c8b7"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/tests/test_contract_validator.py",
+      "repository_sha256": "8f1b830293a1ecd16e90f98edc7deebfea8746b2dda053d25fd91193be3e814b"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/tests/test_readability_contracts.py",
+      "repository_sha256": "a249a5dba1db2ad747b5a9b9f5800c8ebad9c595455624f9b2367d05d37459b6"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/tools/requirements-validation.txt",
+      "repository_sha256": "8b9a05eae8be30662585ec427fcebd47916e0206e1a478c6e90d7446aacd195e"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/machine/tools/validate_contracts.py",
+      "repository_sha256": "37751236f5fa8a6b68abcc7b7e7e1aa206558fcb9ce693705b2de7f63560e1e5"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/01-governance.md",
+      "repository_sha256": "26743d96153e4c83c95a0ceaea68e2db981ac583305fbde201e995ac809067e1"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/02-risk.md",
+      "repository_sha256": "91ef0f48652f3df3b394d2e08ca25ec265a30842157969757086ac4ebfb51975"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/03-1-readability.md",
+      "repository_sha256": "032352548152394fc0666e848daa540088ea1b379c2471f8b3d949c54f5112cd"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/03-2-review-and-refactoring.md",
+      "repository_sha256": "f2e81d7d98da264662ef99a27d0c15c4174b206a49516010d8cdd6e418acd947"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
+      "repository_sha256": "221f982f5a74b425b45835a5f772e063a738064e5ee39f44c9ec1997dc5c10cc"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
+      "repository_sha256": "3a1127691b7831f638dfd9c6bddfb822be975b98fb980ed419f22f65f562ab8c"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
+      "repository_sha256": "e63c0e61fc2eaff13251ccaa133d124dc497d5cb95b41a009136ba116892bc78"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/06-data-state-calibration.md",
+      "repository_sha256": "8b4d4f7951eacd4e4f0214288455acc0e8d7dec272077cbe0913ae3542c13c48"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/07-logs-errors.md",
+      "repository_sha256": "0c86fee4e26321212609aede6e9a7225a7c5f270cfc5042223b4b76457ef205c"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/08-agent-tasks.md",
+      "repository_sha256": "e2c995a8e258e80f55c2261ce909f0eb49d4a6317a938e17a9607297fbd64e0b"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/09-test-design.md",
+      "repository_sha256": "faed6cbf5b822000081d4fb9f257ffc04ea491241077cb1b121ff4b6c567a4aa"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/10-hil-replay.md",
+      "repository_sha256": "bc97b30b5a28edce6c03ceb90b09a76f22671db9e2226384fc9b5f2639a27ecc"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/11-acceptance.md",
+      "repository_sha256": "248ffaf59970a9ef3f0052dea9e2550398b39c5fb05ff1d1d5ec12a193e7f70b"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/12-adoption.md",
+      "repository_sha256": "31e1e012e4b0e22850902abc0a6ae1cef43a01d21c5abfdbe482b4c1a6ec42a5"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/appendix-a-task.md",
+      "repository_sha256": "795f5671c79d7e1f9245a001604de84ef6a0648fc36cc107b6d15fd6038fcaa9"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/appendix-b-test-plan.md",
+      "repository_sha256": "15325fdc22dbb277b107f8e6d715938af87980bb432529cfc6d324ef46db3cd9"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/appendix-c-delivery.md",
+      "repository_sha256": "4449dc184dc6ae909f36c7b362943985f549e111ef0d9d8a7621283b4327abb1"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference/appendix-d-project-scope.md",
+      "repository_sha256": "e3fade8e85b078a7253f141120a6e9a445ebd5275c81b43d077489ff91cfc63c"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/reference-adoption.md",
+      "repository_sha256": "8f1572b92aaf59cd9bd2baeae5a0bddb95b3d923bce137d9d19e864d1adda673"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/source/agent-instructions-template.txt",
+      "repository_sha256": "15f0aa0b3e5b71b0cef77306f0027b6d3291ea97269c1139763e89f4ab28213d"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/source/project-entry-template.txt",
+      "repository_sha256": "40770b312818e674789510be89a3099e9556ca0b712333de8ec5c32a2070394e"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/source/readability-checklist.txt",
+      "repository_sha256": "906659c60da226c7bb2366fd0f5364cc2a6db131117ac39fce22995ab5291512"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/source/rules-index.json",
+      "repository_sha256": "b9f0848fe11d00fc6b1e43c0a47a9b9de015d154d49c89ad8902d01f6163f0a0"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/source/standard.txt",
+      "repository_sha256": "fc4d56def2515c6d78e85e6740ccd30e2709561400d9321244a5e9c241cba5a2"
+    }
+  ],
+  "changes": [
+    "Replace coding reference",
+    "4-space indentation",
+    "50-line and 4-level new-function constraints with reviewed exceptions",
+    "Preserve stricter project goto/Doxygen requirements",
+    "Extend standard version compatibility to 1.3 without changing schema structure"
+  ]
+}
