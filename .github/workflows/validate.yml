@@ -38,3 +38,24 @@ jobs:
         run: python standards/embedded-c/v1.3/machine/tests/test_contract_validator.py
       - name: Check readability contract compatibility
         run: python standards/embedded-c/v1.3/machine/tests/test_readability_contracts.py
+  doxygen-examples:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Download the pinned official Doxygen and verify its digest
+        shell: pwsh
+        run: |
+          $archivePath = Join-Path $env:RUNNER_TEMP 'doxygen-1.18.0.zip'
+          Invoke-WebRequest -Uri 'https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.windows.x64.bin.zip' -OutFile $archivePath
+          $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne 'e84f54cfd49ef06b0b16536056dbec0c496323de28abcce53a4269463de35eaf') { throw 'Doxygen archive digest mismatch' }
+          Expand-Archive -LiteralPath $archivePath -DestinationPath (Join-Path $env:RUNNER_TEMP 'doxygen-tool')
+      - name: Run actual documentation generation and rejection cases
+        shell: pwsh
+        run: python scripts/verify_doxygen_examples.py --doxygen "$env:RUNNER_TEMP/doxygen-tool/doxygen.exe" --expected-version 1.18.0

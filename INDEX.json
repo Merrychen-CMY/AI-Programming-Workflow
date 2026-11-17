@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.4.1",
+  "workflow_version": "2.4.2",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -103,6 +103,11 @@
     ],
     "local_runtime": [
       "docs/guides/local-runtime.md"
+    ],
+    "doxygen_comments": [
+      "standards/embedded-c/v1.3/doxygen/README.md",
+      "standards/embedded-c/v1.3/doxygen/adoption.json",
+      "docs/guides/doxygen-checks.md"
     ]
   },
   "full_reference": [

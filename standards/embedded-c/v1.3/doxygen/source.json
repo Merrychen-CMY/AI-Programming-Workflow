@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "reference_kind": "project_adoption_of_external_comment_guide",
+  "repository_url": "https://github.com/viys/doxygen_stu",
+  "selected_branch": "master",
+  "pinned_commit": "d0c0531cf3802f399540387c74641eaa45d033ac",
+  "checked_on": "2026-11-17",
+  "adopted_content": "readme.md numbered sections 1–11 and unnumbered optional mainpage guidance",
+  "read_files": [
+    {
+      "path": "readme.md",
+      "url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md",
+      "raw_url": "https://raw.githubusercontent.com/viys/doxygen_stu/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md",
+      "sha256": "f9365335b54b8d659c2416558579f3467c9b74f1224985d79e997d9bf872bac4",
+      "bytes": 3759,
+      "hash_basis": "raw Git blob bytes at pinned commit; no checkout newline conversion",
+      "review_scope": "完整读取11个编号章节及未编号主页说明，作为逐项采用来源",
+      "upstream_file_copied_to_repository": false
+    },
+    {
+      "path": "LICENSE",
+      "url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/LICENSE",
+      "raw_url": "https://raw.githubusercontent.com/viys/doxygen_stu/d0c0531cf3802f399540387c74641eaa45d033ac/LICENSE",
+      "sha256": "061671fd79a72a30a3806ee284293f2013c949a51a853a7b07a2868965f90dc6",
+      "bytes": 1061,
+      "hash_basis": "raw Git blob bytes at pinned commit; no checkout newline conversion",
+      "review_scope": "完整核对许可证与版权归属",
+      "upstream_file_copied_to_repository": false
+    },
+    {
+      "path": "Doxyfile",
+      "url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/Doxyfile",
+      "raw_url": "https://raw.githubusercontent.com/viys/doxygen_stu/d0c0531cf3802f399540387c74641eaa45d033ac/Doxyfile",
+      "sha256": "b128ee219ec270f6a1b44a1cca8184fc4e831c7ea5937598e757edef9f361fb5",
+      "bytes": 132410,
+      "hash_basis": "raw Git blob bytes at pinned commit; no checkout newline conversion",
+      "review_scope": "核对输入、过滤、导出及告警关键选项；未整体采纳上游构建配置",
+      "upstream_file_copied_to_repository": false
+    }
+  ],
+  "license": {
+    "spdx_id": "MIT",
+    "copyright_notice": "Copyright (c) 2025 viys",
+    "url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/LICENSE",
+    "notice": "MIT License\n\nCopyright (c) 2025 viys\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+    "notice_preserved_for_attribution": true
+  },
+  "upstream_configuration_decision": {
+    "copied_as_product_gate": false,
+    "reviewed_settings": {
+      "EXTRACT_ALL": "YES",
+      "EXTRACT_STATIC": "NO",
+      "WARN_NO_PARAMDOC": "NO",
+      "WARN_AS_ERROR": "NO",
+      "GENERATE_XML": "NO",
+      "INPUT_FILTER": "",
+      "FILTER_PATTERNS": "",
+      "EXTENSION_MAPPING": ""
+    },
+    "reason": "示例配置用于展示，不足以证明未文档化实体、静态实体及参数契约均已检查；项目检查配置必须独立明确。"
+  },
+  "official_documentation": [
+    {
+      "url": "https://www.doxygen.nl/manual/docblocks.html",
+      "reviewed_topics": [
+        "special comment blocks",
+        "Putting documentation after members"
+      ],
+      "finding": "Doxygen支持成员后的<标记；该能力不覆盖华为对源码注释位置的限制，项目仅采用同一行右侧或目标上方。"
+    },
+    {
+      "url": "https://www.doxygen.nl/manual/starting.html",
+      "reviewed_topics": [
+        "Step 0 supported languages",
+        "project configuration"
+      ],
+      "finding": "默认支持语言列表没有Kconfig；其他语言需要预处理程序等明确路径。"
+    },
+    {
+      "url": "https://www.doxygen.nl/manual/config.html",
+      "reviewed_topics": [
+        "INPUT_FILTER",
+        "FILTER_PATTERNS",
+        "EXTENSION_MAPPING",
+        "USE_MDFILE_AS_MAINPAGE"
+      ],
+      "finding": "过滤输出、解析器映射及实际输入必须正确配置；Markdown主页必须属于输入。"
+    }
+  ],
+  "official_docs_are_live_reference_not_pinned_tool_version": true,
+  "product_tool_version_policy": "项目执行记录必须固定实际Doxygen及专用检查器版本；这里的官方文档链接不等于产品工具已经执行。",
+  "huawei_precedence": {
+    "document_id": "DKBA 2826-2011.5",
+    "source_sha256": "4de7381858f8e47f3c04b6f1950bcebdb41b289bf8fedf67990ff0180ef6efba",
+    "rules": [
+      "HW-R-8.2",
+      "HW-R-8.3",
+      "HW-R-8.4",
+      "HW-R-8.5",
+      "HW-R-8.8",
+      "HW-S-8.1",
+      "HW-S-8.3",
+      "HW-S-9.1",
+      "HW-R-3.2",
+      "HW-R-3.3",
+      "HW-R-3.5"
+    ],
+    "decision": "本次Doxygen参考与华为规范冲突时，以华为规范为准；Doxygen仅补充且不得削弱华为要求。本次决定不重新审查或改变其他历史项目差异。"
+  },
+  "local_files": [
+    "README.md",
+    "adoption.json",
+    "source.json"
+  ],
+  "full_upstream_project_included": false
+}

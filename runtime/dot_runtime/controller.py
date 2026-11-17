@@ -17,6 +17,8 @@ import uuid
 
 from .snapshot import snapshot_project, verify_snapshot
 from .checks import run_check
+from .documentation import CHECKER as DOXYGEN_CHECKER, REFERENCE as DOXYGEN_REFERENCE
+from .documentation import validate_settings as validate_doxygen_settings, validate_report as validate_doxygen_report
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / 'standards/embedded-c/v1.3/huawei/coverage.json'
@@ -124,6 +126,8 @@ def validate_plan(plan):
         raise ValueError('Declare the exact approved test_command argument array')
     if any('REPLACE_WITH' in v for v in command):
         raise ValueError('Replace example test command placeholders before approval')
+    if plan['coding_standard'] == 'huawei-c':
+        validate_doxygen_settings(plan['verification'].get('doxygen'))
     paths = plan.get('allowed_paths')
     if not isinstance(paths, list) or not paths:
         raise ValueError('Declare approved implementation allowed_paths')
@@ -225,7 +229,10 @@ class Controller:
 
     def baseline(self):
         return {'requirements': file_hash(self.state['requirements']), 'plan': file_hash(self.state['plan']),
-                'catalog': file_hash(CATALOG), 'initial_project': self.state['initial_snapshot']['id']}
+                'catalog': file_hash(CATALOG), 'initial_project': self.state['initial_snapshot']['id'],
+                'doxygen': digest({'checker': file_hash(DOXYGEN_CHECKER),
+                    **{p.relative_to(DOXYGEN_REFERENCE).as_posix(): file_hash(p)
+                       for p in sorted(DOXYGEN_REFERENCE.rglob('*')) if p.is_file()}})}
 
     def check_approvals(self):
         current = self.baseline()
@@ -368,6 +375,11 @@ class Controller:
         for check in self.state.get('checks', []):
             if not Path(check['log_path']).is_file() or file_hash(check['log_path']) != check['sha256']:
                 raise ValueError('Approved test command evidence changed or disappeared')
+        for check in self.state.get('documentation_checks', []):
+            for item in check.get('evidence_files', []):
+                path = self.run_dir / item['path']
+                if not path.is_file() or path.is_symlink() or file_hash(path) != item['sha256']:
+                    raise ValueError('Doxygen evidence changed or disappeared')
 
     def check_scope(self, previous, current):
         allowed = self.state['approved_plan']['allowed_paths']
@@ -411,6 +423,67 @@ class Controller:
                 'summary': f'Approved test command: {check["status"]}, executed test count={count}',
                 'evidence': [check], 'root_cause': 'unknown'}
 
+    def approved_documentation(self, workspace):
+        """Run the pinned checker on a disposable candidate copy, before independent review."""
+        sequence = len(self.state.get('documentation_checks', [])) + 1
+        output = self.run_dir / 'documentation' / f'{sequence:04d}'
+        working_copy = self.run_dir / 'documentation-workspaces' / f'{sequence:04d}'
+        inputs = snapshot_project(workspace, working_copy)
+        settings = self.state['approved_plan']['verification']['doxygen']
+        command = [sys.executable, str(DOXYGEN_CHECKER), '--source-root', str(working_copy),
+                   '--output-dir', str(output / 'artifacts'), '--doxygen', settings['executable'],
+                   '--expected-version', settings['expected_version'], '--timeout', str(settings['timeout_seconds'])]
+        for name in settings['include']:
+            command.extend(['--include', name])
+        self.state['active_run'] = {'role': 'doxygen_check', 'sequence': sequence, 'at': now(), 'output': str(output)}
+        self.save()
+        timeout = min(self.state['approved_plan']['budgets']['timeout_seconds'], settings['timeout_seconds'] * 2 + 10)
+        try:
+            process = self.check_runner(command, working_copy, output / 'process', timeout)
+        except Exception as exc:
+            return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
+        report_path = output / 'artifacts/report.json'
+        entry = {'candidate_id': self.state['candidate']['id'], 'process': process,
+                 'status': process.get('status', 'ERROR'), 'report': None, 'evidence_files': []}
+        # The helper owns another process/session. Killing only the outer helper
+        # does not prove that Doxygen stopped, especially on POSIX.
+        if entry['status'] in ('TIMEOUT', 'UNKNOWN'):
+            entry['status'] = 'UNKNOWN'
+        try:
+            report = read_json(report_path)
+            if not isinstance(report, dict):
+                raise ValueError('Doxygen report must be an object')
+            entry['report'] = report
+            # UNKNOWN is retained even if the helper terminated its own immediate child.
+            if report.get('status') == 'UNKNOWN':
+                entry['status'] = 'UNKNOWN'
+                raise ValueError('Doxygen helper could not confirm process termination')
+            validate_doxygen_report(report, working_copy, output / 'artifacts', settings, process, inputs['files'])
+            if not verify_snapshot(working_copy, inputs):
+                raise ValueError('Doxygen modified a candidate input')
+            entry['status'] = 'PASS'
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            if entry['report'] is None and process.get('status') != 'PASS':
+                entry['status'] = 'UNKNOWN'
+            if entry['status'] != 'UNKNOWN':
+                entry['status'] = 'FAIL' if (entry.get('report') or {}).get('status') == 'FAIL' else 'ERROR'
+            entry['error'] = str(exc)
+        for path in sorted(output.rglob('*')):
+            if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
+                if entry['status'] != 'UNKNOWN':
+                    entry['status'] = 'ERROR'
+                entry['error'] = 'Linked Doxygen evidence is not accepted'
+            elif path.is_file():
+                entry['evidence_files'].append({'path': path.relative_to(self.run_dir).as_posix(), 'sha256': file_hash(path)})
+        if not entry['evidence_files'] and entry['status'] == 'PASS':
+            entry.update(status='ERROR', error='Doxygen produced no evidence')
+        self.state.setdefault('documentation_checks', []).append(entry)
+        if entry['status'] != 'UNKNOWN':
+            self.state['active_run'] = None
+        self.save()
+        return {'status': entry['status'], 'summary': 'Doxygen documentation gate: ' + entry['status'] + '. ' + entry.get('error', ''),
+                'evidence': [entry], 'root_cause': 'unknown'}
+
     def prompt(self, role, instruction):
         plan = self.state['approved_plan']
         text = ('You are an independent DOT workflow worker. Read project AGENTS.md if present. '
@@ -425,6 +498,13 @@ class Controller:
             text += '\nCANDIDATE: ' + self.state['candidate']['id']
         if plan['coding_standard'] == 'huawei-c':
             text += '\nCoding baseline: strictly apply Huawei DKBA 2826-2011.5 and Doxygen. Read this catalog: ' + str(CATALOG)
+            text += ('\nDoxygen reference: viys/doxygen_stu. When its examples or style conflict with Huawei, '
+                     'Huawei takes precedence. Read the normative adoption decisions below; do not copy upstream '
+                     'naming or loose Doxyfile settings. Documentation tooling does not prove semantic correctness.\n'
+                     + canonical(read_json(DOXYGEN_REFERENCE / 'adoption.json')))
+            text += '\nACTUAL CURRENT CANDIDATE DOCUMENTATION CHECKS:\n' + canonical([
+                r for r in self.state.get('documentation_checks', [])
+                if r['candidate_id'] == (self.state.get('candidate') or {}).get('id')])
         return text + '\nCURRENT ASSIGNMENT:\n' + instruction
 
     def worker(self, role, instruction, workspace):
@@ -467,6 +547,7 @@ class Controller:
                   'infrastructure_retries': self.state['infrastructure_retries'],
                   'issues': self.state['issues'], 'sessions': self.state['sessions'],
                   'approved_test_commands': self.state.get('checks', []),
+                  'documentation_checks': self.state.get('documentation_checks', []),
                   'compliance': self.state.get('compliance'), 'history': self.state['history'],
                   'delivery_executed': False, 'approval_service': 'local_operator_receipt_only'}
         archive = self.run_dir / 'reports'
@@ -687,6 +768,13 @@ class Controller:
                         if self.triage(checked, candidate_path) == 'stop':
                             break
                         continue
+                    if plan['coding_standard'] == 'huawei-c':
+                        documented = self.approved_documentation(candidate_path)
+                        self.check_candidate()
+                        if documented['status'] != 'PASS':
+                            if self.triage(documented, candidate_path) == 'stop':
+                                break
+                            continue
                     for role in ('test', 'review'):
                         result = self.worker(role, plan['verification'][role + '_instructions'], candidate_path)
                         if role == 'test' and result.get('status') == 'PASS':

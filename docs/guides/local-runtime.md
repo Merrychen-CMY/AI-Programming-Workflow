@@ -8,6 +8,8 @@ L1生成需求，DOT准备执行计划的可读说明和运行配置，分别按
 
 必须把environment里的REPLACE_WITH占位改成真实工具链/目标/测试环境版本，并填写真实允许路径和测试命令；样例不能直接当作已配置、已批准计划。coding_standard选择huawei-c或有充分standard_scope_reason的none；检测到C源码时不能以none豁免华为规范。
 
+`huawei-c`计划还必须填写`verification.doxygen`：已审核的工具绝对路径或PATH名称、精确版本、自有C源码范围和超时。配置和示例见[Doxygen检查指南](doxygen-checks.md)。控制器对每个候选的独立副本实际执行文档检查，保留配置、日志与XML摘要，再交独立测试/审核会话；文档数量不计为业务测试数量，失败统一先交DOT/L2分析。旧C计划缺少配置或规范/检查脚本发生变化时，需要更新计划并重新审核；沿用原三次审核，不另增用户表单。
+
 `allowed_paths`是仓库相对路径前缀数组，例如按实际项目填写src、include或tests范围。运行器在实现修改后核对差异，超出批准范围就阻断；这是事后范围核验，不能阻止同账户进程的任意文件访问，也不能代替操作系统权限隔离。扩大路径范围须修改计划并重新审核。
 
 `verification.test_command`是用户审核过的明确本地测试入口，使用参数数组（argv），不是一整段shell脚本。例如Python单元测试可填写 `["python", "-m", "unittest", "discover", "-s", "tests", "-v"]`，具体入口必须来自项目实际配置。控制器按 `shell=False` 独立运行该命令并保存退出码与原始输出，不依赖执行者打印一段测试摘要。独立测试Codex仍须按test_instructions检查候选、运行自己的独立检查并提交证据，不能用这条命令取代全部测试职责。

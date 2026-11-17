@@ -22,8 +22,10 @@
 
 ## 嵌入式C任务
 
-默认采用基于华为DKBA 2826-2011.5的项目规范V1.3和Doxygen，先读 [整合入口](standards/embedded-c/README.md)。华为逐条要求是规范性补充，见 [覆盖清单](standards/embedded-c/v1.3/huawei/README.md)。DOT建立145项适用性基线，L1-V把适用条款ID纳入计划，用户无需另填清单。不得将33个汇总规则或仓库CI通过视为全部产品条款已验证。
+默认采用基于华为DKBA 2826-2011.5的项目规范V1.3和Doxygen，先读 [整合入口](standards/embedded-c/README.md)。华为逐条要求是规范性补充，见 [覆盖清单](standards/embedded-c/v1.3/huawei/README.md)。DOT建立145个父项及50个子项的适用性基线，L1-V把适用条款ID纳入计划，用户无需另填清单。不得将33个汇总规则或仓库CI通过视为全部产品条款已验证。
 
 ## 运行范围
 
 用户只面对L1和DOT，内部保留L1-V、L2～L5职责；DOT承担L2编排和L5汇总。[本地运行器](docs/guides/local-runtime.md)提供审批状态与执行编排入口，需要真实可用的Codex和项目检查命令。原21章是 [正式集成参考](docs/advanced-profile.md)，现有权限隔离与门禁照常生效。规范维护不等于授权开发实际产品；修改本仓库按 [CONTRIBUTING.md](CONTRIBUTING.md) 检查。
+
+注释按[固定Doxygen参考及采用决定](standards/embedded-c/v1.3/doxygen/README.md)执行；与华为规范冲突时以华为为准。DOT将自有源码范围、实际Doxygen路径与精确版本写入已审执行计划；运行器在独立审查前执行文档检查。DOX-01～12及子项由DOT维护适用性，L4核对语义与工具证据，用户不增加表单。

@@ -1,6 +1,6 @@
 # AI自动编程流程：需求审核 → 计划审核 → 报告审核
 
-**你描述原始需求、参数与环境，L1整理需求；你审核后，DOT提供执行计划供你审核，再组织独立开发、测试和审核，最后提交成功或失败报告供你审核。** 当前版本 **2.4.1**。
+**你描述原始需求、参数与环境，L1整理需求；你审核后，DOT提供执行计划供你审核，再组织独立开发、测试和审核，最后提交成功或失败报告供你审核。** 当前版本 **2.4.2**。
 
 ```mermaid
 flowchart LR
@@ -51,3 +51,5 @@ python -m unittest discover -s tests -v
 ```
 
 检查仓库一致性、策略反例和运行器行为，不执行真实产品/HIL验收。48项正式系统/HIL清单仍为NOT_RUN；记录见 [CHANGELOG](CHANGELOG.md)，维护见 [CONTRIBUTING](CONTRIBUTING.md)。
+
+注释参考已固定采用[viys/doxygen_stu细则](standards/embedded-c/v1.3/doxygen/README.md)：12个采用条目、33个子要求及完整实体示例；与华为冲突时华为优先。C任务在独立审查前运行[真实Doxygen检查入口](docs/guides/doxygen-checks.md)，记录实际版本、候选源码与原始报告；工具通过仍需注释语义审查。

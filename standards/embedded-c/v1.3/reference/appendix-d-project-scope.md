@@ -26,7 +26,7 @@ GPIO、SPI 速率、DMA 缓冲、HX711 增益、阈值及校准系数保存在�
 
 华为《C语言编程规范》DKBA 2826-2011.5（用户提供PDF；来源、页码及项目差异见reference-adoption.md）
 
-Doxygen 注释参考 viys/doxygen_stu
+Doxygen 注释参考 https://github.com/viys/doxygen_stu ，固定提交d0c0531cf3802f399540387c74641eaa45d033ac；采用清单与来源见doxygen/README.md和doxygen/source.json，冲突以华为规范为准。
 
 AWS MQTT mutual auth 示例
 

@@ -1,0 +1,622 @@
+{
+  "schema_version": 1,
+  "adoption_revision": 1,
+  "classification": "DOC-001",
+  "standard_version": "1.3",
+  "source_ref": "source.json",
+  "upstream_commit": "d0c0531cf3802f399540387c74641eaa45d033ac",
+  "normative": true,
+  "extends_huawei_catalog": false,
+  "huawei_catalog_parent_count": 145,
+  "huawei_catalog_subrequirement_count": 50,
+  "precedence": "Huawei requirements take precedence over this Doxygen reference; it only supplements comment syntax and organization and must not weaken Huawei requirements.",
+  "strength_policy": {
+    "MUST": "适用时必须满足；例外沿用现有授权流程，不接受实现者自批。",
+    "SHOULD": "必须评估；不采用时给出具体理由并接受独立审查。",
+    "MAY": "按项目需要选择；选用后仍满足本条列出的条件。",
+    "nested_requirements": "每个子项按自身强度及适用性判断，不能由父项的SHOULD/MAY整体豁免适用的MUST条件。",
+    "level_origin": "等级是本项目采用决定，不声称上游的全部示例或建议原本为强制。"
+  },
+  "workflow": {
+    "implementation_owner": "L3",
+    "independent_verification_owner": "L4",
+    "finding_intake": "DOT_as_L2",
+    "extra_user_form_required": false,
+    "user_review_points": [
+      "requirements",
+      "execution_plan",
+      "final_report"
+    ],
+    "evidence": "DOT在既有任务和证据中记录DOX条款适用性及结果；用户不另填清单。"
+  },
+  "verification_boundary": {
+    "syntax_and_entity_coverage": "Doxygen及专用checker辅助检查；实际能力与配置、工具版本、源码语法和输入范围有关。",
+    "semantic_truth": "需独立审查并按需测试，不能由标签或生成成功证明。",
+    "not_run_is_pass": false,
+    "template_success_is_product_success": false,
+    "all_rules_automatically_checked": false
+  },
+  "tags": [
+    {
+      "tag": "@file",
+      "meaning": "文件身份",
+      "selection": "适用文件头"
+    },
+    {
+      "tag": "@brief",
+      "meaning": "简要职责",
+      "selection": "需要文档化的实体"
+    },
+    {
+      "tag": "@details",
+      "meaning": "详细理由与约束",
+      "selection": "按信息需要"
+    },
+    {
+      "tag": "@param",
+      "meaning": "参数含义和[in]/[out]/[in,out]方向",
+      "selection": "真实参数"
+    },
+    {
+      "tag": "@return",
+      "meaning": "整体返回语义",
+      "selection": "非void返回值"
+    },
+    {
+      "tag": "@retval",
+      "meaning": "具体结果值及含义",
+      "selection": "有约定离散结果"
+    },
+    {
+      "tag": "@note",
+      "meaning": "注意事项",
+      "selection": "存在相关信息时"
+    },
+    {
+      "tag": "@warning",
+      "meaning": "风险或误用后果",
+      "selection": "存在实际风险时"
+    },
+    {
+      "tag": "@see",
+      "meaning": "相关接口或资料",
+      "selection": "有有效关联目标时"
+    },
+    {
+      "tag": "@code",
+      "meaning": "代码示例起始",
+      "selection": "与@endcode成对"
+    },
+    {
+      "tag": "@endcode",
+      "meaning": "代码示例结束",
+      "selection": "与@code成对"
+    },
+    {
+      "tag": "@mainpage",
+      "meaning": "文档主页",
+      "selection": "可选主页"
+    },
+    {
+      "tag": "@section",
+      "meaning": "主页或文档章节",
+      "selection": "采用相应结构时"
+    }
+  ],
+  "rules": [
+    {
+      "id": "DOX-01",
+      "source_section": "1",
+      "source_lines": {
+        "start": 9,
+        "end": 20
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L9-L20",
+      "title": "文档注释语法与位置",
+      "project_level": "MUST",
+      "project_requirement": "新建及授权迁移的自有Doxygen块统一采用/** ... */，短成员说明使用下列实体规则规定的同一行右侧/**< ... */。既有其他合法Doxygen风格按已批准迁移边界处理，不擅自格式化全仓。",
+      "applicability": "自有C源码中的文档注释；普通实现注释不必全部变为Doxygen块。",
+      "verification": "检查块标记、注释与实体的关联及生成结果；不得仅依赖字符串包含Doxygen标签。",
+      "conflict_decision": "上游列出多种合法形式并推荐/**；本项目根据华为统一风格要求选择/**作为新代码统一形式，并明确这是项目选择。位置依据HW-R-8.5而非HW-R-8.1：上方或右方均可，目标下方不采用。",
+      "huawei_refs": [
+        "HW-R-8.5",
+        "HW-R-8.8",
+        "HW-S-8.1",
+        "HW-S-8.3",
+        "HW-S-9.1"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-01.01",
+          "project_level": "MUST",
+          "requirement": "新建或授权迁移的块文档使用/** ... */，内容分行时保持清楚的一致缩进；不把普通/* ... */误称为已被Doxygen识别。",
+          "applicability": "新建或授权迁移的块文档",
+          "verification": "核对源码标记及生成文档；已有/*!、///、//!是否保留由迁移范围决定。"
+        },
+        {
+          "id": "DOX-01.02",
+          "project_level": "MUST",
+          "requirement": "实体说明置于目标正上方或同一行右侧；上方注释与此前代码留空行并与目标缩进一致，不把后置文档独立放到目标下方。",
+          "applicability": "相邻实体注释",
+          "verification": "核对源码相邻关系，区分文件开头无此前代码、同一行尾注和错误的下方注释。"
+        },
+        {
+          "id": "DOX-01.03",
+          "project_level": "MUST",
+          "requirement": "Doxygen标记保留完整语法，在标记与正文之间保留可读间隔；不得为了普通注释空格规则把/**或/**<改成不可识别标记。",
+          "applicability": "文档注释标记及正文",
+          "verification": "运行Doxygen并检查标记；例如/**< 后接空格正文，不在标记内部插入空格。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-02",
+      "source_section": "2",
+      "source_lines": {
+        "start": 24,
+        "end": 36
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L24-L36",
+      "title": "文件注释及真实元数据",
+      "project_level": "MUST",
+      "project_requirement": "适用的.c与.h顶部必须有文件级Doxygen说明，采用@file、@brief、@author、@date、@version表达对应信息，并补齐华为文件头要求的真实版权、作者身份、功能、文件关系和修改历史。",
+      "applicability": "新自有.c/.h及授权补全文件头的既有文件；范围以任务和迁移批准为准。",
+      "verification": "检查文件清单、@file指向、真实元数据、头文件公共接口摘要及Doxygen生成文档；占位符不能作为已完成信息。",
+      "conflict_decision": "上游文件模板不是完整华为文件头。华为HW-R-8.2要求的更多信息必须保留；作者、日期、版本和版权不得照抄示例。未知或字段替代需要既定明确例外，不能伪造或默认省略。",
+      "huawei_refs": [
+        "HW-R-8.2",
+        "HW-S-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-02.01",
+          "project_level": "MUST",
+          "requirement": "每个适用.c/.h顶部有@file及非空@brief，文件名与被文档化文件一致，摘要说明本文件职责。",
+          "applicability": "适用文件头",
+          "verification": "比对输入清单、文件名及文档实体，排除空模板。"
+        },
+        {
+          "id": "DOX-02.02",
+          "project_level": "MUST",
+          "requirement": "@author、@date、@version及版权、作者可追溯身份、文件关系、修改历史均为真实信息；缺失或改由版本控制提供需明确例外批准。",
+          "applicability": "文件元数据",
+          "verification": "核对可追溯依据与例外；不能把复制的示例身份、当前日期或虚构版本当事实。"
+        },
+        {
+          "id": "DOX-02.03",
+          "project_level": "MUST",
+          "requirement": "头文件还须说明公共接口的用途和使用关系，源文件说明实现职责，不能只放文件名或模板文本。",
+          "applicability": "具有公共接口的头文件及其实现文件",
+          "verification": "独立对照接口和模块依赖审查内容。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-03",
+      "source_section": "3",
+      "source_lines": {
+        "start": 40,
+        "end": 60
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L40-L60",
+      "title": "函数契约与参数方向",
+      "project_level": "MUST",
+      "project_requirement": "重要、复杂或公开函数在声明前提供@brief、各真实参数的@param方向及返回语义；定义前补充必要实现理由和约束。简单内部函数按华为适用性及既有项目规则提供适当说明，不机械重复长模板。",
+      "applicability": "公开、重要、复杂函数和其他需要说明的内部函数。",
+      "verification": "Doxygen检查签名关联、参数名和标签；独立审查参数方向、失败后状态、性能、重入、所有权和实现理由。",
+      "conflict_decision": "华为HW-R-8.3区分声明契约和实现理由。上游建议所有函数注释不升级为所有内部函数必须重复长模板；void函数没有返回值，不能添加虚假的@return。",
+      "huawei_refs": [
+        "HW-R-8.3",
+        "HW-P-8.2",
+        "HW-P-8.3",
+        "HW-S-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-03.01",
+          "project_level": "MUST",
+          "requirement": "声明前的@brief说明功能；必要的@details补充前置条件、单位/范围、容量、并发/ISR、阻塞预算、生命周期及失败输出状态，不只复述函数名。",
+          "applicability": "公开、重要或复杂函数",
+          "verification": "独立对照需求、函数签名及所有正常/异常路径审查。"
+        },
+        {
+          "id": "DOX-03.02",
+          "project_level": "MUST",
+          "requirement": "每个具名参数有对应@param[in]、@param[out]或@param[in,out]，名称与签名一致、方向符合真实数据访问，不为void参数列表或返回值编造参数。",
+          "applicability": "需要契约说明且具有参数的函数",
+          "verification": "检查参数集合与方向；Doxygen不能证明方向语义，仍须读实现和调用契约。"
+        },
+        {
+          "id": "DOX-03.03",
+          "project_level": "MUST",
+          "requirement": "非void函数使用@return说明整体返回语义，或使用覆盖约定结果的@retval列表逐值说明；按实际需要可同时使用。void函数不得添加@return或@retval。",
+          "applicability": "有返回值或结果码的文档化函数",
+          "verification": "检查非void函数至少具有返回说明或各项有说明的@retval列表，void函数没有返回值标签；约定结果集合是否完整、说明是否符合实际返回及失败状态，必须由独立审查确认，不能由标签存在或XML检查通过证明。"
+        },
+        {
+          "id": "DOX-03.04",
+          "project_level": "MUST",
+          "requirement": "定义处补充算法步骤、实现理由和设计约束；已有头文件契约可引用，不能维护互相矛盾的完整副本。",
+          "applicability": "公开、重要或复杂函数的实现",
+          "verification": "检查定义说明及声明/定义之间一致性。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-04",
+      "source_section": "4",
+      "source_lines": {
+        "start": 64,
+        "end": 76
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L64-L76",
+      "title": "结构体、联合体与成员说明",
+      "project_level": "MUST",
+      "project_requirement": "结构体及相关类型在声明上方说明用途；短成员说明优先采用同一行右侧/**< ... */，长说明移到该成员上方的/** ... */，说明单位、范围、所有权或不直观含义。",
+      "applicability": "自有公开、重要或复杂结构/联合类型及需说明的字段。",
+      "verification": "核对类型及成员实体覆盖、尾注指向和生成结果；语义审查用途、约束与数据实际使用。",
+      "conflict_decision": "同一行右侧尾注符合华为HW-R-8.5，属于兼容采用。上游紧跟成员之后不能被解释成独立放在成员下方。长说明以上方块保持华为位置和可读性优先；不复制其类型命名为项目统一命名。",
+      "huawei_refs": [
+        "HW-R-8.5",
+        "HW-P-8.3",
+        "HW-S-8.3",
+        "HW-R-9.3",
+        "HW-P-3.2"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-04.01",
+          "project_level": "MUST",
+          "requirement": "类型声明上方有Doxygen用途说明，不能把类型本身的说明仅写成结束大括号之后的/**<尾注。",
+          "applicability": "需要文档化的结构体、联合体和类型定义",
+          "verification": "检查类型说明位置和生成的类型实体。"
+        },
+        {
+          "id": "DOX-04.02",
+          "project_level": "SHOULD",
+          "requirement": "短成员说明采用同一行右侧/**< ... */；不直接照搬数值、单位或领域含义。",
+          "applicability": "需要说明且适合同一行布局的字段",
+          "verification": "检查尾注确实绑定该字段并具有真实信息。"
+        },
+        {
+          "id": "DOX-04.03",
+          "project_level": "MUST",
+          "requirement": "较长成员说明放在该成员上方，以普通/** ... */块指向后续成员；不得使用独立下方的/**<块绕过华为位置要求。",
+          "applicability": "长说明或同一行尾注损害可读性的字段",
+          "verification": "检查源位置、缩进、换行及Doxygen解析关联。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-05",
+      "source_section": "5",
+      "source_lines": {
+        "start": 80,
+        "end": 87
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L80-L87",
+      "title": "宏定义说明",
+      "project_level": "MUST",
+      "project_requirement": "需要文档化的宏在定义上方用Doxygen说明含义；函数式宏还说明参数、求值限制和副作用，命名与代码行为遵守华为及项目既有规则。",
+      "applicability": "自有公共、重要或非自明宏，含常量宏及函数式宏。",
+      "verification": "检查宏实体文档和说明位置；独立核对宏展开、单位、范围、求值次数与调用限制。",
+      "conflict_decision": "上游仅展示常量宏摘要，不能据此省略实际约束。宏说明不放在宏定义尾部的/**<，防止关联/展开误解；常量宏名称按华为大写要求，不采用上游示例作为业务常量。",
+      "huawei_refs": [
+        "HW-R-3.5",
+        "HW-R-3.6",
+        "HW-R-5.1",
+        "HW-R-5.3",
+        "HW-P-8.3",
+        "HW-R-8.5",
+        "HW-S-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-05.01",
+          "project_level": "MUST",
+          "requirement": "文档化宏的说明放在#define之前，以@brief描述用途并补充非自明的单位、取值或约束。",
+          "applicability": "公共、重要或非自明宏",
+          "verification": "检查宏与前置Doxygen块关联，不以无语义的名称翻译通过。"
+        },
+        {
+          "id": "DOX-05.02",
+          "project_level": "MUST",
+          "requirement": "函数式宏的参数含义、可能多次求值、禁止副作用等限制必须如实说明；注释不得掩盖违反宏规则的实现。",
+          "applicability": "需要文档化的函数式宏",
+          "verification": "核对展开后控制流、参数引用次数及实际调用。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-06",
+      "source_section": "6",
+      "source_lines": {
+        "start": 91,
+        "end": 102
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L91-L102",
+      "title": "枚举类型及枚举值",
+      "project_level": "MUST",
+      "project_requirement": "枚举类型在声明上方说明用途；各对外或非自明枚举值说明含义，短说明采用同一行右侧/**< ... */，长说明放在值之前。枚举常量名称按华为大写下划线要求。",
+      "applicability": "自有公开、重要或复杂枚举及约定值。",
+      "verification": "核对类型、枚举值集合与生成实体，审查错误码/状态语义及数值兼容性。",
+      "conflict_decision": "右侧成员尾注不冲突；独立下方尾注不采用。不能为注释风格更改既定枚举数值或ABI，不照搬上游类型命名。",
+      "huawei_refs": [
+        "HW-R-3.5",
+        "HW-R-8.5",
+        "HW-P-8.2",
+        "HW-S-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-06.01",
+          "project_level": "MUST",
+          "requirement": "枚举类型上方说明其表示的状态/类别或结果集合；对外或非自明枚举值逐个有真实含义说明。",
+          "applicability": "公开、重要或复杂枚举",
+          "verification": "检查声明和生成枚举值覆盖，核对所有有效及保留值的实际契约。"
+        },
+        {
+          "id": "DOX-06.02",
+          "project_level": "SHOULD",
+          "requirement": "简短枚举值说明采用同一行右侧/**< ... */，复杂说明改为该枚举值上方的/** ... */。",
+          "applicability": "需要说明的枚举值",
+          "verification": "验证注释位置与生成关联，保持原数值和命名约束。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-07",
+      "source_section": "7",
+      "source_lines": {
+        "start": 106,
+        "end": 113
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L106-L113",
+      "title": "全局及静态对象契约",
+      "project_level": "MUST",
+      "project_requirement": "必要的全局变量以Doxygen说明用途、范围、访问约束、所有权和生命周期；文件级或重要静态状态按同类原则说明。静态对象使用s_，非static全局对象使用g_。",
+      "applicability": "自有全局对象以及需说明的静态状态；普通局部变量按实际可读性需要。",
+      "verification": "检查文档实体与全局/静态对象清单，并独立核对读写者、并发保护、单位及有效期。",
+      "conflict_decision": "上游static int g_system_started示例与华为HW-R-3.3及现有项目静态命名冲突，采用s_。上游只有摘要的示例不能替代HW-R-8.4要求的完整全局状态说明。",
+      "huawei_refs": [
+        "HW-R-3.2",
+        "HW-R-3.3",
+        "HW-R-8.4",
+        "HW-S-8.3",
+        "HW-P-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-07.01",
+          "project_level": "MUST",
+          "requirement": "全局变量文档说明功能、范围/单位和访问注意事项，并保留项目所有权、并发和生命周期要求。",
+          "applicability": "必要的非static全局状态与全局API对象",
+          "verification": "与声明、实际读写和同步方式对照，不只检查@brief存在。"
+        },
+        {
+          "id": "DOX-07.02",
+          "project_level": "MUST",
+          "requirement": "静态对象使用s_前缀；非static全局对象使用g_，含const对象时仍按存储/链接属性命名。",
+          "applicability": "文档示例及自有变量定义",
+          "verification": "检查示例和实际代码，不能复制上游static g_命名。"
+        },
+        {
+          "id": "DOX-07.03",
+          "project_level": "SHOULD",
+          "requirement": "文件级和重要静态状态提供有价值的Doxygen说明，简单局部状态不机械堆砌无意义注释。",
+          "applicability": "静态变量和内部状态",
+          "verification": "审查说明带来的真实信息及代码可读性；按范围记录不适用理由。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-08",
+      "source_section": "8",
+      "source_lines": {
+        "start": 117,
+        "end": 130
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L117-L130",
+      "title": "完整标签用法",
+      "project_level": "MUST",
+      "project_requirement": "采用@file、@brief、@details、@param、@return、@retval、@note、@warning、@see、@code和@endcode的明确语义；标签按实际内容选择，不要求每个注释都包含全部标签。",
+      "applicability": "所有采用这些标签的文档及应提供对应契约的实体。",
+      "verification": "Doxygen验证语法和可解析关联；独立审查信息真实、标签用途及链接有效性。",
+      "conflict_decision": "上游速查表不是必填字段表。@details、@note、@warning、@see按适用性选择；必要的风险和约束不能因标签可选而省略。华为准确、有意义且同步的要求优先。",
+      "huawei_refs": [
+        "HW-P-8.2",
+        "HW-P-8.3",
+        "HW-R-8.1",
+        "HW-R-8.3",
+        "HW-S-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-08.01",
+          "project_level": "MUST",
+          "requirement": "@file标识文件，@brief给出简述，@details容纳详细理由和约束；不得混用成虚假或无关元数据。",
+          "applicability": "使用这些标签的文档",
+          "verification": "核对生成实体及文字所指对象。"
+        },
+        {
+          "id": "DOX-08.02",
+          "project_level": "MUST",
+          "requirement": "@param说明实际参数且标明方向；@return描述整体返回语义；@retval解释具名或具体结果值。",
+          "applicability": "具有相应参数或返回契约的函数/宏",
+          "verification": "按DOX-03核对签名、返回集合和实际行为。"
+        },
+        {
+          "id": "DOX-08.03",
+          "project_level": "MAY",
+          "requirement": "可用@note标明注意事项、@warning标明风险或误用后果、@see链接相关接口或资料；选用时内容和目标必须真实有效。",
+          "applicability": "存在相关提醒、风险或关联资料时",
+          "verification": "验证实际风险/限制及链接，不强迫无风险函数编造警告。"
+        },
+        {
+          "id": "DOX-08.04",
+          "project_level": "MUST",
+          "requirement": "@code与@endcode配对包围示例代码，不将未关闭代码块吞并后续契约。",
+          "applicability": "包含Doxygen代码块的注释",
+          "verification": "检查配对和生成结果，不能仅靠标签次数认定嵌套正确。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-09",
+      "source_section": "9",
+      "source_lines": {
+        "start": 134,
+        "end": 143
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L134-L143",
+      "title": "可用的代码示例",
+      "project_level": "MUST",
+      "project_requirement": "关键接口提供有意义的@code/@endcode用例，包含必要的错误处理和资源释放，普通接口可引用模块示例；示例尽可能参与编译或测试。",
+      "applicability": "关键公共接口、复杂使用流程及既有项目要求的用例。",
+      "verification": "生成文档核对完整代码块，并编译/执行适用示例；无法执行时如实说明，不能把渲染成功当功能通过。",
+      "conflict_decision": "上游片段只是示范标签，项目保留更严格的错误、资源及接口契约要求。示例中的数值与函数不移植为产品实现。",
+      "huawei_refs": [
+        "HW-R-8.3",
+        "HW-P-8.2",
+        "HW-R-2.5",
+        "HW-R-6.2"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-09.01",
+          "project_level": "MUST",
+          "requirement": "关键接口示例使用配对@code/@endcode，引用真实可用API并呈现必要的错误处理、释放及前置条件。",
+          "applicability": "需要用例的关键接口",
+          "verification": "对照接口版本和生成文档，检查示例不是未经填写的模板。"
+        },
+        {
+          "id": "DOX-09.02",
+          "project_level": "SHOULD",
+          "requirement": "可构建或可执行的示例尽可能接入相应检查；缺环境时保留未运行状态和限制，不伪造通过。",
+          "applicability": "适合编译或测试的示例",
+          "verification": "记录实际工具、命令、结果与候选；区分文档生成和示例运行。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-10",
+      "source_section": "10",
+      "source_lines": {
+        "start": 147,
+        "end": 158
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L147-L158",
+      "title": "文档与源码组织",
+      "project_level": "SHOULD",
+      "project_requirement": "推荐明确区分接口、实现和文档，并保存项目Doxygen配置；采用现有平台/模块布局时保持可追踪映射，不强制创建include/src/docs这些字面目录。",
+      "applicability": "新项目布局及授权调整文档组织的项目。",
+      "verification": "核对声明、实现、文档、配置及输入清单的关系；运行时检查配置确实覆盖适用源码。",
+      "conflict_decision": "上游目录树仅为推荐示例。华为模块组织、自包含头文件和项目已有布局优先，不为套示例移动模块或改ABI。上游Doxyfile宽松选项不直接成为项目严格门禁。",
+      "huawei_refs": [
+        "HW-S-1.1",
+        "HW-S-1.2",
+        "HW-R-1.4",
+        "HW-R-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-10.01",
+          "project_level": "SHOULD",
+          "requirement": "按项目结构组织公共头、实现、文档和Doxygen配置，使接口契约与实现理由易于查找。",
+          "applicability": "项目文档组织",
+          "verification": "对照实际目录和接口引用，记录保持平台布局的理由。"
+        },
+        {
+          "id": "DOX-10.02",
+          "project_level": "MUST",
+          "requirement": "声称执行文档检查时必须固定Doxygen版本、配置与实际输入范围，记录生成结果和诊断；不能直接继承上游EXTRACT_ALL=YES等配置作为缺文档门禁。",
+          "applicability": "将Doxygen结果用于验收时",
+          "verification": "检查配置是否覆盖适用.c/.h和必要静态实体、诊断是否被抑制、输入非空及真实执行日志。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-11",
+      "source_section": "11",
+      "source_lines": {
+        "start": 162,
+        "end": 166
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L162-L166",
+      "title": "补充建议与Kconfig边界",
+      "project_level": "MUST",
+      "project_requirement": "建议为各函数和类型提供有价值的说明，项目保持默认中文与准确英文标识符。Kconfig文档化是可选扩展，#注释本身不能证明被Doxygen解析；需要实际配置并验证转换/过滤路径。",
+      "applicability": "自有函数/类型文档；仅使用Kconfig且计划文档化时评估Kconfig扩展。",
+      "verification": "审查实体覆盖、统一语言和注释价值；Kconfig纳入文档时核对转换工具、输入模式、解析器映射及生成实体。",
+      "conflict_decision": "华为不要求所有简单函数写冗长注释；保持已批准适用性。上游关于Kconfig的简述按官方支持语言和过滤机制纠正，不能宣称原生识别任意#注释。",
+      "huawei_refs": [
+        "HW-P-8.1",
+        "HW-P-8.3",
+        "HW-R-8.8",
+        "HW-S-8.2",
+        "HW-S-8.3"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-11.01",
+          "project_level": "SHOULD",
+          "requirement": "尽可能给各函数及类型提供有帮助的说明；明显自解释的简单内部函数不机械重复空洞模板。",
+          "applicability": "函数及类型",
+          "verification": "与华为适用范围共同评估覆盖和价值。"
+        },
+        {
+          "id": "DOX-11.02",
+          "project_level": "MUST",
+          "requirement": "注释语言保持项目统一，默认中文，英文标识符、协议和单位保持准确；批准的产品语言选择继续适用。",
+          "applicability": "自有文档化代码",
+          "verification": "检查术语、语言一致性和批准范围。"
+        },
+        {
+          "id": "DOX-11.03",
+          "project_level": "MAY",
+          "requirement": "可将Kconfig纳入生成文档，但须通过合适转换器或filter处理，并配置输入选择与所需解析器映射；缺少实际配置和输出验证时不得声称支持或通过。",
+          "applicability": "使用Kconfig且要求生成其文档的项目",
+          "verification": "核对固定工具和配置、转换输出与实际生成实体；只出现#注释或Kconfig文件不能作为证据。"
+        }
+      ]
+    },
+    {
+      "id": "DOX-12",
+      "source_section": "unnumbered-mainpage",
+      "source_lines": {
+        "start": 170,
+        "end": 188
+      },
+      "source_url": "https://github.com/viys/doxygen_stu/blob/d0c0531cf3802f399540387c74641eaa45d033ac/readme.md#L170-L188",
+      "title": "可选文档主页",
+      "project_level": "MAY",
+      "project_requirement": "需要文档首页时，可选择输入中的Markdown文件作为主页，或使用@mainpage和@section；不要求每个项目或每个文件重复添加主页。",
+      "applicability": "需要Doxygen首页导航的项目。",
+      "verification": "启用时核对首页来源、实际文件大小写、输入覆盖、章节标识及生成页面，避免重复或互相覆盖的主页定义。",
+      "conflict_decision": "采用上游可选性。示例README.md不是固定文件名；上游实际文件为readme.md，项目必须按真实大小写和路径配置。",
+      "huawei_refs": [
+        "HW-P-8.2",
+        "HW-R-8.8"
+      ],
+      "requirements": [
+        {
+          "id": "DOX-12.01",
+          "project_level": "MAY",
+          "requirement": "可用USE_MDFILE_AS_MAINPAGE指定已纳入Doxygen输入的Markdown文件，文件名与路径必须真实存在。",
+          "applicability": "选择Markdown主页时",
+          "verification": "核对配置、INPUT和生成首页，不仅检查配置字符串。"
+        },
+        {
+          "id": "DOX-12.02",
+          "project_level": "MAY",
+          "requirement": "也可通过@mainpage定义主页并以@section组织有唯一标识的章节；与Markdown主页的选择保持明确，不生成互相冲突的主页。",
+          "applicability": "选择注释主页时",
+          "verification": "运行生成并检查首页和章节导航；无主页需求时记录不适用，不判缺陷。"
+        }
+      ]
+    }
+  ],
+  "precedence_scope": "This decision applies to the Doxygen reference only and does not reopen unrelated historical project differences.",
+  "product_compliance_claimed": false,
+  "product_checks_executed": false
+}

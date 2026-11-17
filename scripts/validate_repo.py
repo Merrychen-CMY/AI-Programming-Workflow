@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from huawei_coverage import check_repository_coverage
+from doxygen_reference import check_doxygen_reference
 
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED = {'.git', '__pycache__', '.venv', 'local-project', 'private-evidence'}
@@ -223,6 +224,11 @@ def validate_embedded_c_policy(policy, source_rules):
         'clause_coverage.reviewed_subrequirements': 50,
         'clause_coverage.all_catalog_subrequirements_accounted_for': True,
         'clause_coverage.parent_pass_does_not_imply_child_pass': True,
+        'documentation_reference.huawei_takes_precedence': True,
+        'documentation_reference.pinned_commit': 'd0c0531cf3802f399540387c74641eaa45d033ac',
+        'documentation_reference.required_for_huawei_c_plans': True,
+        'documentation_reference.tool_success_proves_semantic_truth': False,
+        'documentation_reference.extra_user_forms_required': False,
         'clause_coverage.product_compliance_claimed': False,
         'default_for_applicable_projects': True, 'extra_user_documents_required': False,
         'AI_written_source_is_generated_code_exception': False,
@@ -395,6 +401,7 @@ def validate_repository(root):
     if any(c.get('execution_status') != 'NOT_RUN' or c.get('evidence_ref') is not None for c in cases):
         errors.append('Reference scenarios must not claim real execution; store actual results in the product project')
     errors.extend(validate_capabilities(index))
+    errors.extend(check_doxygen_reference(root))
     if not (root / 'runtime/dot_runtime').is_dir():
         errors.append('Advertised local runtime implementation is missing')
     for name in ('project-context', 'task-draft'):
@@ -423,6 +430,7 @@ def main():
     print(f'STATIC_SPEC_CHECKS_PASS: {len(repository_files(ROOT))} files; 21 chapters; 16 L4 + 12 L5 scenarios.')
     print('Embedded C V1.3 / Huawei reference: 33 mapped rules, 18 sections and provenance verified; not product C compliance.')
     print('Huawei catalog: 139 numbered + 6 governance + 50 reviewed subitems; no product acceptance claim.')
+    print('Doxygen reference: 12 adoption decisions + 33 subrequirements; Huawei precedence and pinned provenance verified.')
     print('48 product/HIL acceptance scenarios remain NOT_RUN. No execution, approval or delivery authority is granted.')
     return 0
 

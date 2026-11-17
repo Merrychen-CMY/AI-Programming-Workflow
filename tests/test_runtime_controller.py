@@ -302,10 +302,13 @@ class ControllerTests(unittest.TestCase):
     def test_c_clause_failure_returns_through_dot_before_repair(self):
         plan = read_json(self.plan)
         plan['coding_standard'] = 'huawei-c'
+        plan['verification']['doxygen'] = {'executable': 'doxygen', 'expected_version': '1.18.0',
+                                           'include': ['.'], 'timeout_seconds': 10}
         atomic_json(self.plan, plan)
         adapter = FakeAdapter([('triage', result('PASS', 'implementation'))])
         c = self.approved(adapter)
         calls = []
+        c.approved_documentation = lambda workspace: {'status': 'PASS', 'evidence': ['Synthetic documentation flow fixture']}
         def compliance_fixture(workspace):
             calls.append(workspace)
             errors = ['Doxygen contract missing'] if len(calls) == 1 else []

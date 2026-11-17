@@ -16,3 +16,5 @@ AI 项目指令模板
 当前编码参考：华为DKBA 2826-2011.5，按V1.3正文及差异表执行。每级4空格；新增函数50行/4层规则与普通评审触发线分开。
 
 采用V1.3华为逐条清单huawei/coverage.json（revision 3），记录仓库commit；DOT维护适用性、条款ID、检查和证据，按任务影响选择，未执行不计PASS。33项项目规则仅为分类。
+
+注释采用固定viys/doxygen_stu参考（commit d0c0531cf3802f399540387c74641eaa45d033ac），具体DOX-01～12及子项见v1.3/doxygen/adoption.json；与华为规范冲突时以华为为准。工具检查和独立语义审查均保留证据。

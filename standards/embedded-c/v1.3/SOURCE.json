@@ -13,6 +13,30 @@
   "adaptation": "standards/embedded-c/v1.3/reference-adoption.md",
   "derived_files": [
     {
+      "path": "standards/embedded-c/v1.3/doxygen/adoption.json",
+      "repository_sha256": "26b645df747fe11e36385a3b3e905a44999fc42f67bd9d03b1186490f1aa930c"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.c",
+      "repository_sha256": "a9bd41d05b2a88657eb196b37403ab526a708bdb5bc9232b393218c49971b6f7"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.h",
+      "repository_sha256": "c0ef7d93636cfd5c2cec88d3f84c85574f6f934c191aff5f835d539876f8bc9f"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/doxygen/README.md",
+      "repository_sha256": "6c6d0365016a8c2fc0809ea6bc239915155ff246026cc6ca4e193fa721eb6cb5"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/doxygen/source.json",
+      "repository_sha256": "542a08ab0f28688743f7aeeb7a3cb3a15b9cd622041581692fc6f8f3fa32b4ad"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/doxygen/templates/Doxyfile",
+      "repository_sha256": "e486a3093305a9d8bc624afad28b2ec69fbbcc884faf348a0f3a5df15cf4df37"
+    },
+    {
       "path": "standards/embedded-c/v1.3/huawei/00.md",
       "repository_sha256": "8b5fe8c2fc1245fdf5104dfb71b3b82755d2da3ed61305672a5c2402bb7548d8"
     },
@@ -106,7 +130,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/INDEX.json",
-      "repository_sha256": "28c71fcd4a78d5c7fe0b19efc25e5580c23339375dd925db1fa4f776c008db6c"
+      "repository_sha256": "5ed20277b558a7aacf13f08ecd4dd9af5423ae6ed727c671425fcddde11702cd"
     },
     {
       "path": "standards/embedded-c/v1.3/machine/common.schema.json",
@@ -190,7 +214,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "repository_sha256": "7969bc2f618df675c1799e3461bbb7f215f7ed40ee17aea03bb093f1f7bd2a9c"
+      "repository_sha256": "b8938bc8672d1c87fa169dbacaa4ac5e2dc6a8af9c14259d1a9f5259abc06d22"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
@@ -238,7 +262,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/appendix-d-project-scope.md",
-      "repository_sha256": "e3fade8e85b078a7253f141120a6e9a445ebd5275c81b43d077489ff91cfc63c"
+      "repository_sha256": "97d2ce56b66dd19530bee47ca99e0ee10a5596b51b6037b71f8cd91e290c53c6"
     },
     {
       "path": "standards/embedded-c/v1.3/reference-adoption.md",
@@ -246,11 +270,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/agent-instructions-template.txt",
-      "repository_sha256": "4631073d7349f4e02aec4f823460ca0bdec4775f7ebb8f1bfd141d77c9b7e5f5"
+      "repository_sha256": "f906294daad2eeef209e72263eb97b7ab8a8efab30846355bcc08ded071c2315"
     },
     {
       "path": "standards/embedded-c/v1.3/source/project-entry-template.txt",
-      "repository_sha256": "169056a15578953ae9a5dd480ee6a2e7f40536d9ba00305b2287ab33f124e7b8"
+      "repository_sha256": "b922502b73b77ae03c3206926604fca1931cb3a7787aa57c456071aae7fbb691"
     },
     {
       "path": "standards/embedded-c/v1.3/source/readability-checklist.txt",
@@ -262,7 +286,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "28c71ea9462e590bdfdcb614f78e7803830fed62a5fcc1092a0dc10253ef6f24"
+      "repository_sha256": "c4d1024dba4345b075f1cecb944b3913c1a259f7506ebb802d409bdab1c46e55"
     }
   ],
   "changes": [
@@ -271,7 +295,14 @@
     "50-line and 4-level new-function constraints with reviewed exceptions",
     "Preserve stricter project goto/Doxygen requirements",
     "Extend standard version compatibility to 1.3 without changing schema structure",
-    "增加139项编号条款及6项治理补充的规范性逐条清单，JSON权威内容派生16章与总览；产品合规未执行。"
+    "增加139项编号条款及6项治理补充的规范性逐条清单，JSON权威内容派生16章与总览；产品合规未执行。",
+    "采用固定Doxygen注释参考：12项采用决定和33子要求、实体示例及真实工具门禁；冲突以华为规范为准。"
   ],
-  "coverage_revision": 1
+  "coverage_revision": 3,
+  "documentation_reference": {
+    "repository_url": "https://github.com/viys/doxygen_stu",
+    "pinned_commit": "d0c0531cf3802f399540387c74641eaa45d033ac",
+    "record": "standards/embedded-c/v1.3/doxygen/source.json",
+    "huawei_takes_precedence": true
+  }
 }

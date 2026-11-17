@@ -1,0 +1,44 @@
+# Minimal C project template; this checked-in form targets the teaching examples.
+# Verified configuration baseline: official Doxygen 1.18.0.
+# https://www.doxygen.nl/manual/config.html
+# Record and pin the actual executable version in the approved project plan.
+# Run from standards/embedded-c/v1.3/doxygen: doxygen templates/Doxyfile
+# Paths below are relative to the PROCESS WORKING DIRECTORY, not this file.
+# For a product, replace PROJECT_NAME / PROJECT_NUMBER / INPUT / OUTPUT_DIRECTORY
+# with reviewed project values. Use a dedicated output directory outside sources.
+# The example metadata and optional mainpage are not production metadata.
+# Generating these example docs is not product verification or Huawei compliance.
+
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "Synthetic Doxygen teaching fixture"
+PROJECT_NUMBER         = teaching-fixture-1.0
+OUTPUT_DIRECTORY       = generated-docs
+INPUT                  = examples/commented_module.h examples/commented_module.c
+INPUT_ENCODING         = UTF-8
+FILE_PATTERNS          = *.h *.c
+RECURSIVE              = NO
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+# Keep missing-documentation detection enabled, including private static helpers.
+# Never switch EXTRACT_ALL on to make warnings disappear.
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = YES
+WARN_NO_PARAMDOC       = YES
+WARN_IF_UNDOC_ENUM_VAL = YES
+WARN_AS_ERROR          = YES
+WARN_LOGFILE           =
+QUIET                  = YES
+
+GENERATE_HTML          = YES
+GENERATE_XML           = YES
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
+
+# Optional Markdown homepage alternative: add that real file to INPUT and remove
+# the example @mainpage before enabling USE_MDFILE_AS_MAINPAGE = README.md.
+# Do not add Kconfig to FILE_PATTERNS and assume '#' comments become Doxygen:
+# it needs a separately reviewed filter/mapping and an actual generation check.

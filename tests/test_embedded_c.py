@@ -67,6 +67,12 @@ class EmbeddedCIntegrationTests(unittest.TestCase):
     def test_user_does_not_get_additional_forms(self):
         self.reject('extra_user_documents_required', True)
 
+    def test_doxygen_cannot_override_huawei_or_claim_semantic_acceptance(self):
+        self.reject('documentation_reference.huawei_takes_precedence', False)
+        self.reject('documentation_reference.required_for_huawei_c_plans', False)
+        self.reject('documentation_reference.tool_success_proves_semantic_truth', True)
+        self.reject('documentation_reference.extra_user_forms_required', True)
+
     def test_subrequirement_gate_cannot_be_silently_disabled(self):
         self.reject('clause_coverage.coverage_revision', 2)
         self.reject('clause_coverage.reviewed_subrequirements', 0)

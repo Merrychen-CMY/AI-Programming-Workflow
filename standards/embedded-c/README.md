@@ -52,3 +52,7 @@ MUST必须满足；SHOULD偏离需说明；MAY按需。例外记录规则ID、�
 [使用说明](v1.3/huawei/README.md) · [145项总览](v1.3/huawei/coverage.md) · [Agent权威JSON](v1.3/huawei/coverage.json)。139项原文编号条款（21原则、68规则、50建议）加6项治理补充均已形成具体项目要求；这些内容是V1.3规范性补充，与18节通用正文共同执行。每条包含适用条件、验证方法、项目差异和33项规则映射。
 
 revision 3补齐10个条款中的50个子项，包括目录/头文件命名、实参副作用建议、资源释放、case例外、详细间距、调测/日志和同宽平台EOF处理；详见[语义修订记录](v1.3/huawei/semantic-review.md)。编号清单完整不证明所有自然语言细节无遗漏，也不代表产品已验证。首次接入由DOT建立父项与子项的适用性基线，后续按影响检查；规则例外、建议偏离和不适用均须有依据。父项PASS不能代替子项结果。
+
+## Doxygen注释参考
+
+[具体采用规范](v1.3/doxygen/README.md) · [机器采用清单](v1.3/doxygen/adoption.json) · [来源版本](v1.3/doxygen/source.json) · [检查接线](../../docs/guides/doxygen-checks.md)。上游固定commit，不跟随远端静默变化；注释要求冲突时华为规范优先。结构检查与注释语义独立审查共同执行，实际C项目范围及工具由DOT在既有执行计划中明确。

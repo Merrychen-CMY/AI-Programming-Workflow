@@ -37,79 +37,79 @@
       "title": "4 注释与接口契约",
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
       "source_start_line": 158,
-      "source_end_line": 197
+      "source_end_line": 203
     },
     {
       "title": "5 分层 资源与实时性",
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
-      "source_start_line": 198,
-      "source_end_line": 233
+      "source_start_line": 204,
+      "source_end_line": 239
     },
     {
       "title": "6 测量数据 状态机与标定",
       "path": "standards/embedded-c/v1.3/reference/06-data-state-calibration.md",
-      "source_start_line": 234,
-      "source_end_line": 267
+      "source_start_line": 240,
+      "source_end_line": 273
     },
     {
       "title": "7 日志与异常行为",
       "path": "standards/embedded-c/v1.3/reference/07-logs-errors.md",
-      "source_start_line": 268,
-      "source_end_line": 310
+      "source_start_line": 274,
+      "source_end_line": 316
     },
     {
       "title": "8 AI 开发任务约定与执行",
       "path": "standards/embedded-c/v1.3/reference/08-agent-tasks.md",
-      "source_start_line": 311,
-      "source_end_line": 344
+      "source_start_line": 317,
+      "source_end_line": 350
     },
     {
       "title": "9 测试设计与自动选择",
       "path": "standards/embedded-c/v1.3/reference/09-test-design.md",
-      "source_start_line": 345,
-      "source_end_line": 374
+      "source_start_line": 351,
+      "source_end_line": 380
     },
     {
       "title": "10 实机 长期记录与失败处置",
       "path": "standards/embedded-c/v1.3/reference/10-hil-replay.md",
-      "source_start_line": 375,
-      "source_end_line": 406
+      "source_start_line": 381,
+      "source_end_line": 412
     },
     {
       "title": "11 最终验收 版本绑定与交付",
       "path": "standards/embedded-c/v1.3/reference/11-acceptance.md",
-      "source_start_line": 407,
-      "source_end_line": 441
+      "source_start_line": 413,
+      "source_end_line": 447
     },
     {
       "title": "12 落地步骤与规则维护",
       "path": "standards/embedded-c/v1.3/reference/12-adoption.md",
-      "source_start_line": 442,
-      "source_end_line": 473
+      "source_start_line": 448,
+      "source_end_line": 479
     },
     {
       "title": "附录 A 开发任务填写模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-a-task.md",
-      "source_start_line": 474,
-      "source_end_line": 529
+      "source_start_line": 480,
+      "source_end_line": 535
     },
     {
       "title": "附录 B 测试任务与用例模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-b-test-plan.md",
-      "source_start_line": 530,
-      "source_end_line": 567
+      "source_start_line": 536,
+      "source_end_line": 573
     },
     {
       "title": "附录 C 交付与验收记录模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-c-delivery.md",
-      "source_start_line": 568,
-      "source_end_line": 615
+      "source_start_line": 574,
+      "source_end_line": 621
     },
     {
       "title": "附录 D 项目适配与资料索引",
       "path": "standards/embedded-c/v1.3/reference/appendix-d-project-scope.md",
-      "source_start_line": 616,
-      "source_end_line": 656
+      "source_start_line": 622,
+      "source_end_line": 662
     }
   ],
   "readability_checklist": "standards/embedded-c/v1.3/source/readability-checklist.txt",
@@ -123,5 +123,11 @@
     "governance_supplements": 6,
     "product_compliance_claimed": false,
     "reviewed_subrequirements": 50
+  },
+  "doxygen_supplement": {
+    "entrypoint": "standards/embedded-c/v1.3/doxygen/README.md",
+    "catalog": "standards/embedded-c/v1.3/doxygen/adoption.json",
+    "source": "standards/embedded-c/v1.3/doxygen/source.json",
+    "huawei_takes_precedence": true
   }
 }

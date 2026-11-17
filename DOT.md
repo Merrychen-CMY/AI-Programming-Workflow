@@ -51,3 +51,5 @@ DOT先核对事实、候选、检查计划、证据和预算，分析根因并�
 ## 嵌入式C要求
 
 读取 [规范入口](standards/embedded-c/README.md)、[33条汇总映射](policy/embedded-c.json) 和 [145项逐条清单](standards/embedded-c/v1.3/huawei/README.md)，记录适用性并按影响纳入任务与检查。开发同步Doxygen，独立审核检查条款证据和差异批准；模板、FINAL、退出0、仓库CI均不证明产品合规。具体强度及已批准差异以规范为准，不擅自扩大例外或把建议改成无条件豁免。
+
+注释按[固定Doxygen参考及采用决定](standards/embedded-c/v1.3/doxygen/README.md)执行；与华为规范冲突时以华为为准。DOT将自有源码范围、实际Doxygen路径与精确版本写入已审执行计划；运行器在独立审查前执行文档检查。DOX-01～12及子项由DOT维护适用性，L4核对语义与工具证据，用户不增加表单。

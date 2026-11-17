@@ -46,3 +46,11 @@ python standards/embedded-c/v1.3/machine/tests/test_readability_contracts.py
 `standards/embedded-c/v1.3/huawei/coverage.json`为145个父项及当前50个子项的权威文件；`source-inventory.json`记录139条原文编号及6个本项目治理补充ID和起始页。SUB编号为项目细化，不冒充原文编号。增删子项或改变强度须核对原文并更新`huawei/semantic-review.md`、脚本中的固定已复核子项签名、记录模板及拒绝测试；不能通过同时删来源清单和正文隐藏遗漏。子项按自己的MUST/SHOULD处理，父PASS不能替代逐子项适用性和证据。
 
 修改后运行`python scripts/huawei_coverage.py --render`生成16份分章视图与总览，再更新V1.3派生文件哈希和根MANIFEST。普通`validate_repo.py`会核对ID全集、差异、映射及生成视图，并在CI运行相关拒绝测试。这证明枚举与文件一致，不证明自然语言全部正确或产品已符合。
+
+## Doxygen参考与检查维护
+
+`standards/embedded-c/v1.3/doxygen/adoption.json`记录12项采用决定及33个子要求；它们是DOC-001的细化，不计入华为145父项及50子项。固定上游来源、MIT许可及内容摘要见同目录`source.json`。与华为规范冲突时，以华为规范为准；不能用示例、工具默认值或旧的适配措辞削弱这项优先级。
+
+修改采用规则后运行`python scripts/doxygen_reference.py --write`重新生成README；普通静态检查拒绝来源、条目、强度或生成内容漂移。变更工具或模板时，核对官方文档并使用真实工具运行`python scripts/verify_doxygen_examples.py --doxygen <实际可执行文件> --expected-version 1.18.0`。该入口在原例先通过后才验证注释缺失等反例；工具缺失必须失败，不能跳过后宣称验证成功。
+
+CI单独下载固定官方Doxygen版本并核对SHA-256，执行示例和拒绝场景；模拟工具故障与控制器证据校验使用单元测试。两者都不证明注释语义、C编译结果或实际产品已合规。涉及运行门禁时同步计划样例、运行器、指南和拒绝测试；规范或检查脚本摘要变化使旧批准失效。
