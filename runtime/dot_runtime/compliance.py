@@ -59,7 +59,7 @@ def _evidence_errors(items, root, label):
 def validate_compliance(record: dict, catalog: dict, evidence_root: Path,
                         candidate_id: str, implementation_session_id: str,
                         approved_exceptions=None, trusted_verifier_sessions=None) -> list[str]:
-    """Return blocking errors, or [] when every catalog clause is accounted for.
+    """Return blocking errors, or [] when catalog clauses and subrequirements are accounted for.
 
     approved_exceptions maps approval IDs to controller-authenticated receipts.
     trusted_verifier_sessions must come from the controller's completed independent
@@ -92,6 +92,9 @@ def validate_compliance(record: dict, catalog: dict, evidence_root: Path,
     if not isinstance(clauses, list) or len(clauses) != 145:
         return errors + ["Trusted catalog must contain all 145 clauses"]
     expected = {}
+    parent_ids = set()
+    children_by_parent = {}
+    child_owner = {}
     for clause in clauses:
         if (not isinstance(clause, dict) or not _nonempty(clause.get("id")) or
                 clause.get("project_level") not in ("MUST", "SHOULD")):
@@ -100,6 +103,29 @@ def validate_compliance(record: dict, catalog: dict, evidence_root: Path,
         if clause["id"] in expected:
             errors.append("Trusted catalog contains duplicate clause IDs")
         expected[clause["id"]] = clause
+        parent_ids.add(clause["id"])
+        children = clause.get("subrequirements", [])
+        if not isinstance(children, list):
+            errors.append(f"{clause['id']}: trusted catalog subrequirements must be an array")
+            continue
+        children_by_parent[clause["id"]] = set()
+        for child in children:
+            if (not isinstance(child, dict) or not isinstance(child.get("id"), str) or
+                    not re.fullmatch(re.escape(clause["id"]) + r"\.SUB-[0-9]{2,}", child["id"]) or
+                    child.get("project_level") not in ("MUST", "SHOULD") or
+                    type(child.get("source_page")) is not int or child["source_page"] < 1 or
+                    child.get("source_basis") not in ("explanation", "exception", "explicit_check") or
+                    not all(_nonempty(child.get(key)) for key in (
+                        "requirement", "applicability", "verification", "source_note")) or
+                    child.get("subrequirements")):
+                errors.append(f"{clause['id']}: trusted catalog contains an invalid subrequirement")
+                continue
+            identity = child["id"]
+            if identity in expected:
+                errors.append(f"{identity}: trusted catalog contains duplicate requirement IDs")
+            expected[identity] = child
+            children_by_parent[clause["id"]].add(identity)
+            child_owner[identity] = clause["id"]
     if errors:
         return errors
     try:
@@ -119,8 +145,34 @@ def validate_compliance(record: dict, catalog: dict, evidence_root: Path,
     rows = record.get("clauses")
     if not isinstance(rows, list):
         return errors + ["Compliance clauses must be an array"]
-    seen = set()
+    # Expand only IDs belonging to each catalog parent. A report cannot shrink
+    # the required set, move children to another parent or supply its own list.
+    expanded_rows = []
     for row in rows:
+        if not isinstance(row, dict):
+            errors.append("Invalid clause result object")
+            continue
+        identity = row.get("id")
+        if not isinstance(identity, str) or identity not in parent_ids:
+            errors.append("Unknown or missing parent clause ID")
+            continue
+        expanded_rows.append(row)
+        children = row.get("subrequirements", [])
+        if not isinstance(children, list):
+            errors.append(f"{identity}: subrequirements results must be an array")
+            continue
+        for child in children:
+            if (not isinstance(child, dict) or not isinstance(child.get("id"), str) or
+                    child["id"] not in children_by_parent[identity]):
+                errors.append(f"{identity}: unknown or misplaced subrequirement result")
+                continue
+            if child.get("subrequirements"):
+                errors.append(f"{child['id']}: unexpected nested subrequirement results")
+            if row.get("applicability") == "NOT_APPLICABLE" and child.get("applicability") == "APPLICABLE":
+                errors.append(f"{child['id']}: applicable subrequirement contradicts non-applicable parent")
+            expanded_rows.append(child)
+    seen = set()
+    for row in expanded_rows:
         if not isinstance(row, dict):
             errors.append("Invalid clause result object")
             continue
@@ -187,5 +239,6 @@ def validate_compliance(record: dict, catalog: dict, evidence_root: Path,
         if receipt.get("approved_by") == implementation_session_id:
             errors.append(f"{identity}: implementer cannot approve their own exception")
     for identity in sorted(set(expected) - seen):
-        errors.append(f"{identity}: missing clause applicability/result")
+        kind = "subrequirement" if identity in child_owner else "clause"
+        errors.append(f"{identity}: missing {kind} applicability/result")
     return errors

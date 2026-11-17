@@ -19,97 +19,97 @@
       "title": "3 编码风格与头文件",
       "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
       "source_start_line": 61,
-      "source_end_line": 104
+      "source_end_line": 108
     },
     {
       "title": "3.1 可读性与控制流组织",
       "path": "standards/embedded-c/v1.3/reference/03-1-readability.md",
-      "source_start_line": 105,
-      "source_end_line": 128
+      "source_start_line": 109,
+      "source_end_line": 132
     },
     {
       "title": "3.2 可读性评审与行为保持",
       "path": "standards/embedded-c/v1.3/reference/03-2-review-and-refactoring.md",
-      "source_start_line": 129,
-      "source_end_line": 153
+      "source_start_line": 133,
+      "source_end_line": 157
     },
     {
       "title": "4 注释与接口契约",
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "source_start_line": 154,
-      "source_end_line": 191
+      "source_start_line": 158,
+      "source_end_line": 197
     },
     {
       "title": "5 分层 资源与实时性",
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
-      "source_start_line": 192,
-      "source_end_line": 225
+      "source_start_line": 198,
+      "source_end_line": 233
     },
     {
       "title": "6 测量数据 状态机与标定",
       "path": "standards/embedded-c/v1.3/reference/06-data-state-calibration.md",
-      "source_start_line": 226,
-      "source_end_line": 259
+      "source_start_line": 234,
+      "source_end_line": 267
     },
     {
       "title": "7 日志与异常行为",
       "path": "standards/embedded-c/v1.3/reference/07-logs-errors.md",
-      "source_start_line": 260,
-      "source_end_line": 296
+      "source_start_line": 268,
+      "source_end_line": 310
     },
     {
       "title": "8 AI 开发任务约定与执行",
       "path": "standards/embedded-c/v1.3/reference/08-agent-tasks.md",
-      "source_start_line": 297,
-      "source_end_line": 330
+      "source_start_line": 311,
+      "source_end_line": 344
     },
     {
       "title": "9 测试设计与自动选择",
       "path": "standards/embedded-c/v1.3/reference/09-test-design.md",
-      "source_start_line": 331,
-      "source_end_line": 360
+      "source_start_line": 345,
+      "source_end_line": 374
     },
     {
       "title": "10 实机 长期记录与失败处置",
       "path": "standards/embedded-c/v1.3/reference/10-hil-replay.md",
-      "source_start_line": 361,
-      "source_end_line": 392
+      "source_start_line": 375,
+      "source_end_line": 406
     },
     {
       "title": "11 最终验收 版本绑定与交付",
       "path": "standards/embedded-c/v1.3/reference/11-acceptance.md",
-      "source_start_line": 393,
-      "source_end_line": 427
+      "source_start_line": 407,
+      "source_end_line": 441
     },
     {
       "title": "12 落地步骤与规则维护",
       "path": "standards/embedded-c/v1.3/reference/12-adoption.md",
-      "source_start_line": 428,
-      "source_end_line": 459
+      "source_start_line": 442,
+      "source_end_line": 473
     },
     {
       "title": "附录 A 开发任务填写模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-a-task.md",
-      "source_start_line": 460,
-      "source_end_line": 515
+      "source_start_line": 474,
+      "source_end_line": 529
     },
     {
       "title": "附录 B 测试任务与用例模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-b-test-plan.md",
-      "source_start_line": 516,
-      "source_end_line": 553
+      "source_start_line": 530,
+      "source_end_line": 567
     },
     {
       "title": "附录 C 交付与验收记录模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-c-delivery.md",
-      "source_start_line": 554,
-      "source_end_line": 601
+      "source_start_line": 568,
+      "source_end_line": 615
     },
     {
       "title": "附录 D 项目适配与资料索引",
       "path": "standards/embedded-c/v1.3/reference/appendix-d-project-scope.md",
-      "source_start_line": 602,
-      "source_end_line": 642
+      "source_start_line": 616,
+      "source_end_line": 656
     }
   ],
   "readability_checklist": "standards/embedded-c/v1.3/source/readability-checklist.txt",
@@ -121,6 +121,7 @@
     "inventory": "standards/embedded-c/v1.3/huawei/source-inventory.json",
     "numbered_clauses": 139,
     "governance_supplements": 6,
-    "product_compliance_claimed": false
+    "product_compliance_claimed": false,
+    "reviewed_subrequirements": 50
   }
 }

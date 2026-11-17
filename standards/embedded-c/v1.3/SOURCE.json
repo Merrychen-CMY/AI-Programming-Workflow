@@ -18,7 +18,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/01.md",
-      "repository_sha256": "089b47bb87021b68a97f169e71ba3364e81674b09132d5ee9258df62ed6918a9"
+      "repository_sha256": "0ceecc14e0fa7a3b3e48e418a801a393b452487043c6c474f40bfb331567aaaf"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/02.md",
@@ -34,11 +34,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/05.md",
-      "repository_sha256": "886d45b5174621a6c2a2387e61f34b1412658a0644d97f3d6bb76d4031dfcd0d"
+      "repository_sha256": "f4f8a10579dfbecdb4933ac1b32b9a46ea4948616a1970157d3b78392fc747ba"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/06.md",
-      "repository_sha256": "e6976777bc96a02914af297b396a96052739765e3f4f01029c5c87c663ab9b60"
+      "repository_sha256": "0c0f90b9affb50a623bd901d94a1f285dc0f46738c10da44ffc08ce102a28c23"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/07.md",
@@ -46,11 +46,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/08.md",
-      "repository_sha256": "42aa7eaa058564518ef6acedcf893767bf3e1fe11047565e6631d29c1ad9c1ce"
+      "repository_sha256": "83e9acd951e686dcf83f67f168cb61b2e8b241dccc33acc489d45e2220b928ec"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/09.md",
-      "repository_sha256": "e8ef1658609733f3b456e10dce421a9bbd5f5c5678eb2f7a7dae60134cacbc54"
+      "repository_sha256": "9319c2f31a911f432a7fee090f8092b87eedbfbfc5bc6d1341fee68461320541"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/10.md",
@@ -62,11 +62,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/12.md",
-      "repository_sha256": "9cb95b8e2b2eed9b3b75f0e32f232abdfa8559a4f2e02c2c9ef732533bac2a19"
+      "repository_sha256": "adec5e7e4bad435d3dafbbafd7e89a1a4b24a6fc42e780f9218d165955379dcf"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/13.md",
-      "repository_sha256": "c1f6a46237a35e5b34cc166e87f1812bd98c5556fcd3de22ea4639be5bd09feb"
+      "repository_sha256": "7d4ca23208ef277e35b947a70795a494bf2b02f98654a99100d67535ecadcf8d"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/14.md",
@@ -78,23 +78,27 @@
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/coverage.json",
-      "repository_sha256": "e08f018a340a9c366b564e8cb8a855ce6d668b08a5eedf80f8548044a0ff7458"
+      "repository_sha256": "16755fbce2209262b457be0f7aa377fba0e579260804d4cbc3665a11277c437b"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/coverage.md",
-      "repository_sha256": "0a5365dd2337bc389e3ee581cc9ba8f2b9ba34889c79c7225ab7a8b2ca575d9a"
+      "repository_sha256": "e9012ffcbb2123a988823074adc7d193ff9706cd6839669b86a03ba25ecf10e8"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/README.md",
-      "repository_sha256": "19622f65ae5bfa6fdab34b091f19bf194f0eb556a4a9a17a16ba59fcce54d091"
+      "repository_sha256": "fa279735ae785edb2fae96f265ca84eb0c29a73b6fcf8488c087efc3fb8a3342"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/runtime-evidence.md",
-      "repository_sha256": "1232e425c1f2cdd88aad69b146a34e8f1437e4cf6a894202977ead8dadad2ea9"
+      "repository_sha256": "175b868d67690aa4416e2263891bf56a387d59f34d94c5512ee4b01c0fc30b6b"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/huawei/semantic-review.md",
+      "repository_sha256": "fdf06b605badae809fd6685342c346218f6b02e9c2993940c889bedf0bffd122"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/source-inventory.json",
-      "repository_sha256": "6aabd394d5fb842969c1e65f534cf5477b1c6a07a0406a168ff6dcbac8b3878c"
+      "repository_sha256": "d94eba63644c54571ef2578dc2aba019e95adee5603308ab4158a34a78b5193f"
     },
     {
       "path": "standards/embedded-c/v1.3/huawei/technical-notes.md",
@@ -102,7 +106,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/INDEX.json",
-      "repository_sha256": "d5153957ecf5ea3065a6b6263c19d354d5725ca6b6947d5fc4c1f215e22eb831"
+      "repository_sha256": "28c71fcd4a78d5c7fe0b19efc25e5580c23339375dd925db1fa4f776c008db6c"
     },
     {
       "path": "standards/embedded-c/v1.3/machine/common.schema.json",
@@ -182,15 +186,15 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
-      "repository_sha256": "bef7472df85b13fd7298819af36b4435e08d4bf094273183f3e6c554ba158eff"
+      "repository_sha256": "484af9d4db072e9b21afac50857f454b0ea7ffbe1c22d6e712118728ebc9c1d9"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "repository_sha256": "9cba30b4b890f73f55203906bb8f3c6fb4b6cf0c8182e0de635f4b98cc3e47a3"
+      "repository_sha256": "7969bc2f618df675c1799e3461bbb7f215f7ed40ee17aea03bb093f1f7bd2a9c"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
-      "repository_sha256": "e63c0e61fc2eaff13251ccaa133d124dc497d5cb95b41a009136ba116892bc78"
+      "repository_sha256": "945b528729118a85ae169544e3e56a296fb05ae543bf8ccb4cd47fc7edc2c734"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/06-data-state-calibration.md",
@@ -198,7 +202,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/07-logs-errors.md",
-      "repository_sha256": "0c86fee4e26321212609aede6e9a7225a7c5f270cfc5042223b4b76457ef205c"
+      "repository_sha256": "80f0f50bf4fffdcfe7fcb8eb360ad1a1e1d8e24e8c5fdb16cd7ace5483ad7e27"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/08-agent-tasks.md",
@@ -242,11 +246,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/agent-instructions-template.txt",
-      "repository_sha256": "683e0c83b6be217763413c9c01f4993a27d70a1cef3f4024e6e52ba4f2f8ba9d"
+      "repository_sha256": "4631073d7349f4e02aec4f823460ca0bdec4775f7ebb8f1bfd141d77c9b7e5f5"
     },
     {
       "path": "standards/embedded-c/v1.3/source/project-entry-template.txt",
-      "repository_sha256": "54eec14a85df119069a72faebed6d344db259f5f943957f3b4a27c3fe31f92cd"
+      "repository_sha256": "169056a15578953ae9a5dd480ee6a2e7f40536d9ba00305b2287ab33f124e7b8"
     },
     {
       "path": "standards/embedded-c/v1.3/source/readability-checklist.txt",
@@ -258,7 +262,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "e8071cfd5c8db556bf93cc2fef7a053bc3f4567474b90b773990fe06db060edf"
+      "repository_sha256": "28c71ea9462e590bdfdcb614f78e7803830fed62a5fcc1092a0dc10253ef6f24"
     }
   ],
   "changes": [

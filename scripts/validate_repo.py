@@ -219,6 +219,10 @@ def validate_embedded_c_policy(policy, source_rules):
         'clause_coverage.catalog': 'standards/embedded-c/v1.3/huawei/coverage.json',
         'clause_coverage.numbered_clauses': 139,
         'clause_coverage.governance_supplements': 6,
+        'clause_coverage.coverage_revision': 3,
+        'clause_coverage.reviewed_subrequirements': 50,
+        'clause_coverage.all_catalog_subrequirements_accounted_for': True,
+        'clause_coverage.parent_pass_does_not_imply_child_pass': True,
         'clause_coverage.product_compliance_claimed': False,
         'default_for_applicable_projects': True, 'extra_user_documents_required': False,
         'AI_written_source_is_generated_code_exception': False,
@@ -418,7 +422,7 @@ def main():
         return 1
     print(f'STATIC_SPEC_CHECKS_PASS: {len(repository_files(ROOT))} files; 21 chapters; 16 L4 + 12 L5 scenarios.')
     print('Embedded C V1.3 / Huawei reference: 33 mapped rules, 18 sections and provenance verified; not product C compliance.')
-    print('Huawei clause coverage: 139 numbered + 6 governance items; catalog completeness only.')
+    print('Huawei catalog: 139 numbered + 6 governance + 50 reviewed subitems; no product acceptance claim.')
     print('48 product/HIL acceptance scenarios remain NOT_RUN. No execution, approval or delivery authority is granted.')
     return 0
 

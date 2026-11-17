@@ -14,6 +14,56 @@ KINDS = {'P':'原则', 'R':'规则', 'S':'建议', 'G':'治理补充'}
 GOVERNANCE = ['0.2-1','0.2-2','0.2-3','0.3-application','0.3-exceptions','0.4-levels']
 STRENGTHENED_SUGGESTIONS = {'HW-S-3.7','HW-S-6.3','HW-S-8.3'}
 
+# Reviewed revision-3 subitems: page, source basis, strength in SUB sequence.
+# Project IDs refine source clauses; this fixed inventory is not a C-code checker.
+REVIEWED_SUBREQUIREMENTS = {'HW-S-1.1': [(11, 'explicit_check', 'SHOULD'),
+              (11, 'explicit_check', 'SHOULD'),
+              (11, 'explicit_check', 'SHOULD'),
+              (11, 'explanation', 'SHOULD'),
+              (11, 'exception', 'MUST')],
+ 'HW-R-5.3': [(29, 'explicit_check', 'MUST'), (30, 'explanation', 'SHOULD')],
+ 'HW-P-12.1': [(50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST')],
+ 'HW-R-12.1': [(50, 'explicit_check', 'MUST'),
+               (50, 'explicit_check', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'exception', 'MUST')],
+ 'HW-R-12.2': [(50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'SHOULD'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST'),
+               (50, 'explanation', 'MUST')],
+ 'HW-R-13.9': [(58, 'explicit_check', 'MUST'), (59, 'exception', 'MUST')],
+ 'HW-R-6.2': [(34, 'explicit_check', 'MUST'),
+              (34, 'explicit_check', 'MUST'),
+              (34, 'explicit_check', 'MUST'),
+              (34, 'explicit_check', 'MUST'),
+              (34, 'explicit_check', 'MUST'),
+              (34, 'explicit_check', 'MUST')],
+ 'HW-R-8.6': [(42, 'explicit_check', 'MUST'), (42, 'exception', 'MUST')],
+ 'HW-R-9.1': [(44, 'explicit_check', 'MUST'),
+              (44, 'explanation', 'SHOULD'),
+              (44, 'exception', 'MUST'),
+              (44, 'exception', 'MUST')],
+ 'HW-R-9.6': [(45, 'explicit_check', 'MUST'),
+              (45, 'explicit_check', 'MUST'),
+              (45, 'explicit_check', 'MUST'),
+              (45, 'explicit_check', 'MUST'),
+              (46, 'explicit_check', 'MUST'),
+              (45, 'explanation', 'SHOULD'),
+              (45, 'explanation', 'MUST'),
+              (45, 'exception', 'MUST')]}
+
 
 def expected_inventory():
     result = {f'HW-G-{number}': ('治理补充', number, 0) for number in GOVERNANCE}
@@ -36,7 +86,7 @@ def validate_coverage(data, inventory, project_rule_ids):
                        'not_applicable_requires_reason':True, 'omission_is_not_pass':True}.items():
         if data.get(key) is not value:
             errors.append(f'Huawei coverage boundary changed: {key}')
-    if data.get('standard_version') != '1.3' or data.get('coverage_revision') != 2:
+    if data.get('standard_version') != '1.3' or data.get('coverage_revision') != 3:
         errors.append('Unexpected Huawei coverage/standard revision')
     if data.get('inventory') != BASE + 'source-inventory.json':
         errors.append('Huawei coverage must link its reviewed source inventory')
@@ -86,6 +136,38 @@ def validate_coverage(data, inventory, project_rule_ids):
         target = BASE + f'{expected[identity][2]:02}.md#{identity.lower()}'
         if row.get('requirement_ref') != target:
             errors.append(f'Huawei clause has invalid normative reference: {identity}')
+    actual_child_count = 0
+    for row in rows:
+        parent = row.get('id')
+        expected_children = {
+            f'{parent}.SUB-{n:02}': spec
+            for n, spec in enumerate(REVIEWED_SUBREQUIREMENTS.get(parent, []), 1)
+        }
+        children = row.get('subrequirements', [])
+        if not isinstance(children, list) or any(not isinstance(s, dict) for s in children):
+            errors.append(f'Huawei subrequirements must be object list: {parent}')
+            continue
+        actual_child_count += len(children)
+        child_ids = [s.get('id') for s in children]
+        if any(not isinstance(i, str) for i in child_ids) or len(child_ids) != len(expected_children) or set(child_ids) != set(expected_children):
+            errors.append(f'Huawei subrequirements missing, duplicate or unexpected: {parent}')
+        for child in children:
+            identity = child.get('id')
+            if 'subrequirements' in child:
+                errors.append(f'Huawei subrequirement cannot have nested children: {parent}')
+            if not isinstance(identity, str) or identity not in expected_children:
+                continue
+            actual = tuple(child.get(k) for k in ('source_page', 'source_basis', 'project_level'))
+            if actual != expected_children[identity] or type(child.get('source_page')) is not int:
+                errors.append(f'Huawei subrequirement source/strength changed: {identity}')
+            for field in ('requirement', 'applicability', 'verification', 'source_note'):
+                if not isinstance(child.get(field), str) or not child[field].strip():
+                    errors.append(f'Huawei subrequirement missing {field}: {identity}')
+    expected_child_count = sum(len(rows) for rows in REVIEWED_SUBREQUIREMENTS.values())
+    if data.get('reviewed_subrequirement_count') != expected_child_count or actual_child_count != expected_child_count:
+        errors.append('Huawei reviewed subrequirement count mismatch')
+    if data.get('semantic_review') != BASE + 'semantic-review.md':
+        errors.append('Huawei coverage must link the semantic review record')
     chapters = data.get('chapters', [])
     if [r.get('chapter') for r in chapters] != list(range(16)):
         errors.append('Huawei coverage must retain governance and chapters 1-15')
@@ -103,7 +185,7 @@ def render_views(data):
     lines = ['# 华为条款逐条覆盖总览', '',
              '本表由 [coverage.json](coverage.json) 生成；维护方法和执行边界见 [使用说明](README.md)。', '',
              f"原文编号条款139项：原则{totals['原则']}、规则{totals['规则']}、建议{totals['建议']}；另列治理补充{totals['治理补充']}项，共145项。",
-             '', '全部已形成项目要求；ADOPTED表示按原意纳入，ADAPTED表示明确项目适配。二者均不表示产品已验证或PASS。', '',
+             '', f"编号清单完整；本轮另将10个条款中的{data['reviewed_subrequirement_count']}个要求、说明或例外拆成可独立核对的子项。SUB编号由项目定义，不是新增原文编号。", '', 'ADOPTED表示按原意纳入，ADAPTED表示明确项目适配。编号完整与字段检查不证明全部自然语言语义无遗漏，也不表示产品已验证或PASS；本轮核对范围见[语义修订记录](semantic-review.md)。', '',
              '| 主题 | 原则 | 规则 | 建议 | 治理补充 |', '| --- | ---: | ---: | ---: | ---: |']
     for chapter in data['chapters']:
         n = chapter['chapter']
@@ -125,6 +207,15 @@ def render_views(data):
                 f"**项目差异：** {row['difference']}", '',
                 f"映射：{', '.join(row['project_rule_ids'])}。实施责任：{row['implementation_owner']}；独立验证：{row['independent_verification_owner']}；发现入口：DOT/{row['finding_intake']}。", ''
             ])
+            for child in row.get('subrequirements', []):
+                body.extend([
+                    f"<a id=\"{child['id'].lower()}\"></a>",
+                    f"### {child['id']} · {child['project_level']}", '',
+                    f"**细化要求：** {child['requirement']}", '',
+                    f"**适用条件：** {child['applicability']}", '',
+                    f"**检查与证据：** {child['verification']}", '',
+                    f"来源：PDF第{child['source_page']}页，{child['source_basis']}。{child['source_note']} 项目细分ID，非原文编号。", ''
+                ])
         rendered[BASE + f'{n:02}.md'] = '\n'.join(body).rstrip() + '\n'
     lines.extend(['', '## 全部条目索引', '', '| 条款 | 源页 | 项目要求主题 | 强度 | 采纳 | 项目规则 |', '| --- | ---: | --- | --- | --- | --- |'])
     for row in clauses:
@@ -164,7 +255,7 @@ def main():
     for error in errors:
         print('ERROR:', error)
     if not errors:
-        print('Huawei clause catalog: 139 numbered + 6 governance items; product checks NOT_RUN.')
+        print('Huawei catalog: 139 numbered + 6 governance + 50 reviewed subitems; product checks NOT_RUN.')
     return 1 if errors else 0
 
 

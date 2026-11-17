@@ -67,6 +67,12 @@ class EmbeddedCIntegrationTests(unittest.TestCase):
     def test_user_does_not_get_additional_forms(self):
         self.reject('extra_user_documents_required', True)
 
+    def test_subrequirement_gate_cannot_be_silently_disabled(self):
+        self.reject('clause_coverage.coverage_revision', 2)
+        self.reject('clause_coverage.reviewed_subrequirements', 0)
+        self.reject('clause_coverage.all_catalog_subrequirements_accounted_for', False)
+        self.reject('clause_coverage.parent_pass_does_not_imply_child_pass', False)
+
     def test_previous_kernel_indentation_is_not_current_policy(self):
         self.reject('coding.indentation', 'tab')
         self.reject('coding.indent_width', 8)

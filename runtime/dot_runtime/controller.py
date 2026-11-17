@@ -542,13 +542,31 @@ class Controller:
 
     def c_compliance(self, workspace):
         from .compliance import validate_compliance
-        catalog = read_json(CATALOG)
+        try:
+            # One immutable read supplies both the approved file identity and
+            # the catalog used for the prompt and all parent/child decisions.
+            catalog_bytes = Path(CATALOG).read_bytes()
+            catalog_file_sha256 = hashlib.sha256(catalog_bytes).hexdigest()
+            catalog = json.loads(catalog_bytes.decode('utf-8-sig'))
+            if (not isinstance(catalog, dict) or
+                    self.state['candidate']['baseline']['catalog'] != catalog_file_sha256):
+                raise ValueError('Compliance catalog differs from the approved candidate baseline')
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors = ['Compliance catalog baseline is unavailable or stale: ' + str(exc)]
+            self.state['compliance'] = {'status': 'INCOMPLETE', 'errors': errors, 'record': None}
+            self.save()
+            return errors
         instruction = ('Independently assess EVERY one of the 145 clauses in the catalog below. '
             'Include Doxygen. A review does not replace required executed tests, toolchain/build or hardware evidence. '
             'Unavailable execution evidence must be NOT_RUN, never PASS or NOT_APPLICABLE. '
             'For each clause cite concrete source locations, findings and the basis of the applicability judgment. '
             'Return one evidence item kind=review whose output is a JSON object {"clauses":[...]} with each item '
             '{id,applicability,applicability_reason,result,verification_method,reason}. '
+            'For EVERY catalog clause with subrequirements, include a subrequirements array on that parent '
+            'with exactly its catalog child IDs and a separate applicability, applicability_reason, result, '
+            'verification_method and reason for EACH child. Do not infer child PASS from parent PASS. '
+            'Do not omit a child because its parent is NOT_APPLICABLE: assess and explain each child. '
+            'Parents without catalog subrequirements may omit the array or use an empty array. '
             'applicability APPLICABLE/NOT_APPLICABLE; result PASS/NOT_APPLICABLE/NOT_RUN/FAIL/DEVIATION; '
             'verification_method review/automated/manual/instrument/combination. No exception approval exists. '
             'You may use the prior independently executed evidence supplied below, but cannot invent tests.\nCATALOG:\n'
@@ -558,6 +576,8 @@ class Controller:
         errors = []
         record = None
         try:
+            if file_hash(CATALOG) != catalog_file_sha256:
+                raise ValueError('Compliance catalog changed during independent review')
             item = next(e for e in result.get('evidence', []) if e.get('kind') == 'review' and e.get('output', '').lstrip().startswith('{'))
             record = json.loads(item['output'])
             if not isinstance(record, dict) or not isinstance(record.get('clauses'), list) or any(not isinstance(c, dict) for c in record['clauses']):
@@ -566,12 +586,31 @@ class Controller:
             if self.run_dir not in result_path.parents:
                 raise ValueError('Review evidence escaped run directory')
             evidence = {'path': result_path.relative_to(self.run_dir).as_posix(), 'sha256': file_hash(result_path)}
+            session = self.state['sessions'][-1] if self.state['sessions'] else {}
+            if (session.get('role') != 'review' or
+                    session.get('candidate_id') != self.state['candidate']['id'] or
+                    session.get('result', {}).get('session_id') != result.get('session_id') or
+                    evidence not in session.get('evidence_files', [])):
+                raise ValueError('Review result is not a registered artifact of this candidate review session')
             record.update(standard_version=catalog['standard_version'], coverage_revision=catalog['coverage_revision'],
                           catalog_sha256=digest(catalog), candidate_id=self.state['candidate']['id'],
                           implementation_session_id=self.last_implementation_session())
-            for clause in record['clauses']:
-                clause['verifier_session_id'] = result.get('session_id', '')
-                clause['evidence'] = [evidence]
+            def bind_review_identity(rows, depth=0):
+                # Bind provenance only. Missing child rows or conclusions are
+                # left missing for the catalog-driven gate to reject.
+                if depth > 1 and rows:
+                    raise ValueError('Unexpected nested subrequirement review')
+                for clause in rows:
+                    if not isinstance(clause, dict):
+                        raise ValueError('Subrequirement review must contain objects')
+                    clause['verifier_session_id'] = result.get('session_id', '')
+                    clause['evidence'] = [dict(evidence)]
+                    if 'subrequirements' in clause:
+                        children = clause['subrequirements']
+                        if not isinstance(children, list):
+                            raise ValueError('Subrequirement review must be an array')
+                        bind_review_identity(children, depth + 1)
+            bind_review_identity(record['clauses'])
             trusted = {s['result']['session_id'] for s in self.state['sessions']
                        if s['role'] in ('test', 'review') and s['candidate_id'] == self.state['candidate']['id']
                        and s['result'].get('session_id') and s['result'].get('status') in ('PASS', 'FAIL')}
@@ -579,7 +618,7 @@ class Controller:
                       self.last_implementation_session(), trusted_verifier_sessions=trusted)
             if result.get('status') != 'PASS':
                 errors.append('Independent clause review did not pass')
-        except (ValueError, KeyError, TypeError, StopIteration) as exc:
+        except (OSError, ValueError, KeyError, TypeError, StopIteration) as exc:
             errors.append('Missing or malformed independent compliance evidence: ' + str(exc))
         self.state['compliance'] = {'status': 'PASS' if not errors else 'INCOMPLETE', 'errors': errors, 'record': record}
         self.save()

@@ -1,5 +1,5 @@
 {
-  "coverage_revision": 2,
+  "coverage_revision": 3,
   "standard_version": "1.3",
   "source_document_id": "DKBA 2826-2011.5",
   "source_sha256": "4de7381858f8e47f3c04b6f1950bcebdb41b289bf8fedf67990ff0180ef6efba",
@@ -475,18 +475,70 @@
       "title": "模块目录与总接口",
       "project_level": "SHOULD",
       "adoption": "ADOPTED",
-      "project_requirement": "同一模块的源文件集中组织，按模块提供稳定的外部接口头；总接口不是无差别包含全部私有头文件。",
+      "project_requirement": "建议将同一模块的源文件集中在以模块名命名的目录内，并提供文件基本名与目录名一致的模块对外头文件；该头文件组织稳定的公共接口，不是无差别包含全部私有头文件。内部子功能关系松散的模块可以直接提供子模块或源文件对应的公共头文件，不强求总接口头。",
       "applicability": "由多个文件组成的模块",
-      "verification": "核对目录边界、公开入口及实际使用需求；不适用布局说明原因。",
+      "verification": "分别核对目录归属及名称、模块公共头文件名称、公开接口范围；对于关系松散而无总接口头的布局，记录模块关系与使用需求，不能仅因缺少总头判为失败。",
       "project_rule_ids": [
         "ARCH-001",
         "HEADER-001"
       ],
-      "difference": "保留原条款意图与强度；按本清单实施。",
+      "difference": "保留建议强度；补齐目录名和对外头文件名约束，并保留松散模块可不提供总头文件的原文例外。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/01.md#hw-s-1.1"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/01.md#hw-s-1.1",
+      "subrequirements": [
+        {
+          "id": "HW-S-1.1.SUB-01",
+          "source_page": 11,
+          "source_basis": "explicit_check",
+          "project_level": "SHOULD",
+          "requirement": "同一模块的多个源文件应集中在同一目录。",
+          "applicability": "由多个源文件组成的模块",
+          "verification": "核对模块清单与源文件目录映射。",
+          "source_note": "建议1.1的文件组织要求。"
+        },
+        {
+          "id": "HW-S-1.1.SUB-02",
+          "source_page": 11,
+          "source_basis": "explicit_check",
+          "project_level": "SHOULD",
+          "requirement": "模块目录名应采用模块名。",
+          "applicability": "具有独立目录的模块",
+          "verification": "比对模块定义中的名称与实际目录名，偏离须说明理由。",
+          "source_note": "建议1.1明确目录与模块的命名对应。"
+        },
+        {
+          "id": "HW-S-1.1.SUB-03",
+          "source_page": 11,
+          "source_basis": "explicit_check",
+          "project_level": "SHOULD",
+          "requirement": "模块应提供对外公共头文件，其文件基本名应与模块目录名一致。",
+          "applicability": "需要整体公共接口的模块；不适用松散模块例外时",
+          "verification": "核对公共头文件的存在、文件名与模块目录名；按项目既定大小写规则检查。",
+          "source_note": "建议1.1明确整体对外头文件及其命名；不要求扩展名也等于目录名。"
+        },
+        {
+          "id": "HW-S-1.1.SUB-04",
+          "source_page": 11,
+          "source_basis": "explanation",
+          "project_level": "SHOULD",
+          "requirement": "模块对外头文件应集中声明对使用者稳定的公共接口，不能简单汇入全部私有头文件。",
+          "applicability": "模块提供总接口头文件时",
+          "verification": "检查公开声明、包含图及私有接口是否泄漏。",
+          "source_note": "原说明将总头定位为面向使用者的接口。"
+        },
+        {
+          "id": "HW-S-1.1.SUB-05",
+          "source_page": 11,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "模块内部子功能关系松散、整体总接口不适用时，允许直接提供各子模块或源文件的公共头文件；不得机械要求增加总头。",
+          "applicability": "有独立接口且内部关系松散的模块",
+          "verification": "记录模块耦合关系与接口使用方式，核实例外条件；不得把合乎该例外的布局判为违反建议。",
+          "source_note": "原文明确存在无需模块总头的情况；此MUST约束评审对例外的正确处理，不把建议升级。"
+        }
+      ]
     },
     {
       "id": "HW-S-1.2",
@@ -1565,18 +1617,40 @@
       "title": "宏实参不得携带修改",
       "project_level": "MUST",
       "adoption": "ADOPTED",
-      "project_requirement": "宏调用不得用自增、自减、赋值等改变实参状态；还须审查重复求值和有副作用调用。",
-      "applicability": "函数式宏调用",
-      "verification": "逐项检查实参和展开后的求值次数，包括MMIO、volatile及函数副作用。",
+      "project_requirement": "宏调用不得用自增、自减、赋值等改变实参状态；还须审查重复求值和有副作用调用。普通函数调用也建议避免在实参中修改变量，以免接口以后替换为兼容宏时产生非预期行为。拆分表达式须保留已定义的实参值、状态变化及调用语义，后置操作必要时先保存旧值，不能机械前移更新。",
+      "applicability": "函数式宏及普通函数调用；普通函数实参变更按SHOULD子项评估",
+      "verification": "分别审查宏实参的修改操作、展开求值次数及MMIO/volatile/函数副作用，并检查普通函数实参中的自增、自减和赋值；普通函数项按SHOULD评估，不能仅因C语法允许即自动通过。",
       "project_rule_ids": [
         "C-001",
         "READ-004"
       ],
-      "difference": "保留原条款意图与强度；按本清单实施。",
+      "difference": "宏实参约束保持MUST；补入p30续文对普通函数实参变更的SHOULD建议，不因归属规则5.3而将该建议错误提升为MUST。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/05.md#hw-r-5.3"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/05.md#hw-r-5.3",
+      "subrequirements": [
+        {
+          "id": "HW-R-5.3.SUB-01",
+          "source_page": 29,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "函数式宏的实参不得包含自增、自减、赋值等改变实参状态的操作。",
+          "applicability": "函数式宏调用",
+          "verification": "检查每个宏调用实参及宏展开；对可能重复求值或隐藏副作用的表达式记录分析结论。",
+          "source_note": "规则5.3主体要求；项目既有MMIO和volatile审查继续适用。"
+        },
+        {
+          "id": "HW-R-5.3.SUB-02",
+          "source_page": 30,
+          "source_basis": "explanation",
+          "project_level": "SHOULD",
+          "requirement": "普通函数调用应避免在实参表达式中改变变量。拆成明确步骤时，必须保留原表达式已定义的实参值、状态变化、求值/短路关系及调用次数；后置操作必要时先保存旧值，不能机械前移更新。",
+          "applicability": "普通函数调用，包括目前求值行为合法的单参数调用",
+          "verification": "检查实参中的变量修改；记录保留该写法的评估理由，不只筛查未定序表达式。",
+          "source_note": "原文续文明确使用建议语气；动机是接口将来可能以兼容宏替换。 保持行为是既有项目约束，不将普通函数实参建议升级为MUST。"
+        }
+      ]
     },
     {
       "id": "HW-R-5.4",
@@ -1785,19 +1859,81 @@
       "chapter": 6,
       "title": "所有资源有释放责任",
       "project_level": "MUST",
-      "adoption": "ADOPTED",
-      "project_requirement": "内存、句柄、队列、定时器和同步对象有明确所有者，正常、异常及部分初始化路径均能回收。",
+      "adoption": "ADAPTED",
+      "project_requirement": "内存及句柄、定时器、Socket、队列、同步对象等资源必须明确所有者和释放责任，正常、异常及部分初始化退出均完成应有清理。嵌套所有权按子对象到容器的顺序释放；指针数组和队列销毁前逐个核对自有成员的释放或明确转移；重新分配不得覆盖未处置的旧资源引用。涉及宏内退出也核查清理路径。借用、共享或已转移对象按所有权契约处理，不机械逐个free。",
       "applicability": "资源取得和转移",
-      "verification": "检查所有权表，失败注入和重复运行观察资源恢复。",
+      "verification": "对照所有权表检查每条正常/异常/部分初始化退出、嵌套结构、指针数组和队列成员、重复取得资源及宏内return/break。执行分配失败注入、重复创建销毁和资源计数检查，确认不泄漏、不重复释放、不释放借用或仍在使用的对象。",
       "project_rule_ids": [
         "RES-001",
         "READ-003"
       ],
-      "difference": "保留原条款意图与强度；按本清单实施。",
+      "difference": "细化原规则列出的资源清理检查点；将从下层向上层释放限定于实际拥有的嵌套资源，借用、共享和异步对象遵循已声明的所有权及生命周期，不将建议措施机械解释为一律free。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/06.md#hw-r-6.2"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/06.md#hw-r-6.2",
+      "subrequirements": [
+        {
+          "id": "HW-R-6.2.SUB-01",
+          "source_page": 34,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "正常、异常及部分初始化退出前，逐项清点本路径已取得且应释放的内存、定时器、文件/Socket句柄、队列、同步及其他项目资源；保留或转移须有明确所有者和最终释放点。",
+          "applicability": "取得资源后存在失败、提前返回或阶段性退出",
+          "verification": "按资源取得顺序构造各阶段失败，检查清理集合及最终资源计数。",
+          "source_note": "原文规则6.2的异常出口清理清单；与项目所有权转移约定并用。"
+        },
+        {
+          "id": "HW-R-6.2.SUB-02",
+          "source_page": 34,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "销毁拥有下层资源的结构时先完成下层自有资源的释放或合法转移，再销毁持有其引用的上层容器；共享或借用成员不得由非所有者释放。",
+          "applicability": "结构拥有嵌套分配对象或多层资源",
+          "verification": "审查所有权树和析构顺序；用非空嵌套对象及部分构造失败验证没有失去最后释放引用、重复释放或悬空访问。",
+          "source_note": "原文明确要求删除结构指针时从底层向上层；按真实所有权解释该顺序。"
+        },
+        {
+          "id": "HW-R-6.2.SUB-03",
+          "source_page": 34,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "释放指针数组容器前逐个检查已初始化元素所指资源的归属；自有资源先释放或明确转移，空元素、借用元素和共享引用分别按契约处理。",
+          "applicability": "数组元素是指针且数组或其元素有独立生命周期",
+          "verification": "测试空数组、部分初始化、多个自有元素及混合借用元素，核查容器和元素各自的清理责任。",
+          "source_note": "原文要求确认释放指针数组前各元素已被提前处置；不据此释放借用对象或同一资源的多个别名。"
+        },
+        {
+          "id": "HW-R-6.2.SUB-04",
+          "source_page": 34,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "再次分配或替换对象时，必须持续跟踪旧引用与所有权，不得覆盖尚未处置的唯一引用；按接口契约处理成功和失败路径的新旧对象。允许先分配新对象，成功后切换并释放旧对象，失败时保留旧对象。",
+          "applicability": "重复初始化、重新分配、对象替换或多次请求",
+          "verification": "连续执行成功和失败的重建路径，检查旧对象引用、失败后的状态和最终累计资源量。",
+          "source_note": "原文要求避免重复分配内存；这里禁止造成资源丢失的重复分配，不禁止有明确生命周期的多个独立对象。"
+        },
+        {
+          "id": "HW-R-6.2.SUB-05",
+          "source_page": 34,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "审查现有或经批准保留的含return/break宏时展开其真实控制流，保证隐藏退出不会跳过已取得资源的清理；本条不授权新增违反宏控制流规则的宏。",
+          "applicability": "适用代码存在宏内部返回或跳出",
+          "verification": "展开宏并追踪跳出范围、退出路径和清理语句，执行相应异常分支测试。",
+          "source_note": "原文把含return/break宏列为资源清理风险；同时遵守项目关于宏控制流的更严格约束。"
+        },
+        {
+          "id": "HW-R-6.2.SUB-06",
+          "source_page": 34,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "销毁、清空或放弃队列时逐个核对成员资源；队列所有的成员先释放或交给明确接收者，借用/共享成员按契约处置，不能只释放队列容器。",
+          "applicability": "队列中承载需要回收的对象或指针",
+          "verification": "检查有成员、部分消费、取消和失败恢复场景；核对成员、容器与已移交对象各自的释放和去向。",
+          "source_note": "原文要求检查队列每个成员是否释放；按实际所有权保留合法转移，不重复释放已移交成员。"
+        }
+      ]
     },
     {
       "id": "HW-R-6.3",
@@ -2268,18 +2404,40 @@
       "title": "明确case贯穿意图",
       "project_level": "MUST",
       "adoption": "ADOPTED",
-      "project_requirement": "有意从一个case继续进入下一case时，在交界处写清贯穿原因，不能以漏写break伪装正常。",
+      "project_requirement": "一个case执行处理后有意继续下一case时，必须在两者交界处明确注明贯穿意图；中间没有处理语句、共同进入同一处理体的连续case标签不强制添加贯穿注释，不能将该例外用于已执行操作的case。",
       "applicability": "switch贯穿路径",
-      "verification": "检查每个case出口和注释，测试贯穿及非贯穿路径。",
+      "verification": "区分有处理后的贯穿与仅连续空标签。检查前者的交界注释和真实路径；对后者不得仅因缺贯穿注释判失败，同时核对其共同处理体与终止行为。",
       "project_rule_ids": [
         "DOC-001",
         "C-001"
       ],
-      "difference": "保留原条款意图与强度；按本清单实施。",
+      "difference": "补全原文明示的空连续case例外，既不放宽有处理后贯穿的注释要求，也不额外要求无处理标签添加无意义注释。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/08.md#hw-r-8.6"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/08.md#hw-r-8.6",
+      "subrequirements": [
+        {
+          "id": "HW-R-8.6.SUB-01",
+          "source_page": 42,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "case执行了处理语句后仍有意进入下一case时，在处理结束与下一标签之间明确标注贯穿意图，避免与漏写break混淆。",
+          "applicability": "有实际处理语句且未终止就进入下一case",
+          "verification": "检查处理体出口与交界注释，并验证贯穿路径及下一case的独立入口。",
+          "source_note": "原文规则8.6针对处理完一个case后进入下一case的场景。"
+        },
+        {
+          "id": "HW-R-8.6.SUB-02",
+          "source_page": 42,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "不得仅因中间没有处理语句的连续case标签缺少贯穿注释而判违反本条；标签共同进入同一处理体且意图清晰时，原文不强制注释。",
+          "applicability": "连续case标签之间没有处理语句",
+          "verification": "核实标签间确实无操作；对空标签例外和有处理贯穿分别设置审查判据。",
+          "source_note": "原文p42在示例旁明确保留无处理的连续case不强制注释例外。"
+        }
+      ]
     },
     {
       "id": "HW-R-8.7",
@@ -2396,17 +2554,59 @@
       "title": "四空格缩进",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "每级缩进用4空格，编辑器将Tab转换为空格；预处理布局统一。AI编写源码不是IDE生成代码豁免。",
+      "project_requirement": "每级缩进使用4个空格，编辑器将Tab键转换为空格；编辑器/IDE支持显示Tab字符时应启用显示以发现误输入。宏定义、编译开关和条件预处理可顶格或采用统一项目方案。AI编写源码不属于IDE生成代码豁免，明确工具生成且不手工维护的文件按项目生成策略处理。",
       "applicability": "新自有代码及授权格式迁移",
-      "verification": "按固定格式配置检查Tab和缩进，审查工具生成文件的边界。",
+      "verification": "核对每级缩进和Tab字符，检查编辑器Tab转空格配置；支持Tab显示时检查已启用或有偏离说明。分别审查预处理布局一致性与工具生成文件范围，不将顶格预处理或批准生成文件误判。",
       "project_rule_ids": [
         "C-001"
       ],
-      "difference": "原文IDE向导代码可不改；本项目仅对明确工具生成且不手工维护的文件按生成策略处理。",
+      "difference": "保留4空格规则，补入原说明的条件性Tab可视化建议及预处理布局选择；原文IDE向导代码可不改，本项目仅对明确工具生成且不手工维护文件按生成策略处理。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/09.md#hw-r-9.1"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/09.md#hw-r-9.1",
+      "subrequirements": [
+        {
+          "id": "HW-R-9.1.SUB-01",
+          "source_page": 44,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "自有或需人工维护的适用代码每级缩进使用4个空格；可配置编辑器时将Tab键设置为插入空格，实际源码不以Tab字符作层级缩进。",
+          "applicability": "新增自有代码或已授权格式迁移",
+          "verification": "检查固定格式配置、编辑器Tab转换设置和实际缩进字符，区分格式迁移范围。",
+          "source_note": "原文规则9.1的每级4空格及说明中需要打开Tab转空格配置。"
+        },
+        {
+          "id": "HW-R-9.1.SUB-02",
+          "source_page": 44,
+          "source_basis": "explanation",
+          "project_level": "SHOULD",
+          "requirement": "所用编辑器或IDE提供Tab字符可视化功能时，应启用该功能，便于及时发现误输入；无此能力时注明不适用，不假定所有工具都支持。",
+          "applicability": "实际使用的编辑器/IDE支持显示Tab字符",
+          "verification": "记录工具及支持情况，支持时核对显示设置；若未采用记录具体理由，仍须核验源码缩进。",
+          "source_note": "原说明将显示Tab表述为支持时应该打开，保留条件性建议强度。"
+        },
+        {
+          "id": "HW-R-9.1.SUB-03",
+          "source_page": 44,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "不得仅因宏定义、编译开关或条件预处理顶格而判违反程序块缩进；采用自定义预处理排版时同一产品/模块保持一致。",
+          "applicability": "预处理指令及宏的布局",
+          "verification": "对照项目格式约定检查同类指令一致性，不对预处理机械套用代码块层级。",
+          "source_note": "原文允许预处理顶格或自定义方案，并要求产品/模块一致。"
+        },
+        {
+          "id": "HW-R-9.1.SUB-04",
+          "source_page": 44,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "识别并记录IDE/工具生成文件边界，明确生成且不手工维护的文件按批准的生成策略处理；不能以AI生成名义将普通自有源码排除出格式要求。",
+          "applicability": "工具生成代码或拟豁免格式迁移的文件",
+          "verification": "核对生成入口、生成标记、维护方式及项目适用性记录。",
+          "source_note": "原文允许IDE向导生成代码不改；本项目沿用已有较严格生成文件边界，不新增通用豁免。"
+        }
+      ]
     },
     {
       "id": "HW-R-9.2",
@@ -2502,17 +2702,99 @@
       "title": "运算符间距统一",
       "project_level": "MUST",
       "adoption": "ADOPTED",
-      "project_requirement": "二元对等运算符周围加适当空格，紧密成员访问等保持紧凑；不加无意义连续空格或括号内部填充。",
+      "project_requirement": "按操作符语义设置间距：同一行的逗号/分号分隔处只在后方留空格；比较、赋值、算术、逻辑及位运算等双目操作符两侧留空格；符号形式单目操作符紧贴其操作数；sizeof等关键字/类型运算按语法分隔，不能合并词元，成员访问的->和.两侧不留空格；if/for/while/switch等控制关键字与后续条件括号间留空格。括号内侧和相邻多重括号通常不额外填空格，操作符分隔不连续留多个空格。长表达式可按原说明为整体清晰适当收紧局部间距，不把缩进、合法对齐或行尾机械算作操作符分隔。",
       "applicability": "表达式排版",
-      "verification": "按项目格式配置核对操作符、成员访问及长表达式可读性。",
+      "verification": "使用按语法区分单双目、声明和表达式的格式检查，核对逗号/分号、成员访问、控制关键字和括号间距。对换行、空for分句、行尾、合法缩进/对齐及长表达式例外单独审查，避免字符替换误伤。",
       "project_rule_ids": [
         "C-001"
       ],
-      "difference": "保留原条款意图与强度；按本清单实施。",
+      "difference": "补齐原规则说明中的具体间距约定和保持长语句整体清晰的局部调整条件；这些是格式要求的操作细则，不将示例值或行尾空白当作强制要求，也不把单目操作符的紧贴关系套用到相邻双目运算符。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/09.md#hw-r-9.6"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/09.md#hw-r-9.6",
+      "subrequirements": [
+        {
+          "id": "HW-R-9.6.SUB-01",
+          "source_page": 45,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "逗号或分号作为同一行项目/语句分隔符时，不在其前方加分隔空格，在后续项目之前留一个空格；行尾不补尾随空格，换行、紧邻闭合符号或空for分句按语法布局处理。",
+          "applicability": "声明列表、实参列表及for头等使用逗号或分号分隔的代码",
+          "verification": "按语法位置检查分隔前后间距，涵盖多行列表、末尾分号和for头；不使用无条件字符串替换。",
+          "source_note": "原文规则9.6的细项(1)指定逗号/分号只后方留空格；示例不意味着在行尾追加空白。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-02",
+          "source_page": 45,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "比较、赋值及复合赋值、算术、逻辑和位运算等双目操作符一般在两侧各留一个空格，语义和局部调整遵守本条长表达式例外。",
+          "applicability": "双目表达式及赋值",
+          "verification": "区分&、*等符号的单目/双目角色，核对两侧分隔及表达式整体可读性。",
+          "source_note": "原文细项(2)列出的双目运算间距要求；按操作符语义解释，避免沿用原说明个别类别名称不精确的表述。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-03",
+          "source_page": 45,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "符号形式的前置单目操作符与其操作数之间不插入空格，后置自增/自减紧贴操作数；取地址、解引用、逻辑非和按位取反等按单目语义处理。sizeof等关键字/类型运算遵守语法分隔，不能合并词元；相邻双目运算符仍按其规则留空格。",
+          "applicability": "单目表达式和前/后置自增自减",
+          "verification": "用表达式语法检查操作符与操作数结合处，不把指针声明或相邻赋值号误判为单目间距。",
+          "source_note": "原文细项(3)通过单目运算及示例说明紧贴操作数；不是禁止其外侧与其他语法单元正常分隔。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-04",
+          "source_page": 45,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "成员访问操作符->和.与两侧操作数之间不留空格。",
+          "applicability": "结构/联合成员访问",
+          "verification": "检查成员访问表达式，排除字符串、注释及其他用途的点号。",
+          "source_note": "原文细项(4)要求成员访问紧密书写。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-05",
+          "source_page": 46,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "if、for、while、switch等控制关键字与紧随的条件或控制括号之间留一个空格，使其与普通函数调用可区分。",
+          "applicability": "具有后续括号的控制语句",
+          "verification": "检查控制关键字到左括号的分隔，避免套用到函数名、宏名或其他括号用途。",
+          "source_note": "原文规则9.6细项(5)位于下一页，不能因跨页遗漏。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-06",
+          "source_page": 45,
+          "source_basis": "explanation",
+          "project_level": "SHOULD",
+          "requirement": "已经清楚的括号内侧及相邻多重括号之间不额外填充空格，保持表达式自然紧凑；不得为所谓宽松排版机械插入空白。",
+          "applicability": "圆括号包围的表达式及多重括号",
+          "verification": "审查左右括号内侧与连续括号布局，结合长表达式整体清晰度判断。",
+          "source_note": "原说明用不需要、不必描述这些位置，保留其避免多余填充的建议含义，不把语法必需分隔误去除。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-07",
+          "source_page": 45,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "作为操作符分隔使用的空白不连续堆叠两个或更多空格；代码块缩进和单独规定的对齐不属于此处的操作符分隔。",
+          "applicability": "表达式中给操作符添加的分隔空白",
+          "verification": "核对运算符周围空格用途，区分缩进、对齐和普通表达式间隔。",
+          "source_note": "原说明明确不要连续留两个以上空格；限制对象是给操作符留空格。"
+        },
+        {
+          "id": "HW-R-9.6.SUB-08",
+          "source_page": 45,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "长语句若逐处加空格反而损害整体清晰度，允许依据项目统一格式收紧局部间距；不得把此条件性例外扩大为任意省略空格，也不得仅因有合理局部收紧而判违规。",
+          "applicability": "过长且密集表达式的局部间距调整",
+          "verification": "记录或审查整体可读性理由，核对同类表达式一致性；必要时优先合理换行而非挤压。",
+          "source_note": "原说明允许长语句以整体清晰为目标在局部不加空格；保留原文例外边界。"
+        }
+      ]
     },
     {
       "id": "HW-S-9.1",
@@ -2787,18 +3069,80 @@
       "title": "模块具备清晰测试边界",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "模块低耦合、契约稳定、输入输出和前置条件明确，关键状态可通过受控接口观察和驱动。",
+      "project_requirement": "模块低耦合、契约稳定，前置条件、输入和预期输出明确；关键状态和数据可通过受控接口查询及设置，原子功能具有唯一逻辑入口，相关依赖集中管理。出口按项目既定适配保持清晰行为边界，允许守卫返回；测试接口不得形成生产越权通道。",
       "applicability": "模块设计和测试接口",
-      "verification": "从行为编写独立判据，核查依赖集中管理和状态可观察性。",
+      "verification": "依据契约编写独立判据；检查原子功能入口映射及无旁路入口，核对关键状态/数据的查询和驱动能力、集中依赖和清晰出口边界。",
       "project_rule_ids": [
         "ARCH-001",
         "TEST-001"
       ],
-      "difference": "原说明的唯一出口理解为清晰行为边界，不禁止项目允许的守卫返回；测试接口不能暴露生产越权通道。",
+      "difference": "补齐原子功能入口唯一要求。保留已明确的出口适配：唯一出口落实为清晰行为边界，不禁止守卫返回；受控测试接口不能暴露生产越权通道。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/12.md#hw-p-12.1"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/12.md#hw-p-12.1",
+      "subrequirements": [
+        {
+          "id": "HW-P-12.1.SUB-01",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "模块间接口必须清晰、完整和稳定，降低耦合。",
+          "applicability": "模块设计与接口变更",
+          "verification": "审查接口契约、依赖关系及变更兼容性。",
+          "source_note": "原则12.1说明中的单元测试前提。"
+        },
+        {
+          "id": "HW-P-12.1.SUB-02",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "模块功能必须具有明确的前置条件、输入和预期结果。",
+          "applicability": "具有可观察功能的模块",
+          "verification": "检查验收判据是否能独立于实现形成测试预期。",
+          "source_note": "源说明列明验收条件的组成。"
+        },
+        {
+          "id": "HW-P-12.1.SUB-03",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "模块内部关键状态和关键数据必须能够被查询，并能通过受控设置或受控输入驱动到测试所需状态。",
+          "applicability": "对验收与故障注入有影响的关键状态和数据",
+          "verification": "列出观测/注入接口并验证测试能力与访问控制；不能以公开生产私有状态替代受控测试。",
+          "source_note": "保留源要求，沿用项目对测试接口权限边界的适配。"
+        },
+        {
+          "id": "HW-P-12.1.SUB-04",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "每项模块原子功能必须有唯一的逻辑入口，不能通过多个旁路进入同一原子功能的内部过程。",
+          "applicability": "模块原子功能",
+          "verification": "建立原子功能到入口的映射，检查调用关系和旁路路径；不将唯一入口误解为整个模块只能公开一个函数。",
+          "source_note": "补齐原文明确列出的入口唯一要求。"
+        },
+        {
+          "id": "HW-P-12.1.SUB-05",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "模块原子功能出口必须保持清晰可审查的行为边界，所有返回路径满足后置条件和资源约束；项目允许守卫返回。",
+          "applicability": "原子功能的正常、异常和提前返回路径",
+          "verification": "审查所有出口的结果、资源与状态，验证守卫返回不会绕过必需处理。",
+          "source_note": "原文要求出口唯一；按已公开项目适配执行，不新增或隐藏本次偏离。"
+        },
+        {
+          "id": "HW-P-12.1.SUB-06",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "模块相关依赖必须集中处理，减少全局变量或以清晰封装隔离。",
+          "applicability": "模块外部依赖、全局状态与资源",
+          "verification": "核对依赖清单、封装边界和可替换测试依赖。",
+          "source_note": "源说明要求集中依赖，以减少单元测试困难。"
+        }
+      ]
     },
     {
       "id": "HW-R-12.1",
@@ -2809,18 +3153,60 @@
       "title": "统一调测配置与源码",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "测试和发布使用同一维护源码，通过受控且文档化的调测开关及打印接口区分配置。",
+      "project_requirement": "项目或产品组必须统一维护用于集成测试和系统联调的编译调测开关及配套打印接口，并提供详细说明；测试与发布使用同一维护源码，通过受控编译配置区分。默认只使用已统一规定的开关，确需新增时必须先按既定例外及配置变更程序审核，不能由模块自行另设。",
       "applicability": "调试功能、测试版本及发布配置",
-      "verification": "核对开关表、默认值、构建输入和候选ID，配置变化须按影响重新验证。",
+      "verification": "核对统一开关/打印接口清单、用途和默认值说明、实际定义及调用、源码来源和候选ID；搜查清单外开关及其审批依据，配置变化按影响重新验证。",
       "project_rule_ids": [
         "TEST-003",
         "EVID-001"
       ],
-      "difference": "相同源码不同配置不是同一候选，不允许复用不匹配的PASS。",
+      "difference": "补齐项目级统一开关和一般不得另设新开关的要求；允许有理由且经既定程序批准的例外。保留相同源码不同配置不是同一候选、不能复用不匹配PASS的项目要求。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/12.md#hw-r-12.1"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/12.md#hw-r-12.1",
+      "subrequirements": [
+        {
+          "id": "HW-R-12.1.SUB-01",
+          "source_page": 50,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "项目或产品组必须有统一的集成测试和系统联调开关及相应打印函数。",
+          "applicability": "具有集成测试、系统联调或调测功能的项目",
+          "verification": "核对统一接口、开关表与实际定义/调用，检查模块是否自行绕开。",
+          "source_note": "规则12.1主体是项目或产品组统一，而非仅要求各开关各自受控。"
+        },
+        {
+          "id": "HW-R-12.1.SUB-02",
+          "source_page": 50,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "统一调测开关和打印函数必须有详细使用说明。",
+          "applicability": "已定义的调测开关及打印函数",
+          "verification": "检查用途、取值、默认配置、启停方式和影响说明是否足以复现构建及调测。",
+          "source_note": "细化可复现检查点，承接原文详细说明要求。"
+        },
+        {
+          "id": "HW-R-12.1.SUB-03",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "开发、测试与发行必须维护同一份源码，以规范统一的编译开关区分测试和发行配置。",
+          "applicability": "测试与发行配置并存的项目",
+          "verification": "核对源码基线及构建输入，禁止为测试另行维护与发行脱节的代码版本。",
+          "source_note": "源说明要求统一源码及编译开关；候选身份仍包含配置。"
+        },
+        {
+          "id": "HW-R-12.1.SUB-04",
+          "source_page": 50,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "默认不得在统一规定之外另设编译调测开关；确需新增必须说明原因并按既定例外与配置变更程序批准后纳入统一管理。",
+          "applicability": "拟新增或清单外的编译调测开关",
+          "verification": "对照开关清单搜索新增定义，核实原因、批准记录和配置验证，不能仅凭开发者说明自动通过。",
+          "source_note": "原文为一般不允许，保留例外可能；批准程序沿用项目治理，不声称原文规定了审批工具。"
+        }
+      ]
     },
     {
       "id": "HW-R-12.2",
@@ -2831,18 +3217,130 @@
       "title": "调测日志统一且可定位",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "统一日志分类、级别和配置接口；关键决策及错误记录必要模块、位置、调用、错误码和上下文，兼顾实时预算与敏感信息。",
+      "project_requirement": "项目或产品组统一日志分类及级别，并通过受控配置渠道改变输出内容和格式；关键分支须有日志，建议避免在原子函数内直接记录。调试日志须能定位文件或模块、行号、函数及相关被调用函数，并记录相关错误码和错误环境。实时路径采用有界采集及延后输出等方式保留所需信息，同时遵守ISR、开销与敏感信息要求，不得以场景适配默默删去适用字段。",
       "applicability": "日志和诊断功能",
-      "verification": "验证可配置性、上下文完整、输出开销、ISR限制与敏感信息处理。",
+      "verification": "验证统一分类/级别、输出内容及格式各自可配置；覆盖关键分支并核对文件/模块、行号、函数、被调函数、错误码和环境字段。对无对应调用或错误的字段记录适用性理由；实质偏离须既定例外批准，另测有界开销、ISR约束及敏感数据处理。",
       "project_rule_ids": [
         "LOG-001",
         "TIME-001"
       ],
-      "difference": "必要字段按运行场景设计，不为格式齐全在实时或原子路径无界打印。",
+      "difference": "将原先笼统的必要字段按场景设计收紧为明确的原文字段与适用性检查，补齐输出格式可配置及关键分支记录；原子函数内避免日志仍为SHOULD。保留实时安全适配，但通过有界记录/延后格式化输出落实，不以实时性默认豁免原文要求。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/12.md#hw-r-12.2"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/12.md#hw-r-12.2",
+      "subrequirements": [
+        {
+          "id": "HW-R-12.2.SUB-01",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "项目或产品组必须统一日志分类和日志级别。",
+          "applicability": "日志和诊断功能",
+          "verification": "核对日志分类/级别表与调用使用的一致性。",
+          "source_note": "规则12.2说明的第一项。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-02",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "必须能通过命令行、管理接口或项目提供的等效受控渠道配置和改变日志输出内容。",
+          "applicability": "具有调测日志的产品；具体渠道按产品环境确定",
+          "verification": "执行内容过滤或字段选择配置，验证输出变化及配置可追溯性。",
+          "source_note": "原文给出命令行、网管等渠道，未限定只能采用这些产品形态。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-03",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "必须能通过受控渠道配置和改变日志输出格式。",
+          "applicability": "调测日志输出格式",
+          "verification": "执行格式配置并核对实际输出与解析兼容性；仅能调级别不等于格式可配置。",
+          "source_note": "原文将内容与格式同时列为可配置对象。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-04",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "关键分支必须记录有助于定位行为或故障的日志。",
+          "applicability": "影响主要决策、错误处置或验收结果的关键分支",
+          "verification": "列出关键分支并验证可观测日志；不能只检查统一日志API存在。",
+          "source_note": "原文明确关键分支记录要求。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-05",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "SHOULD",
+          "requirement": "应避免在原子函数内直接记录调试日志，优先在能表达调用上下文的边界记录。",
+          "applicability": "原子函数及其调用边界",
+          "verification": "审查原子函数日志位置、定位价值与开销；保留时说明评估理由。",
+          "source_note": "原文对此明确使用建议语气。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-06",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "调试日志必须包含能够定位来源的文件名或模块名。",
+          "applicability": "调试日志记录",
+          "verification": "核对日志与文件/模块映射；采用事件表或延后解码时须能可靠还原。",
+          "source_note": "原文的文件名/模块名保留择一表示。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-07",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "调试日志必须包含能够定位记录源位置的代码行号。",
+          "applicability": "调试日志记录",
+          "verification": "核对日志行号与所绑定候选源码；延后解码不得丢失候选身份。",
+          "source_note": "原文单独列出代码行号，不能只用模块名替代。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-08",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "调试日志必须包含记录所在函数名。",
+          "applicability": "函数内的调试日志记录",
+          "verification": "核对记录中的函数名与源码调用位置。",
+          "source_note": "原文明确要求函数名。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-09",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "涉及函数调用的调试日志必须包含相关被调用函数名。",
+          "applicability": "记录相关函数调用或调用错误的日志",
+          "verification": "核对被调函数名与实际调用；无相关调用的记录须说明不适用，不能伪造函数信息。",
+          "source_note": "原文另列被调用函数名，不与记录所在函数名混同。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-10",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "错误调试日志必须包含相关错误码。",
+          "applicability": "错误诊断记录",
+          "verification": "触发错误并核对错误码与实际接口或模块定义。",
+          "source_note": "原文列出错误码。"
+        },
+        {
+          "id": "HW-R-12.2.SUB-11",
+          "source_page": 50,
+          "source_basis": "explanation",
+          "project_level": "MUST",
+          "requirement": "错误调试日志必须包含错误发生环境和定位所需上下文。",
+          "applicability": "错误诊断记录",
+          "verification": "验证错误记录中的运行状态、参数与环境足以定位，同时禁止输出敏感信息明文。",
+          "source_note": "原文列出错误发生环境；项目敏感信息保护继续适用。"
+        }
+      ]
     },
     {
       "id": "HW-R-12.3",
@@ -3117,18 +3615,40 @@
       "title": "字符IO先判断完整返回值",
       "project_level": "MUST",
       "adoption": "ADOPTED",
-      "project_requirement": "字符IO返回值用int接收，先区分EOF及错误再转换为字符，避免丢失有效字节或结束标记。",
+      "project_requirement": "字符I/O返回值用int接收，先区分EOF及错误再转换为字符，避免丢失有效字节或结束标记。对于sizeof(int)与sizeof(char)相同、仅凭int返回值仍可能混淆有效字符和EOF的平台，必须结合对应流的feof()与ferror()判断文件结束及读取错误。",
       "applicability": "字符输入输出接口",
-      "verification": "测试EOF、文件错误及高位字节，检查返回类型和转换顺序。",
+      "verification": "检查目标平台的int/char表示和字符I/O接口语义，测试EOF、文件错误及高位有效字节，审查返回类型与转换顺序；对同宽平台验证feof()/ferror()判别分支，不能仅用常见桌面平台结果替代。",
       "project_rule_ids": [
         "API-001",
         "ERR-001"
       ],
-      "difference": "保留原条款意图与强度；按本清单实施。",
+      "difference": "补齐p59同宽平台例外分支；不把原文说明中的char为8位、int为32位当作通用C语言保证。",
       "implementation_owner": "L3",
       "independent_verification_owner": "L4",
       "finding_intake": "L2",
-      "requirement_ref": "standards/embedded-c/v1.3/huawei/13.md#hw-r-13.9"
+      "requirement_ref": "standards/embedded-c/v1.3/huawei/13.md#hw-r-13.9",
+      "subrequirements": [
+        {
+          "id": "HW-R-13.9.SUB-01",
+          "source_page": 58,
+          "source_basis": "explicit_check",
+          "project_level": "MUST",
+          "requirement": "字符I/O函数返回值必须以int接收；需要与EOF比较时，不得先缩窄转换为char。",
+          "applicability": "fgetc/getc/getchar/fputc/putc/putchar/ungetc等返回字符或EOF的接口",
+          "verification": "审查接收变量及EOF比较前的转换，测试高位字节、EOF及错误。",
+          "source_note": "规则13.9及说明；不将示例平台整数宽度推广为语言保证。"
+        },
+        {
+          "id": "HW-R-13.9.SUB-02",
+          "source_page": 59,
+          "source_basis": "exception",
+          "project_level": "MUST",
+          "requirement": "在sizeof(int)等于sizeof(char)、返回值可能无法独立区分字符和EOF的平台，必须使用对应流的feof()和ferror()确认文件尾及文件错误。",
+          "applicability": "同宽目标平台上的字符输入/流处理，存在EOF表示歧义时",
+          "verification": "记录目标类型宽度和表示；验证高位有效字符不会误报EOF，分别验证结束和错误标志处理；缺少目标验证不得声称通过。",
+          "source_note": "原文续页明确要求同宽平台附加检测；不以仅采用int判为充分合规。"
+        }
+      ]
     },
     {
       "id": "HW-R-13.10",
@@ -3260,5 +3780,8 @@
       "finding_intake": "L2",
       "requirement_ref": "standards/embedded-c/v1.3/huawei/15.md#hw-s-15.2"
     }
-  ]
+  ],
+  "subrequirement_id_origin": "project_defined_refinement_of_reviewed_source; not original PDF numbering",
+  "reviewed_subrequirement_count": 50,
+  "semantic_review": "standards/embedded-c/v1.3/huawei/semantic-review.md"
 }

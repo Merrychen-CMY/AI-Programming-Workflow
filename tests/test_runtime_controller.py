@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'runtime'))
@@ -313,6 +314,118 @@ class ControllerTests(unittest.TestCase):
         c.c_compliance = compliance_fixture
         self.assertEqual(c.run()['report']['outcome'], 'SUCCESS')
         self.assertEqual(adapter.calls, ['implementation', 'test', 'review', 'triage', 'implementation', 'test', 'review'])
+
+    def compliance_review_fixture(self):
+        """Synthetic child results exercise controller provenance binding only."""
+        catalog = copy.deepcopy(read_json(ROOT / 'standards/embedded-c/v1.3/huawei/coverage.json'))
+        parent = next(clause for clause in catalog['clauses'] if clause['id'] == 'HW-R-13.9')
+        parent['subrequirements'] = [{
+            'id': 'HW-R-13.9.SUB-91', 'source_page': 59, 'source_basis': 'exception',
+            'project_level': 'MUST', 'requirement': 'Synthetic child requirement.',
+            'applicability': 'Synthetic target.', 'verification': 'Synthetic independent review.',
+            'source_note': 'Protocol test fixture, not product or PDF acceptance.',
+        }]
+        def row(clause):
+            value = {'id': clause['id'], 'applicability': 'APPLICABLE',
+                     'applicability_reason': 'Synthetic fixture scope.', 'result': 'PASS',
+                     'verification_method': 'review', 'reason': 'Synthetic review only.'}
+            if clause.get('subrequirements'):
+                value['subrequirements'] = [row(child) for child in clause['subrequirements']]
+            return value
+        return catalog, {'clauses': [row(clause) for clause in catalog['clauses']]}
+
+    def run_compliance_fixture(self, catalog, record, review_hook=None):
+        report = result(output=json.dumps(record))
+        catalog_path = self.root / 'synthetic-catalog.json'
+        atomic_json(catalog_path, catalog)
+        with patch('dot_runtime.controller.CATALOG', catalog_path):
+            c = self.approved()
+            c.run()
+            c.adapter.overrides = [('review', report)]
+            if review_hook:
+                c.adapter.hook = lambda role, workspace: review_hook(c, catalog_path)
+            errors = c.c_compliance(Path(c.state['candidate']['path']))
+        return c, errors
+
+    def test_compliance_children_receive_real_review_identity_and_evidence(self):
+        catalog, record = self.compliance_review_fixture()
+        c, errors = self.run_compliance_fixture(catalog, record)
+        self.assertEqual(errors, [])
+        parent = next(row for row in c.state['compliance']['record']['clauses'] if row['id'] == 'HW-R-13.9')
+        child = parent['subrequirements'][0]
+        self.assertEqual(child['verifier_session_id'], c.state['sessions'][-1]['result']['session_id'])
+        self.assertEqual(child['evidence'], parent['evidence'])
+        self.assertTrue((self.run_dir / child['evidence'][0]['path']).is_file())
+        self.assertEqual(c.state['compliance']['record']['coverage_revision'], catalog['coverage_revision'])
+        self.assertNotIn('verifier_session_id', record['clauses'][0])
+
+    def test_compliance_controller_does_not_invent_missing_child_conclusions(self):
+        catalog, record = self.compliance_review_fixture()
+        parent = next(row for row in record['clauses'] if row['id'] == 'HW-R-13.9')
+        del parent['subrequirements']
+        c, errors = self.run_compliance_fixture(catalog, record)
+        self.assertTrue(any('missing subrequirement' in error for error in errors))
+        saved_parent = next(row for row in c.state['compliance']['record']['clauses'] if row['id'] == 'HW-R-13.9')
+        self.assertNotIn('subrequirements', saved_parent)
+        self.assertEqual(c.state['compliance']['status'], 'INCOMPLETE')
+
+    def test_compliance_controller_preserves_unexecuted_child_result(self):
+        catalog, record = self.compliance_review_fixture()
+        parent = next(row for row in record['clauses'] if row['id'] == 'HW-R-13.9')
+        parent['subrequirements'][0]['result'] = 'NOT_RUN'
+        c, errors = self.run_compliance_fixture(catalog, record)
+        self.assertTrue(any('SUB-91' in error and 'NOT_RUN' in error for error in errors))
+        saved_parent = next(row for row in c.state['compliance']['record']['clauses'] if row['id'] == 'HW-R-13.9')
+        self.assertEqual(saved_parent['subrequirements'][0]['result'], 'NOT_RUN')
+
+    def test_compliance_controller_rejects_malformed_child_array(self):
+        catalog, record = self.compliance_review_fixture()
+        parent = next(row for row in record['clauses'] if row['id'] == 'HW-R-13.9')
+        parent['subrequirements'] = {'id': 'HW-R-13.9.SUB-91', 'result': 'PASS'}
+        c, errors = self.run_compliance_fixture(catalog, record)
+        self.assertTrue(any('must be an array' in error for error in errors))
+        self.assertEqual(c.state['compliance']['status'], 'INCOMPLETE')
+
+    def test_compliance_catalog_change_during_review_is_rejected(self):
+        catalog, record = self.compliance_review_fixture()
+        def change_catalog(controller, path):
+            modified = read_json(path)
+            modified['clauses'][0]['project_requirement'] += ' Changed during review.'
+            atomic_json(path, modified)
+        c, errors = self.run_compliance_fixture(catalog, record, change_catalog)
+        self.assertTrue(any('changed during' in error for error in errors))
+        self.assertEqual(c.state['compliance']['status'], 'INCOMPLETE')
+
+    def test_compliance_catalog_requires_approved_candidate_baseline_before_worker(self):
+        catalog, record = self.compliance_review_fixture()
+        c = self.approved()
+        c.run()
+        before = list(c.adapter.calls)
+        catalog_path = self.root / 'unapproved-catalog.json'
+        atomic_json(catalog_path, catalog)
+        with patch('dot_runtime.controller.CATALOG', catalog_path):
+            errors = c.c_compliance(Path(c.state['candidate']['path']))
+        self.assertTrue(any('baseline' in error for error in errors))
+        self.assertEqual(c.adapter.calls, before)
+
+    def test_compliance_cannot_bind_another_sessions_report_as_current_evidence(self):
+        catalog, record = self.compliance_review_fixture()
+        report = result(output=json.dumps(record))
+        catalog_path = self.root / 'synthetic-catalog.json'
+        atomic_json(catalog_path, catalog)
+        with patch('dot_runtime.controller.CATALOG', catalog_path):
+            c = self.approved()
+            c.run()
+            old_result_path = c.state['sessions'][-1]['result']['runtime_evidence']['result_path']
+            c.adapter.overrides = [('review', report)]
+            real_worker = c.worker
+            def altered_result(role, instruction, workspace):
+                current = real_worker(role, instruction, workspace)
+                current['runtime_evidence']['result_path'] = old_result_path
+                return current
+            c.worker = altered_result
+            errors = c.c_compliance(Path(c.state['candidate']['path']))
+        self.assertTrue(any('registered artifact' in error for error in errors))
 
 
 if __name__ == '__main__':

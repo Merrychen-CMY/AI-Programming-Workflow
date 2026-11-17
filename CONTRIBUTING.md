@@ -43,6 +43,6 @@ python standards/embedded-c/v1.3/machine/tests/test_readability_contracts.py
 
 ## 华为逐条清单维护
 
-`standards/embedded-c/v1.3/huawei/coverage.json`为145项规范性内容的权威文件；`source-inventory.json`记录139条原文编号及6个本项目治理补充ID和起始页。增删或改强度前核对原文，不通过同时删来源清单和正文隐藏遗漏。
+`standards/embedded-c/v1.3/huawei/coverage.json`为145个父项及当前50个子项的权威文件；`source-inventory.json`记录139条原文编号及6个本项目治理补充ID和起始页。SUB编号为项目细化，不冒充原文编号。增删子项或改变强度须核对原文并更新`huawei/semantic-review.md`、脚本中的固定已复核子项签名、记录模板及拒绝测试；不能通过同时删来源清单和正文隐藏遗漏。子项按自己的MUST/SHOULD处理，父PASS不能替代逐子项适用性和证据。
 
 修改后运行`python scripts/huawei_coverage.py --render`生成16份分章视图与总览，再更新V1.3派生文件哈希和根MANIFEST。普通`validate_repo.py`会核对ID全集、差异、映射及生成视图，并在CI运行相关拒绝测试。这证明枚举与文件一致，不证明自然语言全部正确或产品已符合。

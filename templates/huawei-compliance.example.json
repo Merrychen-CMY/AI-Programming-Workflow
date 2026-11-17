@@ -1,7 +1,7 @@
 {
   "standard_version": "1.3",
-  "coverage_revision": 2,
-  "catalog_sha256": "b8be861f0ba4f1f396cd8a37b3f57ce50daed7f6b977fb4f3a7182646098b1c2",
+  "coverage_revision": 3,
+  "catalog_sha256": "0c7fdd230e2d8895b5d3efeebb6ac4eaae04eec52b6169ebd86cd9684b115d7e",
   "candidate_id": null,
   "implementation_session_id": null,
   "clauses": [
@@ -201,7 +201,64 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-S-1.1.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-S-1.1.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-S-1.1.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-S-1.1.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-S-1.1.SUB-05",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-S-1.2",
@@ -751,7 +808,31 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-5.3.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-5.3.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-5.4",
@@ -861,7 +942,75 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-6.2.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-6.2.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-6.2.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-6.2.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-6.2.SUB-05",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-6.2.SUB-06",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-6.3",
@@ -1103,7 +1252,31 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-8.6.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-8.6.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-8.7",
@@ -1169,7 +1342,53 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-9.1.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.1.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.1.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.1.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-9.2",
@@ -1224,7 +1443,97 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-9.6.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-05",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-06",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-07",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-9.6.SUB-08",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-S-9.1",
@@ -1367,7 +1676,75 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-P-12.1.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-P-12.1.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-P-12.1.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-P-12.1.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-P-12.1.SUB-05",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-P-12.1.SUB-06",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-12.1",
@@ -1378,7 +1755,53 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-12.1.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.1.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.1.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.1.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-12.2",
@@ -1389,7 +1812,130 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-12.2.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-03",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-04",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-05",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-06",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-07",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-08",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-09",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-10",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-12.2.SUB-11",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-12.3",
@@ -1532,7 +2078,31 @@
       "verifier_session_id": null,
       "evidence": [],
       "reason": null,
-      "exception_approval_id": null
+      "exception_approval_id": null,
+      "subrequirements": [
+        {
+          "id": "HW-R-13.9.SUB-01",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        },
+        {
+          "id": "HW-R-13.9.SUB-02",
+          "applicability": "UNASSESSED",
+          "applicability_reason": null,
+          "result": "NOT_RUN",
+          "verification_method": null,
+          "verifier_session_id": null,
+          "evidence": [],
+          "reason": null,
+          "exception_approval_id": null
+        }
+      ]
     },
     {
       "id": "HW-R-13.10",

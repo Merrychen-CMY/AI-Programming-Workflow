@@ -75,7 +75,7 @@ class HuaweiCoverageTests(unittest.TestCase):
         self.rejected()
 
     def test_old_revision_cannot_hide_changed_exception_policy(self):
-        self.data['coverage_revision'] = 1
+        self.data['coverage_revision'] = 2
         self.rejected()
 
     def test_empty_requirement_applicability_check_or_delta_rejected(self):
@@ -131,6 +131,131 @@ class HuaweiCoverageTests(unittest.TestCase):
             shutil.copytree(ROOT / BASE, root / BASE)
             (root / BASE / '02.md').write_text('Stale view\n', encoding='utf-8')
             self.assertTrue(check_repository_coverage(root, self.rules))
+
+    def test_nested_subrequirements_cannot_escape_rendering_or_runtime(self):
+        child = self.row('HW-R-5.3')['subrequirements'][0]
+        for value in ([], None, 'unexpected', [{'id': child['id'] + '.SUB-01'}]):
+            with self.subTest(value=value):
+                child['subrequirements'] = value
+                self.rejected()
+
+    def child(self, parent, suffix='SUB-01'):
+        identity = parent + '.' + suffix
+        return next(item for item in self.row(parent)['subrequirements'] if item['id'] == identity)
+
+    def test_reviewed_subrequirements_have_a_valid_baseline(self):
+        self.assertEqual(validate_coverage(self.data, self.inventory, self.rules), [])
+        children = [child for row in self.data['clauses'] for child in row.get('subrequirements', [])]
+        self.assertEqual(self.data['coverage_revision'], 3)
+        self.assertEqual(len(children), 50)
+        self.assertEqual(len({child['id'] for child in children}), 50)
+
+    def test_missing_subrequirement_is_rejected(self):
+        self.row('HW-R-6.2')['subrequirements'].pop()
+        self.rejected()
+
+    def test_deleting_whole_subrequirement_group_is_rejected(self):
+        del self.row('HW-R-9.6')['subrequirements']
+        self.rejected()
+
+    def test_duplicate_cannot_replace_another_subrequirement(self):
+        children = self.row('HW-R-6.2')['subrequirements']
+        children[-1] = copy.deepcopy(children[0])
+        self.rejected()
+
+    def test_subrequirement_cannot_move_to_another_parent(self):
+        child = self.row('HW-R-6.2')['subrequirements'].pop()
+        self.row('HW-R-8.6')['subrequirements'].append(child)
+        self.rejected()
+
+    def test_fabricated_subrequirement_id_is_rejected(self):
+        self.child('HW-R-6.2')['id'] = 'HW-R-6.2.SUB-99'
+        self.rejected()
+
+    def test_unreviewed_parent_cannot_acquire_subrequirement(self):
+        child = copy.deepcopy(self.child('HW-R-6.2'))
+        child['id'] = 'HW-R-1.1.SUB-01'
+        self.row('HW-R-1.1')['subrequirements'] = [child]
+        self.data['reviewed_subrequirement_count'] += 1
+        self.rejected()
+
+    def test_changing_declared_count_cannot_hide_subrequirement_deletion(self):
+        self.row('HW-R-6.2')['subrequirements'].pop()
+        self.data['reviewed_subrequirement_count'] = 49
+        self.rejected()
+
+    def test_reviewed_subitem_source_signature_cannot_drift(self):
+        child = self.child('HW-R-6.2')
+        for field, value in [('source_page', 35), ('source_page', 34.0),
+                             ('source_basis', 'exception'), ('source_basis', 'invented'),
+                             ('project_level', 'SHOULD')]:
+            with self.subTest(field=field, value=value):
+                previous = child[field]
+                child[field] = value
+                self.rejected()
+                child[field] = previous
+
+    def test_subrequirement_source_reference_is_independently_fixed(self):
+        parent = self.row('HW-R-6.2')
+        parent['source_page'] = 35
+        next(item for item in self.inventory['entries'] if item['id'] == parent['id'])['source_page'] = 35
+        self.child('HW-R-6.2')['source_page'] = 35
+        self.rejected()
+
+    def test_subrequirement_required_evidence_and_scope_are_not_empty(self):
+        child = self.child('HW-R-6.2')
+        for field in ('requirement', 'applicability', 'verification', 'source_note'):
+            for value in (' ', '', None):
+                with self.subTest(field=field, value=value):
+                    previous = child[field]
+                    child[field] = value
+                    self.rejected()
+                    child[field] = previous
+
+    def test_subrequirement_groups_have_the_declared_structure(self):
+        parent = self.row('HW-R-6.2')
+        previous = parent['subrequirements']
+        for value in (None, {}, 'not-an-array', [None]):
+            with self.subTest(value=value):
+                parent['subrequirements'] = value
+                self.rejected()
+        parent['subrequirements'] = previous
+
+    def test_function_argument_and_parenthesis_advice_remain_suggestions(self):
+        # These SHOULD subitems occur under MUST parents; the parent must not
+        # silently raise the strength of the explanatory advice.
+        for parent, suffix in [('HW-R-5.3', 'SUB-02'), ('HW-R-9.6', 'SUB-06')]:
+            with self.subTest(parent=parent):
+                self.assertEqual(self.row(parent)['project_level'], 'MUST')
+                child = self.child(parent, suffix)
+                self.assertEqual(child['project_level'], 'SHOULD')
+                self.assertEqual(child['source_basis'], 'explanation')
+                child['project_level'] = 'MUST'
+                self.rejected()
+                child['project_level'] = 'SHOULD'
+
+    def test_empty_case_exception_is_not_an_unconditional_comment_rule(self):
+        child = self.child('HW-R-8.6', 'SUB-02')
+        self.assertEqual(child['source_basis'], 'exception')
+        self.assertEqual(child['project_level'], 'MUST')
+        # Narrow semantic checks, not a snapshot of the entire prose: the
+        # MUST applies to honoring the empty-label exception, not adding comments.
+        self.assertIn('没有处理语句', child['applicability'])
+        self.assertIn('连续case', child['requirement'])
+        self.assertIn('不得', child['requirement'])
+        self.assertIn('缺少贯穿注释', child['requirement'])
+        self.assertIn('不强制注释', child['requirement'])
+        processed_case = self.child('HW-R-8.6', 'SUB-01')
+        self.assertIn('有实际处理语句', processed_case['applicability'])
+        child['source_basis'] = 'explicit_check'
+        self.rejected()
+        child['source_basis'] = 'exception'
+        child['project_level'] = 'SHOULD'
+        self.rejected()
+
+    def test_semantic_review_pointer_cannot_be_removed(self):
+        self.data['semantic_review'] = None
+        self.rejected()
 
 
 if __name__ == '__main__':

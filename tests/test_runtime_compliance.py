@@ -26,14 +26,35 @@ class ComplianceGateTests(unittest.TestCase):
             'coverage_revision': self.catalog['coverage_revision'],
             'catalog_sha256': catalog_digest(self.catalog),
             'candidate_id': 'candidate-1', 'implementation_session_id': 'implementer-1',
-            'clauses': [{
-                'id': c['id'], 'applicability': 'APPLICABLE',
-                'applicability_reason': 'Synthetic fixture scope includes this clause.',
-                'result': 'PASS', 'verification_method': 'Independent synthetic review',
-                'verifier_session_id': 'reviewer-1', 'evidence': [dict(self.evidence)],
-                'reason': None, 'exception_approval_id': None,
-            } for c in self.catalog['clauses']],
+            'clauses': [self.fixture_row(c) for c in self.catalog['clauses']],
         }
+
+    def fixture_row(self, clause):
+        row = {
+            'id': clause['id'], 'applicability': 'APPLICABLE',
+            'applicability_reason': 'Synthetic fixture scope includes this requirement.',
+            'result': 'PASS', 'verification_method': 'Independent synthetic review',
+            'verifier_session_id': 'reviewer-1', 'evidence': [dict(self.evidence)],
+            'reason': None, 'exception_approval_id': None,
+        }
+        if clause.get('subrequirements'):
+            row['subrequirements'] = [self.fixture_row(child) for child in clause['subrequirements']]
+        return row
+
+    def add_fixture_subrequirements(self):
+        # Independent of the real catalog revision or its selected parent IDs.
+        self.catalog = copy.deepcopy(self.catalog)
+        parent = next(c for c in self.catalog['clauses'] if c['id'] == 'HW-R-13.9')
+        parent['subrequirements'] = [{
+            'id': parent['id'] + suffix, 'source_page': 59,
+            'source_basis': 'exception', 'project_level': level,
+            'requirement': 'Synthetic child requirement used only to exercise the gate.',
+            'applicability': 'Synthetic scope.', 'verification': 'Synthetic review.',
+            'source_note': 'Synthetic protocol fixture, not a source interpretation.',
+        } for suffix, level in (('.SUB-91', 'MUST'), ('.SUB-92', 'SHOULD'))]
+        self.row(parent['id'])['subrequirements'] = [self.fixture_row(c) for c in parent['subrequirements']]
+        self.record['catalog_sha256'] = catalog_digest(self.catalog)
+        return self.row(parent['id'])['subrequirements']
 
     def validate(self, **kwargs):
         return validate_compliance(self.record, self.catalog, self.root,
@@ -46,6 +67,133 @@ class ComplianceGateTests(unittest.TestCase):
 
     def test_complete_bound_independent_evidence_passes(self):
         self.assertEqual(self.validate(), [])
+
+    def test_complete_parent_and_child_results_pass(self):
+        self.add_fixture_subrequirements()
+        self.assertEqual(self.validate(), [])
+
+    def test_parent_pass_does_not_imply_children_pass(self):
+        self.add_fixture_subrequirements()
+        del self.row('HW-R-13.9')['subrequirements']
+        self.assertTrue(any('missing subrequirement' in e for e in self.validate()))
+
+    def test_duplicate_child_cannot_replace_missing_child(self):
+        children = self.add_fixture_subrequirements()
+        children[-1] = copy.deepcopy(children[0])
+        errors = self.validate()
+        self.assertTrue(any('duplicate' in e for e in errors))
+        self.assertTrue(any('missing subrequirement' in e for e in errors))
+
+    def test_child_cannot_be_invented_or_moved_to_another_parent(self):
+        children = self.add_fixture_subrequirements()
+        original = children[0]['id']
+        children[0]['id'] = 'HW-R-13.9.SUB-99'
+        self.assertTrue(any('unknown or misplaced' in e for e in self.validate()))
+        children[0]['id'] = original
+        self.row('HW-R-9.1').setdefault('subrequirements', []).append(children.pop(0))
+        errors = self.validate()
+        self.assertTrue(any('unknown or misplaced' in e for e in errors))
+        self.assertTrue(any('missing subrequirement' in e for e in errors))
+
+    def test_subrequirement_cannot_be_reported_as_a_top_level_clause(self):
+        children = self.add_fixture_subrequirements()
+        self.record['clauses'].append(children.pop())
+        self.assertTrue(any('parent clause' in e for e in self.validate()))
+
+    def test_child_unexecuted_results_block_even_with_parent_pass(self):
+        children = self.add_fixture_subrequirements()
+        for outcome in ('NOT_RUN', 'FAIL', 'BLOCKED', 'ERROR', 'SKIP', 'APPROVED'):
+            with self.subTest(outcome=outcome):
+                children[0]['result'] = outcome
+                self.assertTrue(any(children[0]['id'] in e for e in self.validate()))
+
+    def test_child_recommendation_deviation_requires_reason(self):
+        children = self.add_fixture_subrequirements()
+        children[1].update(result='DEVIATION', reason='Synthetic justified choice within the recommendation.')
+        self.assertEqual(self.validate(), [])
+        children[1]['reason'] = ''
+        self.assertTrue(self.validate())
+        children[1]['reason'] = 'Reason restored.'
+        children[0].update(result='DEVIATION', reason='Cannot downgrade a mandatory child.')
+        self.assertTrue(self.validate())
+
+    def test_each_child_needs_independent_identity_and_actual_evidence(self):
+        children = self.add_fixture_subrequirements()
+        for field, value in (('verifier_session_id', 'implementer-1'),
+                             ('verifier_session_id', 'invented-reviewer'),
+                             ('evidence', []), ('applicability', 'UNASSESSED'),
+                             ('applicability_reason', ''), ('verification_method', '')):
+            with self.subTest(field=field, value=value):
+                previous = children[0][field]
+                children[0][field] = value
+                self.assertTrue(self.validate())
+                children[0][field] = previous
+
+    def test_child_nonapplicability_is_separately_assessed(self):
+        children = self.add_fixture_subrequirements()
+        children[0].update(applicability='NOT_APPLICABLE', result='NOT_APPLICABLE',
+                           applicability_reason='Synthetic target lacks this child condition.')
+        self.assertEqual(self.validate(), [])
+        children[0]['result'] = 'PASS'
+        self.assertTrue(self.validate())
+
+    def test_nonapplicable_parent_cannot_hide_applicable_child(self):
+        self.add_fixture_subrequirements()
+        self.row('HW-R-13.9').update(applicability='NOT_APPLICABLE', result='NOT_APPLICABLE')
+        self.assertTrue(any('contradicts' in e for e in self.validate()))
+
+    def test_nonapplicable_parent_does_not_waive_missing_children(self):
+        self.add_fixture_subrequirements()
+        parent = self.row('HW-R-13.9')
+        parent.update(applicability='NOT_APPLICABLE', result='NOT_APPLICABLE')
+        del parent['subrequirements']
+        self.assertTrue(any('missing subrequirement' in e for e in self.validate()))
+
+    def test_parent_and_children_can_each_be_independently_nonapplicable(self):
+        children = self.add_fixture_subrequirements()
+        parent = self.row('HW-R-13.9')
+        parent.update(applicability='NOT_APPLICABLE', result='NOT_APPLICABLE')
+        for child in children:
+            child.update(applicability='NOT_APPLICABLE', result='NOT_APPLICABLE',
+                         applicability_reason='Reviewed target lacks this specific child condition.')
+        self.assertEqual(self.validate(), [])
+        children[0]['evidence'] = []
+        self.assertTrue(self.validate())
+
+    def test_mandatory_child_exception_requires_its_own_bound_receipt(self):
+        child = self.add_fixture_subrequirements()[0]
+        child.update(result='EXCEPTION', reason='Synthetic independently approved deviation.',
+                     exception_approval_id='child-approval', approved_by='user', decision='APPROVED')
+        self.assertTrue(self.validate())
+        receipt = {'decision': 'APPROVED', 'approval_id': 'child-approval',
+                   'approved_by': 'authenticated-user', 'clause_id': child['id'],
+                   'candidate_id': self.record['candidate_id'],
+                   'standard_version': self.record['standard_version'],
+                   'coverage_revision': self.record['coverage_revision'],
+                   'catalog_sha256': self.record['catalog_sha256']}
+        self.assertEqual(self.validate(approved_exceptions={'child-approval': receipt}), [])
+        for field, value in (('clause_id', 'HW-R-13.9'), ('candidate_id', 'old-candidate'),
+                             ('catalog_sha256', '0' * 64)):
+            with self.subTest(field=field):
+                wrong = dict(receipt, **{field: value})
+                self.assertTrue(self.validate(approved_exceptions={'child-approval': wrong}))
+
+    def test_parent_without_catalog_children_allows_omitted_or_empty_array(self):
+        parent = next(c for c in self.catalog['clauses'] if not c.get('subrequirements'))
+        row = self.row(parent['id'])
+        row.pop('subrequirements', None)
+        self.assertEqual(self.validate(), [])
+        row['subrequirements'] = []
+        self.assertEqual(self.validate(), [])
+        row['subrequirements'] = None
+        self.assertTrue(self.validate())
+
+    def test_malformed_catalog_child_blocks_instead_of_trusting_report(self):
+        self.add_fixture_subrequirements()
+        parent = next(c for c in self.catalog['clauses'] if c['id'] == 'HW-R-13.9')
+        parent['subrequirements'][0]['project_level'] = 'OPTIONAL'
+        self.record['catalog_sha256'] = catalog_digest(self.catalog)
+        self.assertTrue(any('invalid subrequirement' in e for e in self.validate()))
 
     def test_omitted_clause_blocks(self):
         self.record['clauses'].pop()
