@@ -100,8 +100,8 @@ def validate_policy(policy):
 
 SIMPLE_FLOW_TRANSITIONS = {
     'DISCOVERY': {'REVIEW_PENDING'},
-    'REVIEW_PENDING': {'DISCOVERY', 'PLAN_PENDING', 'BLOCKED'},
-    'PLAN_PENDING': {'REVIEW_PENDING', 'EXECUTING', 'BLOCKED'},
+    'REVIEW_PENDING': {'DISCOVERY', 'PLAN_PENDING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
+    'PLAN_PENDING': {'REVIEW_PENDING', 'EXECUTING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
     'EXECUTING': {'VERIFYING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
     'VERIFYING': {'EXECUTING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
     'DECISION_PENDING': {'REVIEW_PENDING', 'PLAN_PENDING', 'EXECUTING', 'VERIFYING', 'REPORT_PENDING', 'BLOCKED'},
@@ -117,12 +117,17 @@ def validate_simple_flow(flow):
     errors = []
     expected = {
         'default_mode': 'simple',
+        'default_approval_mode': 'delegated_l1',
+        'requirements_require_l1_approval': True,
+        'execution_plan_requires_l1_approval': True,
+        'product_or_ac_change_requires_l1_decision': True,
+        'approval_owners': {'requirements': 'L1', 'execution_plan': 'L1', 'final_report': 'user'},
         'execution_authority': False,
-        'user_facing_roles': ['L1', 'DOT'],
-        'user_approval_artifact': 'versioned_requirements_execution_plan_and_final_report',
-        'implementation_requires_user_approval': True,
+        'user_facing_roles': ['L1'],
+        'user_approval_artifact': 'l1_final_success_or_failure_report',
+        'implementation_requires_user_approval': False,
         'requirements_approval_allows_implementation': False,
-        'execution_plan_requires_user_approval': True,
+        'execution_plan_requires_user_approval': False,
         'final_report_requires_user_approval': True,
         'routine_in_scope_work_requires_new_user_approval': False,
         'internal_verification_plan_requires_separate_user_document': False,
@@ -132,9 +137,9 @@ def validate_simple_flow(flow):
         'implementation_worker_can_issue_final_acceptance': False,
         'issue_intake': 'DOT_as_L2',
         'direct_verifier_to_developer_dispatch': False,
-        'product_or_ac_change_requires_user_decision': True,
+        'product_or_ac_change_requires_user_decision': False,
         'plan_maintenance.may_lower_acceptance_standard': False,
-        'plan_maintenance.semantic_change': 'user_reapproves_changed_execution_plan_and_all_required_reverification',
+        'plan_maintenance.semantic_change': 'L1_reapproves_within_original_delegation_and_reruns_required_checks',
         'delivery.execute_when_existing_authorization_covers_actual_action': True,
         'delivery.check_actual_candidate_evidence_action_target': True,
         'delivery.require_new_approval_when_scope_not_covered': True,
@@ -147,7 +152,7 @@ def validate_simple_flow(flow):
         'internal_role_mapping.L5': 'DOT_acceptance_and_delivery_request',
         'existing_project_protections_remain_required': True,
         'runtime_implemented_by_this_repository': True,
-        'runtime_approval_trust_model': 'local_interactive_user_account_no_authenticated_approval_service',
+        'runtime_approval_trust_model': 'local_delegated_l1_and_final_human_no_authenticated_service',
         'agent_may_enter_user_approval': False,
         'failed_report_approval_resumes_execution': False,
         'budgets_reset_on_restart_or_replan': False,
@@ -162,9 +167,9 @@ def validate_simple_flow(flow):
     required_bindings = {'actions', 'targets', 'candidate_conditions', 'evidence_conditions', 'expiry', 'use_limit'}
     if not required_bindings.issubset(flow.get('delivery', {}).get('preauthorization_must_bind', [])):
         errors.append('Delivery preauthorization must be bounded and bind actual candidate/evidence conditions')
-    required_outputs = {'requirements_for_review', 'execution_plan_for_review', 'success_or_failure_final_report_for_review'}
+    required_outputs = {'initial_requirements_questions', 'success_or_failure_final_report_for_review'}
     if not required_outputs.issubset(flow.get('user_visible_outputs', [])):
-        errors.append('Requirements, execution plan and final success/failure report must reach the user')
+        errors.append('Only initial questions and final report require user interaction')
     states = flow.get('states', [])
     if not isinstance(states, list) or not all(isinstance(state, dict) for state in states):
         return errors + ['Simple flow states must be objects in a list']
@@ -193,6 +198,8 @@ def validate_capabilities(index):
         'product_tests_executed': False,
         'hil_tests_executed': False,
         'delivery_executor': False,
+        'l1_delegated_approval': True, 'gpt_responses_adapter': True,
+        'l1_mcp_bridge': True, 'harness_end_to_end_verified': False,
     }
     errors = []
     capabilities = index.get('capabilities', {})
@@ -202,7 +209,7 @@ def validate_capabilities(index):
         if type(capabilities.get(name)) is not bool or capabilities.get(name) is not wanted:
             errors.append(f'Capability {name} must be {wanted}')
     runtime = index.get('runtime_scope', {})
-    if runtime.get('approval_trust_model') != 'local_interactive_user_account_no_authenticated_approval_service':
+    if runtime.get('approval_trust_model') != 'local_delegated_l1_and_final_human_no_authenticated_service':
         errors.append('Local runtime must declare its limited approval trust model')
     if runtime.get('external_delivery_implemented') is not False:
         errors.append('Local runtime must not claim external delivery')

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "authority": "delegated_l1",
+  "source_message": "REPLACE_WITH_原始用户委托消息引用或原文",
+  "raw_input_sha256": "REPLACE_WITH_SHA256",
+  "expires_at": "REPLACE_WITH_ISO8601_TIMEZONE",
+  "hard_constraints": [
+    "REPLACE_WITH_用户明确目标参数及限制，不得被AI降低"
+  ],
+  "allowed_paths": [
+    "REPLACE_WITH_项目相对路径"
+  ],
+  "external_delivery": false,
+  "limits": {
+    "implementation_attempts": 3,
+    "same_root_cause_attempts": 2,
+    "infrastructure_retries": 2,
+    "timeout_seconds": 600,
+    "l1_reviews": 8,
+    "revisions": 2,
+    "api_calls": 12,
+    "api_max_output_tokens": 8192,
+    "wall_time_seconds": 7200
+  }
+}

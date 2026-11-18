@@ -138,8 +138,9 @@ def _terminate_tree(process: subprocess.Popen, output_dir: Path) -> bool:
 
 
 class CodexAdapter:
-    def __init__(self, executable: str = "codex"):
+    def __init__(self, executable: str = "codex", environment=None):
         self.executable = executable
+        self.environment = environment
 
     def run(self, role: str, prompt: str, workspace: Path, output_dir: Path,
             timeout_seconds: int) -> dict:
@@ -197,7 +198,7 @@ class CodexAdapter:
         try:
             with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
                 process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
-                                           text=True, encoding="utf-8", cwd=workspace, **options)
+                                           text=True, encoding="utf-8", cwd=workspace, env=self.environment, **options)
                 try:
                     process.communicate(instructions, timeout=timeout_seconds)
                 except subprocess.TimeoutExpired:

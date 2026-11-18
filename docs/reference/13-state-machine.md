@@ -1,15 +1,13 @@
 # 13 配置状态机与恢复规则
 
-> 当前2.4用户流程补充：需求审核仅允许DOT编排；执行计划审核后才开工；成功或失败最终报告都须用户审核。成功报告获准再核对交付授权，失败确认不授权继续。以下正式技术阶段须同时满足此约束；本地运行器不实现外部交付。详见 [当前流程](../../DOT.md)。
-
-> v2.0使用范围：本章保留原完整技术参考。默认用户流程为L1整理需求、用户批准、DOT执行；本章内部角色和正式工具契约按 [进阶范围](../advanced-profile.md) 适用，不要求用户逐层操作。
+> 3.0适用范围：L1是唯一用户入口，在原始委托内代理批准需求、计划和变更，用户只审核L1最终报告。原技术契约保留，正式保护仍适用。见 [当前规则](../../AGENTS.md)；历史人工Ready/签名服务示例不自动授予L1身份或权限。
 
 控制器分别保存项目阶段 phase、检查结果 outcome 和问题状态 issue_status。FAIL/ERROR 是一次观察结果，BLOCKED/UNKNOWN/STALE 是阻断状态，均不等于已确认根因。所有状态转换须带 issue_id 或批准回执、操作者身份与版本条件；下表是阶段主线。
 
 | 阶段或状态 | 允许转换及责任人 | 进入下一步的条件 |
 | --- | --- | --- |
-| READY | 需求审核有效 → L2 PLANNED → 用户审核执行计划 | 需求、AC、起点、计划与预算绑定；两项审核均通过才派实现 |
-| PLANNED / IMPLEMENTING | 用户批准执行计划后L2派L3；完成后 → CANDIDATE_FROZEN | 两项批准仍有效；依赖就绪；唯一写入者；任务与授权范围一致 |
+| READY | 需求审核有效 → L2 PLANNED → L1审核执行计划 | 需求、AC、起点、计划与预算绑定；两项审核均通过才派实现 |
+| PLANNED / IMPLEMENTING | L1代理批准执行计划后L2派L3；完成后 → CANDIDATE_FROZEN | 两项批准仍有效；依赖就绪；唯一写入者；任务与授权范围一致 |
 | CANDIDATE_FROZEN | 门2通过 → VERIFICATION_READY | 受控构建与不可变清单；L1-V 候选包完成授权及 V0 |
 | VERIFICATION_READY / VERIFYING | L2 调度 L4；完整证据经门3 → ACCEPTANCE_READY | 任何失败先进入 TRIAGE_PENDING；不得跳过必需检查 |
 | TRIAGE_PENDING / TRIAGING | L2 接收、根因分析 → RESOLVING 或 BLOCKED | 不得仅凭错误码直接派修；分类和依据入库 |

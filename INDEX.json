@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.4.2",
+  "workflow_version": "3.0.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -9,7 +9,9 @@
   "role_reading": {
     "L1": [
       "L1.md",
-      "templates/requirements.md"
+      "templates/requirements.md",
+      "docs/guides/l1-harness.md",
+      "templates/l1-delegation.example.json"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -108,6 +110,11 @@
       "standards/embedded-c/v1.3/doxygen/README.md",
       "standards/embedded-c/v1.3/doxygen/adoption.json",
       "docs/guides/doxygen-checks.md"
+    ],
+    "l1_harness_integration": [
+      "docs/guides/l1-harness.md",
+      "templates/l1-bridge.example.json",
+      "policy/l1-rejection-tests.json"
     ]
   },
   "full_reference": [
@@ -241,7 +248,7 @@
     "name": "AI自动编程流程配置教程_统一回流架构完整版.docx",
     "sha256": "3bb9ae41bb37fb9059237f8b15590024ca2ba67e6d0bb676fe5a0cc703b1609e",
     "included_binary": false,
-    "usage": "Preserved advanced technical chapters; v2 user workflow and profile scope are defined in primary documents."
+    "usage": "Preserved advanced technical chapters; v3 delegated L1 workflow and profile scope are defined in primary documents."
   },
   "capabilities": {
     "static_repo_validation": true,
@@ -249,7 +256,11 @@
     "real_approval_service": false,
     "product_tests_executed": false,
     "hil_tests_executed": false,
-    "delivery_executor": false
+    "delivery_executor": false,
+    "l1_delegated_approval": true,
+    "gpt_responses_adapter": true,
+    "l1_mcp_bridge": true,
+    "harness_end_to_end_verified": false
   },
   "default_mode": "simple",
   "primary_documents": [
@@ -271,9 +282,12 @@
   "runtime_scope": {
     "entrypoint": "scripts/dot.py",
     "implementation": "runtime/dot_runtime",
-    "approval_trust_model": "local_interactive_user_account_no_authenticated_approval_service",
+    "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/2.4.0-validation.md"
+    "validation_record": "docs/reports/3.0.0-validation.md",
+    "l1_entrypoint": "scripts/l1_bridge.py",
+    "live_api_verified": false,
+    "harness_plugin_installed": false
   }
 }

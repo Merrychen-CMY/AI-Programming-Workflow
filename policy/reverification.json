@@ -42,5 +42,6 @@
       "required_actions": "修复按完整主线；回退按预批准条件核验并保存实际回执"
     }
   ],
-  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md."
+  "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
+  "approval_profile": "3.0 default: intermediate baselines approved by delegated L1 after independent review; L1 submits final report for user review. No additional human checkpoint within the task; out-of-delegation issues produce a blocked final report."
 }

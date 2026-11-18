@@ -228,18 +228,38 @@ class Controller:
         self.save()
 
     def baseline(self):
-        return {'requirements': file_hash(self.state['requirements']), 'plan': file_hash(self.state['plan']),
+        value = {'requirements': file_hash(self.state['requirements']), 'plan': file_hash(self.state['plan']),
                 'catalog': file_hash(CATALOG), 'initial_project': self.state['initial_snapshot']['id'],
                 'doxygen': digest({'checker': file_hash(DOXYGEN_CHECKER),
                     **{p.relative_to(DOXYGEN_REFERENCE).as_posix(): file_hash(p)
                        for p in sorted(DOXYGEN_REFERENCE.rglob('*')) if p.is_file()}})}
+        if self.state.get('delegation'):
+            from .delegation import check_binding
+            # Reviewing completed evidence does not consume execution time or grant a new run.
+            check_binding(self.state, enforce_time=self.state['state'] not in ('REPORT_PENDING', 'DELIVERY_READY'))
+            value['delegation'] = self.state['delegation']['sha256']
+        return value
 
     def check_approvals(self):
         current = self.baseline()
+        delegated = bool(self.state.get('delegation'))
         for kind in ('requirements', 'plan'):
             receipt = self.state['approvals'].get(kind, {})
-            if receipt.get('sha256') != current[kind] or receipt.get('authority') != 'local_terminal_operator':
-                raise ValueError(kind + ' approval missing, stale or not an operator receipt')
+            authority = 'delegated_l1' if delegated else 'local_terminal_operator'
+            if receipt.get('sha256') != current[kind] or receipt.get('authority') != authority:
+                raise ValueError(kind + ' approval missing, stale or wrong authority')
+            if delegated:
+                number = receipt.get('review_number', 0)
+                reviews = self.state.get('l1_reviews', [])
+                if (type(number) is not int or number < 1 or number > len(reviews)
+                        or receipt.get('delegation_sha256') != current['delegation']):
+                    raise ValueError('Missing delegated review binding')
+                review = reviews[number - 1]
+                if (review['kind'] != kind or review['baseline'] != receipt['baseline']
+                        or review['result'].get('status') != 'PASS'
+                        or review['result'].get('session_id') != receipt.get('reviewer_session_id')
+                        or receipt.get('l1_session_id') == receipt.get('reviewer_session_id')):
+                    raise ValueError('Delegated approval lacks independent matching review')
         plan_receipt = self.state['approvals']['plan']
         if plan_receipt.get('baseline') != current:
             raise ValueError('Plan approval baseline changed; reapproval is required')
@@ -252,6 +272,8 @@ class Controller:
     def approve(self, kind, confirm=operator_confirm):
         with run_lock(self.run_dir):
             self.state = read_json(self.state_path)
+            if self.state.get('delegation') and kind != 'report':
+                raise ValueError('Delegated mode uses L1 approval for requirements and plan')
             wanted = {'requirements': 'REVIEW_PENDING', 'plan': 'PLAN_PENDING', 'report': 'REPORT_PENDING'}
             if kind not in wanted or self.state['state'] != wanted[kind]:
                 raise ValueError('Approval is not valid in the current state')
@@ -261,6 +283,8 @@ class Controller:
                 if self.state['approvals'].get('requirements', {}).get('sha256') != file_hash(self.state['requirements']):
                     raise ValueError('Requirements changed; revise and reapprove them first')
             if kind == 'report':
+                if self.state.get('delegation') and not self.state['report'].get('l1_submitted'):
+                    raise ValueError('L1 must submit its final assessment before user report review')
                 if self.state.get('report', {}).get('sha256') != file_hash(path):
                     raise ValueError('Final report changed outside controller')
                 if self.state['report']['outcome'] == 'SUCCESS':
@@ -268,10 +292,12 @@ class Controller:
                     self.check_candidate()
                     self.check_evidence()
             sha = file_hash(path)
-            baseline = self.baseline()
+            # Expired delegation must not prevent the human acknowledging a failure report.
+            failure_report = kind == 'report' and self.state['report']['outcome'] != 'SUCCESS'
+            baseline = self.state.get('approved_baseline') if failure_report else self.baseline()
             if not confirm(kind, path, sha):
                 raise ValueError('Approval declined')
-            if file_hash(path) != sha or self.baseline() != baseline:
+            if file_hash(path) != sha or (not failure_report and self.baseline() != baseline):
                 raise ValueError('Inputs changed during approval')
             if kind == 'report' and self.state['report']['outcome'] == 'SUCCESS':
                 self.check_candidate()
@@ -324,6 +350,16 @@ class Controller:
                 if not resolved.is_file():
                     raise ValueError('Revision input file does not exist')
             validate_plan(read_json(plan))
+            if self.state.get('delegation'):
+                from .delegation import check_binding, check_plan_bounds
+                delegation = check_binding(self.state)
+                check_plan_bounds(read_json(plan), delegation)
+                if self.state.get('report') and self.state['state'] == 'BLOCKED':
+                    raise ValueError('Closed/rejected final report cannot auto-resume; start a newly assigned task')
+                if self.state['revision_count'] >= delegation['limits']['revisions']:
+                    self.report('FAILED', 'L1 revision budget exhausted')
+                    return self.state
+                self.state['revision_count'] += 1
             self.state['requirements'], self.state['plan'] = str(Path(requirements).resolve()), str(Path(plan).resolve())
             self.state['approvals'] = {}
             self.state['completed_tasks'] = []
@@ -367,7 +403,7 @@ class Controller:
             raise ValueError('Working project changed after candidate creation')
 
     def check_evidence(self):
-        for record in self.state['sessions']:
+        for record in self.state['sessions'] + self.state.get('l1_reviews', []):
             for item in record.get('evidence_files', []):
                 path = self.run_dir / item['path']
                 if not path.is_file() or file_hash(path) != item['sha256']:
@@ -391,6 +427,12 @@ class Controller:
         if escaped:
             raise ValueError('Implementation changed paths outside the approved scope: ' + ', '.join(sorted(escaped)))
 
+    def operation_timeout(self, requested):
+        if self.state.get('delegation'):
+            from .delegation import bounded_timeout
+            return bounded_timeout(self.state, requested)
+        return requested
+
     def approved_test(self, workspace):
         """Execute the reviewed argv directly; never trust a worker's fabricated test summary."""
         sequence = len(self.state.get('checks', [])) + 1
@@ -401,7 +443,7 @@ class Controller:
         self.save()
         plan = self.state['approved_plan']
         try:
-            check = self.check_runner(plan['verification']['test_command'], working_copy, output, plan['budgets']['timeout_seconds'])
+            check = self.check_runner(plan['verification']['test_command'], working_copy, output, self.operation_timeout(plan['budgets']['timeout_seconds']))
         except Exception as exc:
             return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
         check['candidate_id'] = self.state['candidate']['id']
@@ -439,7 +481,7 @@ class Controller:
         self.save()
         timeout = min(self.state['approved_plan']['budgets']['timeout_seconds'], settings['timeout_seconds'] * 2 + 10)
         try:
-            process = self.check_runner(command, working_copy, output / 'process', timeout)
+            process = self.check_runner(command, working_copy, output / 'process', self.operation_timeout(timeout))
         except Exception as exc:
             return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
         report_path = output / 'artifacts/report.json'
@@ -516,7 +558,7 @@ class Controller:
         self.save()  # Crash after dispatch must never silently replay a worker.
         try:
             result = self.adapter.run(role, self.prompt(role, instruction), Path(workspace), output,
-                                      self.state['approved_plan']['budgets']['timeout_seconds'])
+                                      self.operation_timeout(self.state['approved_plan']['budgets']['timeout_seconds']))
         except Exception as exc:
             result = {'status': 'UNKNOWN', 'session_id': '', 'summary': f'Adapter exception: {type(exc).__name__}: {exc}',
                       'evidence': [], 'findings': [], 'root_cause': 'unknown'}
@@ -549,7 +591,9 @@ class Controller:
                   'approved_test_commands': self.state.get('checks', []),
                   'documentation_checks': self.state.get('documentation_checks', []),
                   'compliance': self.state.get('compliance'), 'history': self.state['history'],
-                  'delivery_executed': False, 'approval_service': 'local_operator_receipt_only'}
+                  'delivery_executed': False,
+                  'approval_service': 'local_delegated_l1_and_final_human' if self.state.get('delegation') else 'local_operator_receipt_only',
+                  'delegation': self.state.get('delegation'), 'l1_reviews': self.state.get('l1_reviews', [])}
         archive = self.run_dir / 'reports'
         archive.mkdir(exist_ok=True)
         path = archive / (now().replace(':', '-') + '.json')
@@ -558,6 +602,15 @@ class Controller:
         self.state['report'] = {'outcome': outcome, 'sha256': file_hash(self.run_dir / 'final-report.json'),
                                 'archive': path.relative_to(self.run_dir).as_posix()}
         self.transition('REPORT_PENDING', reason)
+
+    def stop_with_report(self, reason):
+        """External L1/API stop request: serialize with any real worker before reporting."""
+        with run_lock(self.run_dir):
+            self.state = read_json(self.state_path)
+            if self.state['state'] not in ('REVIEW_PENDING', 'PLAN_PENDING', 'DECISION_PENDING', 'EXECUTING', 'VERIFYING'):
+                raise ValueError('No active L1/DOT stage to stop')
+            self.report('UNKNOWN' if self.state['active_run'] else 'FAILED', reason)
+            return self.state
 
     def triage(self, failure, workspace):
         if failure.get('status') == 'UNKNOWN':

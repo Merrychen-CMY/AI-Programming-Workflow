@@ -1,0 +1,9 @@
+{
+  "project": "REPLACE_WITH_ABSOLUTE_PRODUCT_PATH",
+  "control_dir": "REPLACE_WITH_ABSOLUTE_PRIVATE_CONTROL_PATH",
+  "raw_input": "REPLACE_WITH_ABSOLUTE_RAW_INPUT_FILE",
+  "delegation": "REPLACE_WITH_ABSOLUTE_DELEGATION_FILE",
+  "model": "REPLACE_WITH_AVAILABLE_GPT_API_MODEL",
+  "codex": "REPLACE_WITH_CODEX_EXECUTABLE",
+  "environment_context": "REPLACE_WITH_已核实的语言/工具版本、实际测试入口、Doxygen路径版本和源码范围，不填密钥"
+}

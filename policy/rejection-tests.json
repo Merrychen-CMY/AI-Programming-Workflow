@@ -386,5 +386,6 @@
       "execution_status": "NOT_RUN",
       "evidence_ref": null
     }
-  ]
+  ],
+  "approval_profile": "3.0 default: intermediate baselines approved by delegated L1 after independent review; L1 submits final report for user review. No additional human checkpoint within the task; out-of-delegation issues produce a blocked final report."
 }

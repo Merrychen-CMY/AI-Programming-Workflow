@@ -15,7 +15,7 @@
 
 ## 检查与限制
 
-静态脚本校验核心不变量、内部文件链接、JSON可解析性、矩阵/测试数量与ID、INDEX路径、manifest摘要，以及默认L1/DOT流程的关键授权边界。它不验证任意JSON Schema，不证明所有自然语言语义一致，不执行产品门禁，也不验证审批签名。运行器单元/集成测试与真实Codex产品执行结果分开；同账户终端审批不是受信审批服务。新增能力时在README中说明真实实现范围。
+静态脚本校验核心不变量、内部文件链接、JSON可解析性、矩阵/测试数量与ID、INDEX路径、manifest摘要，以及默认L1唯一用户入口、代理中间审批和最终人工审核边界。它不验证任意JSON Schema，不证明所有自然语言语义一致，不执行产品门禁，也不验证审批签名。运行器单元/集成测试与真实Codex产品执行结果分开；同账户L1代理记录和最终终端审批都不是受信审批服务。新增能力时在README中说明真实实现范围。
 
 GitHub CI使用固定SHA的官方 [checkout](https://github.com/actions/checkout) 与 [setup-python](https://github.com/actions/setup-python)，仅contents:read。更新Action时审核新版本并固定提交；不要给此文档检查注入产品或部署凭证。
 

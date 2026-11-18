@@ -27,8 +27,9 @@ class SimpleFlowTests(unittest.TestCase):
     def test_default_simple_flow_valid(self):
         self.assertEqual(validate_simple_flow(self.flow), [])
 
-    def test_implementation_cannot_start_before_user_approval(self):
-        self.reject('implementation_requires_user_approval', False)
+    def test_implementation_requires_l1_approval_without_extra_human_checkpoint(self):
+        self.reject('implementation_requires_user_approval', True)
+        self.reject('requirements_require_l1_approval', False)
 
     def test_routine_work_does_not_add_user_approval(self):
         self.reject('routine_in_scope_work_requires_new_user_approval', True)
@@ -48,7 +49,8 @@ class SimpleFlowTests(unittest.TestCase):
         self.reject('delivery.require_new_approval_when_scope_not_covered', False)
 
     def test_ac_changes_and_lowered_standards_are_not_internal_repairs(self):
-        self.reject('product_or_ac_change_requires_user_decision', False)
+        self.reject('product_or_ac_change_requires_user_decision', True)
+        self.reject('product_or_ac_change_requires_l1_decision', False)
         self.reject('plan_maintenance.may_lower_acceptance_standard', True)
 
     def test_verifier_still_returns_to_dot_before_repair_dispatch(self):
@@ -62,7 +64,8 @@ class SimpleFlowTests(unittest.TestCase):
 
     def test_requirements_cannot_replace_execution_plan_review(self):
         self.reject('requirements_approval_allows_implementation', True)
-        self.reject('execution_plan_requires_user_approval', False)
+        self.reject('execution_plan_requires_user_approval', True)
+        self.reject('execution_plan_requires_l1_approval', False)
 
     def test_final_report_review_is_required_on_success_and_failure(self):
         self.reject('final_report_requires_user_approval', False)
@@ -86,7 +89,7 @@ class SimpleFlowTests(unittest.TestCase):
     def test_replan_does_not_reset_cumulative_budget(self):
         self.reject('budgets_reset_on_restart_or_replan', True)
 
-    def test_material_plan_change_requires_user_review(self):
+    def test_material_plan_change_requires_bounded_l1_review(self):
         self.reject('plan_maintenance.semantic_change', 'internal_owner_approval_only')
 
     def reject_edge(self, source, target):

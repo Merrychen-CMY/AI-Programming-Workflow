@@ -10,13 +10,14 @@
 | 已收到批准需求，准备计划 | [DOT.md](DOT.md)、[简化策略](policy/simple-flow.json) |
 | 受DOT指派做开发或验证 | 已批准任务及 [内部职责映射](policy/roles.json) 中对应角色 |
 
-编排和结案分别读取 [执行计划](templates/execution-plan.md) 与 [最终报告](templates/final-report.md)，均须用户审核。记录需求/计划/报告版本、规范commit与真实授权。用户通常不用查看内部基线、任务包或门禁JSON。
+编排和结案分别读取 [执行计划](templates/execution-plan.md) 与 [最终报告](templates/final-report.md)，计划由L1批准，报告由L1核查后交用户审核。记录需求/计划/报告版本、规范commit与真实授权。用户通常不用查看内部基线、任务包或门禁JSON。
 
 ## 出现问题时再补读
 
 | 事件 | 参考 |
 | --- | --- |
 | 嵌入式C开发/验证 | [规范入口](standards/embedded-c/README.md)、[规则映射](policy/embedded-c.json)及当前变化对应章节 |
+| L1接通Harness和GPT | [接入指南](docs/guides/l1-harness.md) |
 | 本地DOT运行 | [本地运行器](docs/guides/local-runtime.md) |
 | 首次接入 | [接入指南](docs/guides/adopt-project.md)、[首次闭环](docs/guides/first-run.md) |
 | 测试失败 | [L4矩阵](policy/l4-failures.json)、[问题处理](docs/guides/handle-issue.md) |
@@ -26,6 +27,6 @@
 | 超时、重启、运行状态未知 | [内部状态机](policy/state-machine.json) |
 | 正式门禁、HIL或自动执行器接入 | 先读 [进阶范围](docs/advanced-profile.md)，再按 [INDEX](INDEX.json) 选相应章节 |
 
-所有L4/L5发现统一回DOT的L2职责，保留根因、派工和独立重验记录。产品决策由L1请用户审核，普通内部修复不增加用户审批。
+所有L4/L5发现统一回DOT的L2职责，保留根因、派工和独立重验记录。产品决策由L1在原始委托内处理，超出委托汇总受阻报告，普通内部修复不增加用户审批。
 
 资料不足时先使用已有上下文；只有影响当前动作的关键缺口才汇总提问。恢复执行先核对真实状态，不能把Agent自己的旧总结当成唯一证据。

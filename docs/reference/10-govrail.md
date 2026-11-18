@@ -1,6 +1,6 @@
 # 10 配置 govrail 正式判定
 
-> v2.0使用范围：本章保留原完整技术参考。默认用户流程为L1整理需求、用户批准、DOT执行；本章内部角色和正式工具契约按 [进阶范围](../advanced-profile.md) 适用，不要求用户逐层操作。
+> 3.0适用范围：L1是唯一用户入口，在原始委托内代理批准需求、计划和变更，用户只审核L1最终报告。原技术契约保留，正式保护仍适用。见 [当前规则](../../AGENTS.md)；历史人工Ready/签名服务示例不自动授予L1身份或权限。
 
 govrail 运行检查，项目证据验证器理解候选与账本契约。保留 candidate_admission、evidence_gate、delivery_guard 三个自定义入口，并增加 verification_admission 校验 V0、issue_router 约束 L2 回流调度。以下 YAML 为这些适配器共同读取的自定义策略，不是 govrail 原生配置。
 

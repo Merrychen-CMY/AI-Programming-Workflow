@@ -1,22 +1,15 @@
-# 模板使用顺序
+# 由L1/DOT维护的模板
 
-用户审核三份主要产物：[需求文档](requirements.md)、[DOT执行计划](execution-plan.md)、[最终报告](final-report.md)。由L1/DOT填写，用户不必填内部JSON和逐条规范适用表。启动见 [agent-start.md](agent-start.md)。
+用户提供原始信息，并只审核 [L1最终报告](final-report.md)。需求和计划均由L1在固定委托内审核批准。
 
-所有模板均是草案，复制到真实项目私有位置再填写；本公开规范仓库不保存真实批准、运行状态或凭证。
-
-| 文件 | 用途 |
+| 模板 | 维护者与用途 |
 | --- | --- |
-| [requirements.md](requirements.md) | L1的需求、约束、验收与范围，首次审核 |
-| [execution-plan.md](execution-plan.md) | DOT的方案、任务、独立执行与预算，开工审核 |
-| [final-report.md](final-report.md) | 成功/失败/未完成报告，结束审核 |
-| [local-execution-plan.example.json](local-execution-plan.example.json) | 本地运行器JSON计划草案，须填写真实环境并审核 |
-| [project-context.json](project-context.json) | DOT维护项目版本、角色和能力现状 |
-| [product-spec.md](product-spec.md) | 内部产品规格与AC |
-| [verification-plan.md](verification-plan.md) | 内部L1-V计划与候选绑定 |
-| [task-draft.json](task-draft.json) | DOT准备的任务草案 |
-| [issue-intake.json](issue-intake.json) | 问题接收，不预填根因结论 |
-| [handoff.md](handoff.md) | 角色之间交接 |
-| [verification-report.md](verification-report.md) | 独立观察结果与证据 |
-| [delivery-request.md](delivery-request.md) | 最终报告批准后的具体交付授权申请 |
+| [requirements.md](requirements.md) | L1需求、约束、AC及独立审查记录 |
+| [execution-plan.md](execution-plan.md) / [JSON计划](local-execution-plan.example.json) | GPT/DOT计划，L1批准 |
+| [l1-delegation.example.json](l1-delegation.example.json) | L1记录原始委托、硬约束和上限 |
+| [l1-bridge.example.json](l1-bridge.example.json) | 一次性本机路径、模型和工具配置 |
+| [verification-plan.md](verification-plan.md) | L1内部L1-V维护验证基线 |
+| [final-report.md](final-report.md) | DOT证据汇总，L1核查提交用户 |
+| [agent-start.md](agent-start.md) | 给L1的启动说明 |
 
-REPLACE_*、null、NOT_RUN、DRAFT表示未完成；不能写成PASS或APPROVED绕过真实检查。正式审批身份与权限条件见 [接入适配器](../docs/reference/14-adapters.md)。
+其他内部任务、交付及条款记录按需使用。所有模板保持DRAFT，占位文件不是执行或发布授权；不得让用户重复填写内部JSON和逐条清单。

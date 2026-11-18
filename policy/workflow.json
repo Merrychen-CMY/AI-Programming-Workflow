@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "policy_version": "2.4.2",
+  "policy_version": "3.0.0",
   "status": "reference_specification",
   "execution_authority": false,
-  "description": "内部职责与回流不变量；默认用户入口为L1和DOT，正式控制器契约按进阶接入范围适用。",
+  "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
   "roles": [
     "L1",
     "L1-V",
@@ -14,9 +14,10 @@
   ],
   "forward_flow": [
     "L1",
-    "user_requirements_review",
-    "L2_plan",
-    "user_execution_plan_review",
+    "independent_requirements_review",
+    "L1_delegated_requirements_approval",
+    "GPT_DOT_plan",
+    "L1_delegated_plan_approval",
     "G1",
     "L3",
     "G2",
@@ -26,6 +27,7 @@
     "L4-review",
     "G3",
     "L5",
+    "L1_final_report_submission",
     "user_final_report_review",
     "G4",
     "delivery_guard"
@@ -108,15 +110,15 @@
     "infrastructure_only": "same_candidate_possible_with_documented_impact_and_new_run_id"
   },
   "approval_rules": {
-    "G1": "authenticated_requirements_and_execution_plan_authorization",
+    "G1": "L1_delegated_requirements_and_plan_approval_with_independent_review",
     "V0": "validate_candidate_package_against_explicit_authorization",
     "G4": "user_approved_success_report_then_exact_action_target_authorization_and_real_receipt",
     "L5_can_approve_delivery": false,
     "merge_implies_release": false,
     "example_is_authorization": false,
-    "simple_mode": "user_reviews_requirements_then_execution_plan_then_success_or_failure_report",
+    "simple_mode": "L1_approves_intermediate_baselines_user_reviews_final_report",
     "formal_gate_contract_scope": "when_formal_approval_and_gate_services_are_adopted",
-    "delegated_plan_maintenance": "equivalent_maintenance_within_approved_scope_logged; material_execution_plan_change_requires_user_review"
+    "delegated_plan_maintenance": "L1_reapproves_within_original_delegation_no_scope_or_budget_expansion"
   },
   "closure": {
     "implementation_or_verification": "independent_L4_reverification_and_trusted_verdict_then_L2_close",
@@ -138,16 +140,14 @@
   "project_adoption": "requires_explicit_user_assignment_scope_and_project_baselines",
   "default_user_flow": "policy/simple-flow.json",
   "user_interface": {
-    "L1": "requirements_and_user_decisions",
+    "L1": "sole_user_interface_and_delegated_approver",
     "DOT": [
       "L2",
       "L5"
     ],
     "six_separate_conversations_required": false,
     "review_artifacts": [
-      "requirements",
-      "execution_plan",
-      "final_report"
+      "L1_final_report"
     ]
   },
   "coding_standards": [

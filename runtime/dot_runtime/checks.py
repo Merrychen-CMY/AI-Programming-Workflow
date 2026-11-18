@@ -1,6 +1,6 @@
-"""Run an operator-approved test entry point and retain its actual output.
+"""Run a baseline-approved test entry point and retain its actual output.
 
-This runner is deliberately not an OS sandbox. The operator must review the
+This runner is deliberately not an OS sandbox. The authorized reviewer must inspect the
 exact command and product/test code before approving it; hardware operations,
 publishing and deployment do not belong in the test command. No shell command
 string is constructed here. A zero exit status describes process completion,
@@ -17,7 +17,7 @@ from .snapshot import _root
 
 
 def run_check(command: list[str], workspace: Path, output_dir: Path,
-              timeout_seconds: int) -> dict:
+              timeout_seconds: int, environment=None) -> dict:
     """Execute exactly one reviewed argv; never overwrite an earlier run.
 
     Invalid arguments/paths raise ValueError before dispatch. Operational
@@ -46,7 +46,7 @@ def run_check(command: list[str], workspace: Path, output_dir: Path,
         try:
             process = subprocess.Popen(
                 command, shell=False, stdin=subprocess.DEVNULL,
-                stdout=log, stderr=subprocess.STDOUT, cwd=workspace, **options)
+                stdout=log, stderr=subprocess.STDOUT, cwd=workspace, env=environment, **options)
             result["process_id"] = process.pid
             try:
                 process.wait(timeout=timeout_seconds)

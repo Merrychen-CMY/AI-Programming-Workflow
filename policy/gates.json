@@ -3,8 +3,8 @@
   "rows": [
     {
       "id": "门1 开工",
-      "conditions": "用户已审核批准具体需求与DOT执行计划，AC、代码起点、验证/审核安排与预算均绑定",
-      "decision_owner": "授权审批人",
+      "conditions": "L1已在原始委托内审核批准具体需求与DOT执行计划，AC、代码起点、验证/审核安排与预算均绑定",
+      "decision_owner": "原始委托内的L1及独立审查；正式项目另核既有保护",
       "failure_path": "保持 READY；L2 汇总原因；需求决策提交 L1"
     },
     {
@@ -21,7 +21,7 @@
     },
     {
       "id": "门3 证据准入",
-      "conditions": "独立测试与独立审核全部必需项完整、来源可核、版本匹配、失败已处置；生成报告待用户审核",
+      "conditions": "独立测试与独立审核全部必需项完整、来源可核、版本匹配、失败已处置；生成报告由L1核查后提交用户审核",
       "decision_owner": "govrail 调用证据验证器",
       "failure_path": "停止放行；L4 或门禁产生问题单，统一交 L2"
     },
@@ -33,5 +33,5 @@
     }
   ],
   "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
-  "formal_integration_scope": "Controller, approval service and named gate executors are formal integration contracts, not mandatory tools for initial requirements review."
+  "formal_integration_scope": "Formal contracts retain technical gates; default L1 approves intermediate baselines, user only reviews final report. External delivery is not implemented."
 }

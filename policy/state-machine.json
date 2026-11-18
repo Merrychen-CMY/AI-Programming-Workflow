@@ -4,7 +4,7 @@
     {
       "state_or_phase": "READY",
       "transition": "门1有效 → L2 PLANNED",
-      "guard": "用户已批准需求和DOT执行计划，需求、AC、起点与累计预算绑定；任一未批准不得派实现"
+      "guard": "L1已在原始委托内批准需求和DOT执行计划，需求、AC、起点与累计预算绑定；任一未批准不得派实现"
     },
     {
       "state_or_phase": "PLANNED / IMPLEMENTING",
@@ -38,7 +38,7 @@
     },
     {
       "state_or_phase": "ACCEPTANCE_READY",
-      "transition": "L5汇总成功或失败报告 → REPORT_PENDING（用户审核）",
+      "transition": "L5汇总成功或失败报告 → L1核查提交 → REPORT_PENDING（用户审核）",
       "guard": "成功需独立测试与独立审核；失败/耗尽亦提交报告，完整AC、风险、问题历史及证据"
     },
     {
@@ -78,6 +78,6 @@
     }
   ],
   "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
-  "formal_integration_scope": "Formal gate stages supplement the mandatory requirements/plan/report user reviews; external delivery is not implemented locally.",
+  "formal_integration_scope": "Formal contracts retain technical gates; default L1 approves intermediate baselines, user only reviews final report. External delivery is not implemented.",
   "current_user_flow": "policy/simple-flow.json"
 }

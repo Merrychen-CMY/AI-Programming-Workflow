@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local DOT CLI. State and approvals must live outside the worker project."""
+"""Legacy manual DOT CLI and final human report review. Default L1 automation uses l1_bridge.py."""
 import argparse
 import json
 from pathlib import Path
@@ -13,7 +13,7 @@ from dot_runtime.adapter import CodexAdapter
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
-    init = sub.add_parser('init', help='Stage a new run without starting workers')
+    init = sub.add_parser('init', help='Legacy manual mode: stage a run without workers; default automation uses l1_bridge.py')
     for key in ('project', 'requirements', 'plan', 'run-dir'):
         init.add_argument('--' + key, required=True, type=Path)
     approval = sub.add_parser('approve', help='Human-only local terminal review of exact document hash')

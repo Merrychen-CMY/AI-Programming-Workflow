@@ -97,7 +97,8 @@ def validate_reference(data, source, huawei_ids):
     elif (workflow.get('implementation_owner') != 'L3'
           or workflow.get('independent_verification_owner') != 'L4'
           or workflow.get('finding_intake') != 'DOT_as_L2'
-          or workflow.get('user_review_points') != ['requirements', 'execution_plan', 'final_report']):
+          or workflow.get('user_review_points') != ['final_report']
+          or workflow.get('l1_delegated_review_points') != ['requirements', 'execution_plan']):
         errors.append('Doxygen must retain independent verification, DOT intake and existing approvals')
 
     if (source.get('schema_version') != 1 or source.get('repository_url') != UPSTREAM

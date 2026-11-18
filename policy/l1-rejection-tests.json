@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "scope": "automated local unit/integration checks with mock models; not live API, Harness or product acceptance",
+  "test_file": "tests/test_delegated_l1.py",
+  "cases": [
+    {
+      "id": "L1-01",
+      "fault": "无固定委托或原始输入被改",
+      "expected": "拒绝代理批准或执行",
+      "test": "test_changed_raw_input_or_envelope_rejected"
+    },
+    {
+      "id": "L1-02",
+      "fault": "需求作者兼任同会话独立审查者",
+      "expected": "回L1决策，不产生批准",
+      "test": "test_author_cannot_be_its_independent_reviewer"
+    },
+    {
+      "id": "L1-03",
+      "fault": "扩大允许路径或尝试预算",
+      "expected": "拒绝新计划",
+      "test": "test_plan_paths_and_budgets_cannot_expand"
+    },
+    {
+      "id": "L1-04",
+      "fault": "独立需求审查失败",
+      "expected": "DECISION_PENDING交L1修订，不要求用户审核中间文档",
+      "test": "test_rejected_review_reflows_without_human_checkpoint"
+    },
+    {
+      "id": "L1-05",
+      "fault": "旧审查证据被改",
+      "expected": "执行前阻断",
+      "test": "test_changed_review_evidence_prevents_dispatch"
+    },
+    {
+      "id": "L1-06",
+      "fault": "API失败后重启企图不计次数",
+      "expected": "失败计入持久预算，不自动重试",
+      "test": "test_api_failure_consumes_budget_and_has_no_auto_retry"
+    },
+    {
+      "id": "L1-07",
+      "fault": "GPT请求审批工具或多个执行工具",
+      "expected": "拒绝非白名单调用",
+      "test": "test_api_function_allowlist_rejects_approval_and_multiple_calls"
+    },
+    {
+      "id": "L1-08",
+      "fault": "API返回未完成的调度",
+      "expected": "不派实现",
+      "test": "test_incomplete_api_response_cannot_dispatch"
+    },
+    {
+      "id": "L1-09",
+      "fault": "L1用自然语言把失败说成成功",
+      "expected": "最终结构结果保留FAILED，人工确认后BLOCKED",
+      "test": "test_l1_cannot_upgrade_failed_outcome"
+    },
+    {
+      "id": "L1-10",
+      "fault": "没有L1核查提交就确认最终报告",
+      "expected": "拒绝；必须先由L1提交报告",
+      "test": "test_delegated_full_cycle_has_only_final_human_approval"
+    },
+    {
+      "id": "L1-11",
+      "fault": "审查过程UNKNOWN后再次请求审批",
+      "expected": "保留active_run并报告UNKNOWN，不重派",
+      "test": "test_review_attempt_is_reserved_and_unknown_is_not_retried"
+    },
+    {
+      "id": "L1-12",
+      "fault": "执行总时长已耗尽",
+      "expected": "不派新审查",
+      "test": "test_expired_execution_budget_prevents_new_review"
+    },
+    {
+      "id": "L1-13",
+      "fault": "L1修订次数耗尽",
+      "expected": "最终失败报告",
+      "test": "test_revision_limit_and_review_limit_produce_report"
+    },
+    {
+      "id": "L1-14",
+      "fault": "委托已过期但需审核失败报告",
+      "expected": "允许L1提交和用户确认失败，不恢复执行",
+      "test": "test_failure_report_can_be_reviewed_after_expiry"
+    }
+  ]
+}

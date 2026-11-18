@@ -1,6 +1,6 @@
 # 内部契约如何接入DOT
 
-用户审核 [统一需求文档](../../templates/requirements.md)、[DOT执行计划](../../templates/execution-plan.md)和[最终报告](../../templates/final-report.md)。145项适用性和证据由DOT维护，不要求用户逐项填表。实际项目选一个权威记录；其他视图从它派生，不要求重复手填。已有等价结构可以适配；采用本包校验器时必须保持原Schema字段，不能直接往additionalProperties受限对象塞自定义字段。
+L1代理批准 [需求](../../templates/requirements.md) 和 [DOT计划](../../templates/execution-plan.md)，用户只审核L1提交的 [最终报告](../../templates/final-report.md)。145项适用性和证据由DOT维护，不要求用户逐项填表。实际项目选一个权威记录；其他视图从它派生，不要求重复手填。已有等价结构可以适配；采用本包校验器时必须保持原Schema字段，不能直接往additionalProperties受限对象塞自定义字段。
 
 | 对象 | 维护职责 | 与主流程的关系 |
 | --- | --- | --- |

@@ -23,10 +23,10 @@
     "finding_intake": "DOT_as_L2",
     "extra_user_form_required": false,
     "user_review_points": [
-      "requirements",
-      "execution_plan",
       "final_report"
     ],
+    "l1_delegated_review_points": ["requirements", "execution_plan"],
+    "workflow_binding_version": "3.0.0",
     "evidence": "DOT在既有任务和证据中记录DOX条款适用性及结果；用户不另填清单。"
   },
   "verification_boundary": {

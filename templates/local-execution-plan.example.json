@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "示例必须由DOT根据已审核需求改写，用户审核后方可执行；此文件本身不是授权。",
+  "description": "示例必须由DOT根据已审核需求改写，L1在固定委托内批准后方可执行；此文件本身不是授权。",
   "coding_standard": "huawei-c",
   "standard_scope_reason": "项目自有或AI维护的嵌入式C，应用华为规范和Doxygen。",
   "allowed_paths": [

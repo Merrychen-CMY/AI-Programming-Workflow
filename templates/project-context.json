@@ -3,13 +3,12 @@
   "document_kind": "template",
   "status": "DRAFT",
   "workflow": {
-    "version": "2.4.2",
+    "version": "3.0.0",
     "repository": "REPLACE_WORKFLOW_REPOSITORY",
     "commit": "REPLACE_FULL_COMMIT",
     "mode": "simple",
     "user_entry_roles": [
-      "L1",
-      "DOT"
+      "L1"
     ]
   },
   "product": {
@@ -48,6 +47,6 @@
     "delivery_guard": "NOT_IMPLEMENTED"
   },
   "requirements_document_ref": null,
-  "note": "Internal DOT draft; user reviews requirements, execution plan and final report. Actual project capabilities must be verified; no permission is granted by this template.",
+  "note": "Internal L1/DOT draft; L1 approves requirements and execution plan within original delegation, user reviews only the L1 final report. Actual project capabilities must be verified; no permission is granted by this template.",
   "applicable_coding_standard_refs": []
 }

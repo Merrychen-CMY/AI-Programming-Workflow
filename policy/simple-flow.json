@@ -1,11 +1,10 @@
 {
   "schema_version": 1,
-  "workflow_version": "2.4.2",
+  "workflow_version": "3.0.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
-    "L1",
-    "DOT"
+    "L1"
   ],
   "entry_documents": [
     "AGENTS.md",
@@ -13,13 +12,13 @@
     "DOT.md",
     "templates/requirements.md"
   ],
-  "user_approval_artifact": "versioned_requirements_execution_plan_and_final_report",
-  "implementation_requires_user_approval": true,
+  "user_approval_artifact": "l1_final_success_or_failure_report",
+  "implementation_requires_user_approval": false,
   "routine_in_scope_work_requires_new_user_approval": false,
   "internal_verification_plan_requires_separate_user_document": false,
   "internal_role_mapping": {
-    "L1": "user_requirements_interface",
-    "L1-V": "internal_verification_plan",
+    "L1": "sole_user_interface_requirements_and_delegated_approval_final_report",
+    "L1-V": "L1_internal_independent_verification_planning",
     "L2": "DOT_orchestration",
     "L3": "implementation_worker",
     "L4": "independent_test_and_review_workers",
@@ -29,12 +28,12 @@
   "implementation_worker_can_issue_final_acceptance": false,
   "issue_intake": "DOT_as_L2",
   "direct_verifier_to_developer_dispatch": false,
-  "product_or_ac_change_requires_user_decision": true,
+  "product_or_ac_change_requires_user_decision": false,
   "plan_maintenance": {
     "within_explicit_delegation": "equivalent_maintenance_logged_without_changing_approved_scope_checks_or_budget",
-    "semantic_change": "user_reapproves_changed_execution_plan_and_all_required_reverification",
+    "semantic_change": "L1_reapproves_within_original_delegation_and_reruns_required_checks",
     "may_lower_acceptance_standard": false,
-    "outside_delegation": "L1_or_DOT_requests_user_decision_before_affected_execution"
+    "outside_delegation": "L1_submits_blocked_final_report_no_automatic_expansion"
   },
   "delivery": {
     "execute_when_existing_authorization_covers_actual_action": true,
@@ -60,18 +59,12 @@
     "approved_final_report"
   ],
   "user_decision_triggers": [
-    "requirements_or_AC_change",
-    "material_execution_plan_change",
-    "scope_permission_or_budget_expansion",
-    "unresolved_blocker",
-    "delivery_not_covered_by_authorization"
+    "initial_missing_facts",
+    "final_report"
   ],
   "user_visible_outputs": [
-    "requirements_for_review",
-    "execution_plan_for_review",
-    "decision_needed_with_options",
-    "success_or_failure_final_report_for_review",
-    "delivery_result_when_external_executor_connected"
+    "initial_requirements_questions",
+    "success_or_failure_final_report_for_review"
   ],
   "states": [
     {
@@ -86,18 +79,22 @@
       "next": [
         "DISCOVERY",
         "PLAN_PENDING",
-        "BLOCKED"
+        "BLOCKED",
+        "DECISION_PENDING",
+        "REPORT_PENDING"
       ],
-      "guard": "Real user approval binds requirements hash and permits planning only; refusal returns discovery"
+      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure reflows to L1 or final report"
     },
     {
       "id": "PLAN_PENDING",
       "next": [
         "REVIEW_PENDING",
         "EXECUTING",
-        "BLOCKED"
+        "BLOCKED",
+        "DECISION_PENDING",
+        "REPORT_PENDING"
       ],
-      "guard": "Real user approval binds execution plan and approved requirements hashes before product execution"
+      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure reflows to L1 or final report"
     },
     {
       "id": "EXECUTING",
@@ -129,7 +126,7 @@
         "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "Changed requirements or material plan must return respective approval stage; unchanged authorized work only may resume"
+      "guard": "L1 handles requirements/verification/plan revision within immutable delegation; reapprove affected baselines, preserve counters; unresolved or outside scope produces final report"
     },
     {
       "id": "BLOCKED",
@@ -146,7 +143,7 @@
         "DELIVERY_READY",
         "BLOCKED"
       ],
-      "guard": "User approves exact report and candidate evidence; success permits DELIVERY_READY only; failed or incomplete report approval leads BLOCKED without retry authority"
+      "guard": "L1 submits exact DOT outcome/evidence and its assessment; only human approves final report; failed/unknown remains BLOCKED and never authorizes retries"
     },
     {
       "id": "DELIVERY_READY",
@@ -172,7 +169,7 @@
     "policy/embedded-c.json"
   ],
   "coding_standard_requires_extra_user_document": false,
-  "execution_plan_requires_user_approval": true,
+  "execution_plan_requires_user_approval": false,
   "final_report_requires_user_approval": true,
   "requirements_approval_allows_implementation": false,
   "independent_review_required": true,
@@ -181,8 +178,17 @@
     "tester",
     "reviewer"
   ],
-  "runtime_approval_trust_model": "local_interactive_user_account_no_authenticated_approval_service",
+  "runtime_approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
   "agent_may_enter_user_approval": false,
   "failed_report_approval_resumes_execution": false,
-  "budgets_reset_on_restart_or_replan": false
+  "budgets_reset_on_restart_or_replan": false,
+  "requirements_require_l1_approval": true,
+  "execution_plan_requires_l1_approval": true,
+  "product_or_ac_change_requires_l1_decision": true,
+  "default_approval_mode": "delegated_l1",
+  "approval_owners": {
+    "requirements": "L1",
+    "execution_plan": "L1",
+    "final_report": "user"
+  }
 }

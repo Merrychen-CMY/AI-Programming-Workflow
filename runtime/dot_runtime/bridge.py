@@ -1,0 +1,159 @@
+"""Project-bound L1 tools, serialized through one local control directory."""
+from pathlib import Path
+import os
+import time
+
+from .adapter import CodexAdapter
+from .controller import Controller, ROOT, atomic_json, digest, file_hash, initialize, read_json, run_lock
+from .delegation import attach_delegation, approve_l1, submit_l1_report, validate_delegation
+from .gpt_dot import ResponsesClient, DotAdapter, execute, propose_plan
+from .checks import run_check
+
+
+TOOLS = {
+    'dot_plan': ('Ask GPT/DOT to draft a plan. No execution or approval.', {'requirements': 'string'}),
+    'dot_initialize': ('Initialize the current reviewed draft with pinned delegation. No workers.', {}),
+    'l1_approve': ('L1 requests delegated approval; independent review may veto. Never human approval.',
+                   {'kind': 'string', 'l1_session_id': 'string'}),
+    'dot_run': ('Ask GPT/DOT to dispatch the approved local workflow. May take several minutes.', {}),
+    'dot_status': ('Read status, decisions and final report. Does not dispatch.', {}),
+    'l1_revise': ('L1 stages revised requirements and a GPT plan within existing delegation and counters.',
+                  {'requirements': 'string', 'plan_json': 'string'}),
+    'l1_submit_report': ('L1 submits its final assessment; cannot approve the human final report.',
+                         {'summary': 'string', 'l1_session_id': 'string'}),
+    'l1_stop': ('Report failure/unknown when L1 cannot resolve a blocker; no retry or delivery.', {'reason': 'string'}),
+}
+
+
+class Bridge:
+    def __init__(self, settings, client_factory=ResponsesClient, workers=None):
+        self.settings = settings
+        self.project = Path(settings['project']).resolve(strict=True)
+        self.root = Path(settings['control_dir']).resolve()
+        if not self.project.is_dir() or self.root == self.project or self.project in self.root.parents or self.root in self.project.parents:
+            raise ValueError('Separate the control directory from the product workspace')
+        for key in ('raw_input', 'delegation'):
+            path = Path(settings[key]).resolve(strict=True)
+            if self.project == path or self.project in path.parents or self.root == path or self.root in path.parents:
+                raise ValueError('Original input and delegation must stay outside product/control directories')
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.run_dir = self.root / 'run'
+        self.worker_environment = {key: value for key, value in os.environ.items() if key.upper() != 'OPENAI_API_KEY'}
+        self.workers = workers or CodexAdapter(settings.get('codex', 'codex'), environment=self.worker_environment)
+        self.client_factory = client_factory
+
+    def tools(self):
+        return [{'name': name, 'description': description, 'inputSchema': {
+            'type': 'object', 'additionalProperties': False,
+            'properties': {key: {'type': value} for key, value in fields.items()}, 'required': list(fields)}}
+                for name, (description, fields) in TOOLS.items()]
+
+    def client(self):
+        delegation = read_json(self.settings['delegation'])
+        validate_delegation(delegation)
+        if file_hash(self.settings['raw_input']) != delegation['raw_input_sha256']:
+            raise ValueError('Original input differs from delegation')
+        return self.client_factory(self.settings['model'], self.root / 'api', delegation)
+
+    def status(self):
+        if not (self.run_dir / 'state.json').exists():
+            return {'state': 'DISCOVERY', 'plan_ready': (self.root / 'plan.json').exists(),
+                    'preflight_report': read_json(self.root / 'preflight-report.json') if (self.root / 'preflight-report.json').exists() else None}
+        state = read_json(self.run_dir / 'state.json')
+        return {'state': state['state'], 'run_id': state['run_id'], 'implementation_attempts': state['implementation_attempts'],
+            'revision_count': state.get('revision_count', 0), 'report': state['report'],
+            'final_report': read_json(self.run_dir / 'final-report.json') if state['report'] else None,
+            'decision': read_json(self.run_dir / 'decision-request.json') if state['state'] == 'DECISION_PENDING'
+                        and (self.run_dir / 'decision-request.json').exists() else None,
+            'l1_reviews': state.get('l1_reviews', []),
+            'next_owner': 'user' if state['state'] == 'REPORT_PENDING' and (state['report'] or {}).get('l1_submitted') else 'L1'}
+
+    def call(self, name, arguments):
+        import json
+        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) != set(TOOLS[name][1]) or any(
+                not isinstance(value, str) or not value.strip() for value in arguments.values()):
+            raise ValueError('Unknown tool or invalid arguments')
+        with run_lock(self.root):
+            # Pin all settings once. Restarting the server is not a new delegation or budget.
+            binding = self.root / 'settings-binding.json'
+            value = {'sha256': digest(self.settings)}
+            if binding.exists() and read_json(binding) != value:
+                raise ValueError('Bridge settings changed in an existing task')
+            if not binding.exists():
+                atomic_json(binding, value)
+            if name == 'dot_status':
+                return self.status()
+            c = Controller(self.run_dir) if (self.run_dir / 'state.json').exists() else None
+            if name == 'l1_submit_report':
+                submit_l1_report(c, arguments['summary'], arguments['l1_session_id'])
+                return self.status()
+            if name == 'l1_stop':
+                if c:
+                    c.stop_with_report(arguments['reason'])
+                else:
+                    atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': arguments['reason'],
+                        'execution_started': False, 'owner': 'L1', 'user_review_required': True})
+                return self.status()
+            if c is None and (self.root / 'preflight-report.json').exists():
+                raise ValueError('Preflight has ended with a final failure report; no automatic resumption')
+            # Read-only report access and failure submission remain possible after expiry/API failure.
+            client = self.client()
+            if name == 'dot_plan':
+                if c and c.state['state'] not in ('DECISION_PENDING', 'PLAN_PENDING'):
+                    raise ValueError('Planning cannot overwrite an active/final baseline')
+                if c and c.state['active_run']:
+                    raise ValueError('Unresolved process forbids new planning')
+                try:
+                    plan = propose_plan(client, arguments['requirements'],
+                        read_json(ROOT / 'templates/local-execution-plan.example.json'), self.settings['environment_context'])
+                except (ValueError, OSError, KeyError) as exc:
+                    if c:
+                        c.stop_with_report(str(exc))
+                    else:
+                        atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': str(exc),
+                            'execution_started': False, 'owner': 'L1', 'user_review_required': True})
+                    raise
+                if c:
+                    return {'plan': plan, 'next': 'L1 inspects the proposal then calls l1_revise; approvals are not copied'}
+                (self.root / 'requirements.md').write_text(arguments['requirements'], encoding='utf-8', newline='\n')
+                atomic_json(self.root / 'plan.json', plan)
+                return {'plan': plan, 'next': 'dot_initialize, then l1_approve requirements and plan'}
+            if name == 'dot_initialize':
+                if c:
+                    raise ValueError('Task already initialized; do not reset attempts')
+                initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
+                c = Controller(self.run_dir)
+                attach_delegation(c, self.settings['delegation'], self.settings['raw_input'])
+                c.state['delegated_started_at'] = read_json(self.root / 'api/ledger.json')['started_at']
+                c.save()
+            elif c is None:
+                raise ValueError('Initialize the task first')
+            elif not c.state.get('delegation'):
+                raise ValueError('Incomplete bridge initialization; do not dispatch or synthesize approvals')
+            elif name == 'l1_approve':
+                approve_l1(c, arguments['kind'], arguments['l1_session_id'], self.workers)
+            elif name == 'l1_revise':
+                # Never overwrite an approved file in place, even if staging fails.
+                revisions = self.root / 'revisions'
+                revisions.mkdir(exist_ok=True)
+                tag = str(time.time_ns())
+                requirements, plan = revisions / (tag + '.md'), revisions / (tag + '.json')
+                requirements.write_text(arguments['requirements'], encoding='utf-8', newline='\n')
+                atomic_json(plan, json.loads(arguments['plan_json']))
+                c.revise(requirements, plan)
+            elif name == 'dot_run':
+                if c.state['state'] not in ('EXECUTING', 'VERIFYING'):
+                    raise ValueError('Only approved work can run')
+                if c.state['active_run']:
+                    c.stop_with_report('Prior process requires reconciliation; no redispatch')
+                else:
+                    c.adapter = DotAdapter(client, self.workers)
+                    c.check_runner = lambda *args: run_check(*args, environment=self.worker_environment)
+                    try:
+                        execute(client, c)
+                    except (ValueError, OSError, KeyError) as exc:
+                        if c.state['state'] in ('EXECUTING', 'VERIFYING', 'DECISION_PENDING'):
+                            c.stop_with_report(str(exc))
+                        else:
+                            raise
+            return self.status()
