@@ -273,7 +273,9 @@ class Controller:
             raise ValueError('C inputs require the Huawei/Doxygen baseline in the approved execution plan')
         return current
 
-    def approve(self, kind, confirm=operator_confirm):
+    def approve(self, kind, confirm=operator_confirm, *, authority='local_terminal_operator'):
+        if authority not in ('local_terminal_operator', 'local_harness_user') or (authority == 'local_harness_user' and kind != 'report'):
+            raise ValueError('Harness human approval is limited to the final report')
         with run_lock(self.run_dir):
             self.state = read_json(self.state_path)
             if self.state.get('delegation') and kind != 'report':
@@ -306,7 +308,7 @@ class Controller:
             if kind == 'report' and self.state['report']['outcome'] == 'SUCCESS':
                 self.check_candidate()
                 self.check_evidence()
-            self.state['approvals'][kind] = {'authority': 'local_terminal_operator', 'operator': getpass.getuser(),
+            self.state['approvals'][kind] = {'authority': authority, 'operator': getpass.getuser(),
                 'sha256': sha, 'baseline': baseline, 'at': now(), 'run_id': self.state['run_id']}
             if kind == 'requirements':
                 self.transition('PLAN_PENDING', 'Exact requirements approved by local operator')

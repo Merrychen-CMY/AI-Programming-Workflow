@@ -1,0 +1,148 @@
+import copy
+from datetime import datetime, timedelta, timezone
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'runtime'))
+from dot_runtime import onboarding as o
+from dot_runtime.controller import Controller, digest, read_json
+
+
+class OnboardingTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        self.project = self.base / 'product'
+        self.project.mkdir()
+        (self.project / 'input.txt').write_text('original', encoding='utf-8')
+        self.task = self.base / 'task'
+        self.settings = {'model': 'fixture-model', 'python': sys.executable, 'codex': 'fixture-codex'}
+        self.draft = json.loads((ROOT / 'templates/harness-start.example.json').read_text(encoding='utf-8'))
+        self.draft.update(project=str(self.project), raw_input='原始要求：完成输入解析，不发布。',
+                          topics={key: '明确测试条件' for key in o.TOPICS}, hard_constraints=['不得发布'], allowed_paths=['.'],
+                          expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),
+                          environment_checks=[{'name':'input','kind':'file','path':str(self.project/'input.txt'),
+                                               'required':True,'evidence':'Input fixture exists'}])
+        self.probe = patch.object(o, 'tool_check', return_value={'status':'PASS','exit_code':0})
+        self.probe.start(); self.addCleanup(self.probe.stop)
+
+    def request(self, action, **kwargs):
+        return o.dispatch({'task':str(self.task),'session':'native-session','action':action, **kwargs})
+
+    def prepare(self):
+        return self.request('inspect',draft=self.draft,settings=self.settings)
+
+    def confirm(self, prepared=None):
+        prepared = prepared or self.prepare()
+        return self.request('confirm',draft=self.draft,settings=self.settings,digest=prepared['digest'])
+
+    def test_inspection_is_read_only_and_not_confirmation(self):
+        result = self.prepare()
+        self.assertTrue(result['inspection']['ready'])
+        self.assertFalse((self.task/'confirmation.json').exists())
+        self.assertEqual((self.project/'input.txt').read_text(),'original')
+
+    def test_bridge_refuses_before_confirmation(self):
+        self.prepare()
+        with self.assertRaisesRegex(ValueError,'confirmation required'):
+            self.request('bridge',name='dot_plan',arguments={'requirements':'x'})
+
+    def test_missing_topic_rejected(self):
+        self.draft['topics'].pop('safety')
+        with self.assertRaises(ValueError): self.prepare()
+
+    def test_unknown_required_manual_check_blocks(self):
+        self.draft['environment_checks']=[{'name':'device','kind':'manual','path':'','required':True,'evidence':''}]
+        prepared = self.prepare()
+        self.assertFalse(prepared['inspection']['ready'])
+        with self.assertRaises(ValueError): self.confirm(prepared)
+
+    def test_manual_evidence_never_becomes_tool_pass(self):
+        self.draft['environment_checks']=[{'name':'device','kind':'manual','path':'','required':True,'evidence':'User says device is connected'}]
+        self.assertEqual(self.prepare()['inspection']['checks'][-1]['status'],'USER_ATTESTED')
+
+    def test_tool_failure_blocks(self):
+        with patch.object(o,'tool_check',return_value={'status':'FAIL'}):
+            self.assertFalse(self.prepare()['inspection']['ready'])
+
+    def test_changed_project_during_confirmation_rejected(self):
+        prepared = self.prepare()
+        (self.project/'input.txt').write_text('changed')
+        with self.assertRaisesRegex(ValueError,'changed'): self.confirm(prepared)
+
+    def test_changed_draft_during_confirmation_rejected(self):
+        prepared = self.prepare()
+        self.draft['limits']['api_calls'] += 10
+        with self.assertRaisesRegex(ValueError,'changed'): self.confirm(prepared)
+
+    def test_changed_model_during_confirmation_rejected(self):
+        prepared = self.prepare()
+        self.settings['model']='different-model'
+        with self.assertRaisesRegex(ValueError,'changed'): self.confirm(prepared)
+
+    def test_confirmation_pins_raw_input_delegation_and_no_execution(self):
+        self.confirm()
+        bridge = read_json(self.task/'bridge.json')
+        receipt = read_json(self.task/'confirmation.json')
+        self.assertEqual(receipt['authority'],'local_harness_user')
+        self.assertEqual(receipt['bridge_sha256'],digest(bridge))
+        self.assertFalse((self.task/'control/run/state.json').exists())
+        self.assertEqual((self.task/'raw-input.md').read_text(encoding='utf-8'),self.draft['raw_input'])
+
+    def test_cannot_reset_confirmed_task(self):
+        self.confirm()
+        with self.assertRaises(ValueError): self.prepare()
+        with self.assertRaises(ValueError): self.confirm({'digest':'x'})
+
+    def test_tampered_delegation_cannot_expand_authority(self):
+        self.confirm()
+        policy = read_json(self.task/'delegation.json'); policy['limits']['api_calls']=999
+        (self.task/'delegation.json').write_text(json.dumps(policy))
+        with self.assertRaisesRegex(ValueError,'delegation changed'):
+            self.request('bridge',name='dot_plan',arguments={'requirements':'x'})
+
+    def test_changed_project_after_confirmation_cannot_start(self):
+        self.confirm(); (self.project/'input.txt').write_text('changed')
+        with self.assertRaisesRegex(ValueError,'project changed'):
+            self.request('bridge',name='dot_plan',arguments={'requirements':'x'})
+
+    def test_model_cannot_choose_l1_identity(self):
+        self.confirm()
+        with self.assertRaisesRegex(ValueError,'identity comes from the host'):
+            self.request('bridge',name='l1_approve',arguments={'kind':'plan','l1_session_id':'forged'})
+
+    def test_product_cannot_include_control_records(self):
+        self.task = self.project/'private'
+        with self.assertRaisesRegex(ValueError,'disjoint'): self.prepare()
+
+    def test_path_traversal_in_delegation_rejected(self):
+        self.draft['allowed_paths']=['../outside']
+        with self.assertRaises(ValueError): self.prepare()
+
+    def test_expired_authority_rejected(self):
+        self.draft['expires_at']='2001-01-01T00:00:00+00:00'
+        with self.assertRaisesRegex(ValueError,'expired'): self.prepare()
+
+    def test_harness_cannot_approve_intermediate_as_human(self):
+        with self.assertRaisesRegex(ValueError,'limited to the final report'):
+            Controller.approve(None,'requirements',authority='local_harness_user')
+
+    def test_failure_report_review_never_resumes(self):
+        self.confirm()
+        self.request('bridge',name='l1_stop',arguments={'reason':'No feasible plan'})
+        preview=self.request('report_preview')
+        with self.assertRaises(ValueError): self.request('report_confirm',sha256='forged')
+        result=self.request('report_confirm',sha256=preview['sha256'])
+        self.assertEqual(result['state'],'BLOCKED')
+        self.assertFalse(result['execution_authorized'])
+        with self.assertRaisesRegex(ValueError,'no automatic resumption'):
+            self.request('bridge',name='dot_plan',arguments={'requirements':'try again'})
+
+
+if __name__ == '__main__': unittest.main()

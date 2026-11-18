@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.0.3",
+  "workflow_version": "3.1.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -14,7 +14,10 @@
       "templates/l1-delegation.example.json",
       "docs/guides/l1-dot-communication.md",
       "policy/communication.json",
-      "docs/guides/l1-user-expression.md"
+      "docs/guides/l1-user-expression.md",
+      "docs/guides/l1-plugin.md",
+      "policy/onboarding.json",
+      "templates/harness-start.example.json"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -144,6 +147,11 @@
       "policy/communication.json",
       "templates/requirements.md",
       "templates/final-report.md"
+    ],
+    "plugin_onboarding": [
+      "docs/guides/l1-plugin.md",
+      "policy/onboarding.json",
+      "templates/harness-start.example.json"
     ]
   },
   "full_reference": [
@@ -289,7 +297,8 @@
     "l1_delegated_approval": true,
     "gpt_responses_adapter": true,
     "l1_mcp_bridge": true,
-    "harness_end_to_end_verified": false
+    "harness_end_to_end_verified": false,
+    "harness_native_plugin_bundle": true
   },
   "default_mode": "simple",
   "primary_documents": [
@@ -314,9 +323,10 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.0.3-validation.md",
+    "validation_record": "docs/reports/3.1.0-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
-    "harness_plugin_installed": false
+    "harness_plugin_installed": false,
+    "harness_plugin_entrypoint": "harness/index.js"
   }
 }

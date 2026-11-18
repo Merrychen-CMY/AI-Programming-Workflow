@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.0.3",
+  "workflow_version": "3.1.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -60,10 +60,12 @@
   ],
   "user_decision_triggers": [
     "initial_missing_facts",
+    "consolidated_start_confirmation",
     "final_report"
   ],
   "user_visible_outputs": [
     "initial_requirements_questions",
+    "consolidated_start_summary",
     "success_or_failure_final_report_for_review"
   ],
   "states": [
@@ -191,5 +193,7 @@
     "execution_plan": "L1",
     "final_report": "user"
   },
-  "communication_policy": "policy/communication.json"
+  "communication_policy": "policy/communication.json",
+  "startup_confirmation_required": true,
+  "onboarding_policy": "policy/onboarding.json"
 }

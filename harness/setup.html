@@ -1,0 +1,28 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 编程 L1 · 首次配置</title>
+<style>body{font:17px/1.65 system-ui,sans-serif;color:#203234;background:#f3f7f7;margin:0}main{max-width:720px;margin:40px auto;padding:32px;background:white;border-radius:18px}h1{line-height:1.3}label{display:block;margin:18px 0 4px}input{box-sizing:border-box;width:100%;padding:11px;border:1px solid #a6b7ba;border-radius:6px;font:inherit}button{padding:12px 18px;border:0;border-radius:6px;background:#145e69;color:white;font:inherit;margin:20px 8px 0 0;cursor:pointer}button:disabled{opacity:.5}small{color:#53676a}#status{white-space:pre-wrap;background:#edf4f4;padding:16px}a{color:#145e69}</style>
+<main><small>AI PROGRAMMING WORKFLOW · L1</small><h1>连接你的 GPT / DOT</h1>
+<p>这里只配置负责统筹工作的 GPT。L1 继续使用你在 DeepSeek Harness 中选择的模型。密钥存入 Harness 凭据服务，不进入聊天、项目仓库或工作会话。</p>
+<label for="model">GPT API 模型 ID</label><input id="model" autocomplete="off" placeholder="填写你的 API 账户可用且支持 Responses 的模型 ID">
+<label for="key">OpenAI API 密钥</label><input id="key" type="password" autocomplete="new-password" placeholder="已配置时可留空，保留原密钥">
+<small>密钥不会回显。本版仅连接 https://api.openai.com/v1/responses。</small>
+<label for="python">Python 3.11+ 可执行文件</label><input id="python" autocomplete="off" placeholder="python 或完整 python.exe 路径">
+<label for="codex">Codex 可执行文件</label><input id="codex" autocomplete="off" placeholder="codex 或完整 codex.exe 路径">
+<p><small>填写可执行文件本身，不附带参数。Codex 需要另行完成本机登录。凭据保存方式由 Harness 当前凭据服务决定，本插件不声称采用操作系统加密。</small></p>
+<button id="save">保存配置</button><button id="probe">测试 API（两次小额计费请求）</button>
+<p id="status" role="status">读取配置状态…</p>
+<p>测试只发送固定示例，不发送项目文件。测试通过后回到 L1，说明项目路径、原始需求和已知约束。L1 会检查环境并展示一份开工摘要，由你集中确认一次。</p>
+<p><small>配置页仅监听本机，安装插件不会自动调用付费 API。会话被宿主释放或卸载插件后链接失效。不要分享本页链接。</small></p></main>
+<script>
+const token = location.hash.slice(1); history.replaceState(null, '', '/');
+const el = id => document.getElementById(id);
+async function call(path, body) {
+  const response = await fetch(path, {method:'POST',headers:{'Content-Type':'application/json','X-Workflow-Token':token},body:JSON.stringify(body)});
+  const value = await response.json(); if (!response.ok) throw new Error(value.error); return value;
+}
+async function run(action) { el('save').disabled=el('probe').disabled=true; el('status').textContent='处理中…';
+ try {el('status').textContent=await action();} catch(e){el('status').textContent=e.message;} finally{el('save').disabled=el('probe').disabled=false;} }
+el('save').onclick=()=>run(async()=>{const value={model:el('model').value,python:el('python').value,codex:el('codex').value,key:el('key').value}; el('key').value=''; await call('/save',value);return '配置已保存。请点击 API 测试，检查模型是否支持工具调用和结构化输出。';});
+el('probe').onclick=()=>run(async()=>{await call('/probe',{});return 'API 兼容性检查通过。现在可以返回 L1，继续检查项目环境和确认开工。';});
+run(async()=>{const data=await call('/status',{}); for(const id of ['model','python','codex'])el(id).value=data[id]; return `密钥：${data.configured?'已配置':'未配置'}\nAPI 检查：${data.probe?.status||'尚未执行'}`;});
+</script></html>

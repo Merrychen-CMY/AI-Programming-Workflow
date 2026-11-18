@@ -203,6 +203,7 @@ def validate_capabilities(index):
         'delivery_executor': False,
         'l1_delegated_approval': True, 'gpt_responses_adapter': True,
         'l1_mcp_bridge': True, 'harness_end_to_end_verified': False,
+        'harness_native_plugin_bundle': True,
     }
     errors = []
     capabilities = index.get('capabilities', {})
@@ -425,6 +426,33 @@ def validate_repository(root):
     errors.extend(check_project_constraints(root))
     errors.extend(validate_communication_policy(documents['policy/communication.json']))
     errors.extend(validate_l1_source_notice(root))
+    onboarding = documents.get('policy/onboarding.json', {})
+    expected_onboarding = {
+        'workflow_version': version,
+        'human_start_confirmation': 'once_after_discovery_before_DOT_calls',
+        'confirmation_provider': 'native_ctx.userQuestions',
+        'model_can_supply_human_confirmation': False,
+        'routine_intermediate_approval_owner': 'L1_after_independent_review',
+        'final_report_review_owner': 'user',
+        'credential_in_model_arguments': False,
+        'credential_in_worker_environment': False,
+        'external_delivery_executor': False,
+        'interruption': 'persist_UNKNOWN_before_dispatch_no_automatic_replay',
+    }
+    for key, expected in expected_onboarding.items():
+        if onboarding.get(key) != expected or type(onboarding.get(key)) is not type(expected):
+            errors.append('Onboarding invariant drift: ' + key)
+    topics = ['requirements', 'baseline', 'scope', 'functions', 'acceptance', 'test_environment', 'test_plan', 'delivery', 'safety']
+    if onboarding.get('required_topics') != topics or set(documents.get('templates/harness-start.example.json', {}).get('topics', {})) != set(topics):
+        errors.append('Onboarding must preserve all nine discovery topics')
+    package = documents.get('package.json', {})
+    if package.get('version') != version or package.get('dsh', {}).get('bundle', {}).get('patch') != './harness/cordis.patch.yml':
+        errors.append('Native plugin package/version mismatch')
+    for key in ('policy/simple-flow.json', 'policy/workflow.json'):
+        if documents[key].get('onboarding_policy') != 'policy/onboarding.json':
+            errors.append('Workflow must reference onboarding policy')
+    if simple.get('startup_confirmation_required') is not True:
+        errors.append('Consolidated startup confirmation is required')
     if simple.get('communication_policy') != 'policy/communication.json' or policy.get('communication_policy') != 'policy/communication.json':
         errors.append('Default and detailed workflows must reference the same communication policy')
     if not (root / 'runtime/dot_runtime').is_dir():

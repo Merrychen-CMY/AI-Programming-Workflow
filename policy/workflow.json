@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.0.3",
+  "policy_version": "3.1.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -153,5 +153,6 @@
   "coding_standards": [
     "policy/embedded-c.json"
   ],
-  "communication_policy": "policy/communication.json"
+  "communication_policy": "policy/communication.json",
+  "onboarding_policy": "policy/onboarding.json"
 }

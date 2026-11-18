@@ -1,0 +1,33 @@
+{
+  "project": "REPLACE_WITH_产品目录绝对路径",
+  "raw_input": "REPLACE_WITH_用户原始信息及澄清记录，区分原文、资料引用与L1推断，不含密钥",
+  "topics": {
+    "requirements": "REPLACE_WITH_目标、参数、约束来源及优先级",
+    "baseline": "REPLACE_WITH_现有版本、待保留行为、历史报告关联；新项目明确写明",
+    "scope": "REPLACE_WITH_本次范围、明确不做项、允许修改路径",
+    "functions": "REPLACE_WITH_功能、接口、异常和边界场景",
+    "acceptance": "REPLACE_WITH_可判定AC、独立预期、性能阈值、必需证据",
+    "test_environment": "REPLACE_WITH_OS、编译器、依赖、设备、权限、可用性及真实证据",
+    "test_plan": "REPLACE_WITH_单元、集成、静态检查、独立审核和适用HIL的方式及限制",
+    "delivery": "REPLACE_WITH_产物、目标、报告形式；本版不执行外部交付",
+    "safety": "REPLACE_WITH_敏感数据、允许发给模型的内容、网络/命令/设备边界及禁止操作"
+  },
+  "hard_constraints": ["REPLACE_WITH_不可由AI降低的明确要求"],
+  "allowed_paths": ["REPLACE_WITH_项目内相对路径"],
+  "expires_at": "REPLACE_WITH_含时区的ISO8601有效期",
+  "limits": {
+    "implementation_attempts": 3,
+    "same_root_cause_attempts": 2,
+    "infrastructure_retries": 2,
+    "timeout_seconds": 600,
+    "l1_reviews": 8,
+    "revisions": 2,
+    "api_calls": 12,
+    "api_max_output_tokens": 8192,
+    "wall_time_seconds": 7200
+  },
+  "environment_checks": [
+    {"name": "REPLACE_WITH_编译器或测试入口", "kind": "file", "path": "REPLACE_WITH_绝对路径", "required": true, "evidence": "存在性检查，不等于实际测试通过"},
+    {"name": "REPLACE_WITH_设备或其他人工确认条件", "kind": "manual", "path": "", "required": true, "evidence": "REPLACE_WITH_用户提供的事实与证据来源；缺失写空字符串以保持UNKNOWN"}
+  ]
+}

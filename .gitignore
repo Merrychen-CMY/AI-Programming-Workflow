@@ -9,3 +9,5 @@ Thumbs.db
 .pytest_cache/
 local-project/
 private-evidence/
+node_modules/
+*.tgz

@@ -1,0 +1,23 @@
+{
+  "name": "ai-programming-workflow",
+  "version": "3.1.0",
+  "private": true,
+  "type": "module",
+  "description": "L1 guided onboarding and bounded GPT/DOT workflow for DeepSeek Harness",
+  "exports": {
+    ".": "./harness/index.js",
+    "./icon": "./harness/icon.svg",
+    "./locale/*.json": "./harness/locale/*.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./harness/cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test harness/tests/*.test.js"
+  }
+}

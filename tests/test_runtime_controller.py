@@ -116,6 +116,22 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(c.run()['state'], 'DECISION_PENDING')
         self.assertFalse(c.adapter.calls)
 
+    def test_native_report_review_records_distinct_human_authority(self):
+        c = self.approved()
+        c.run()
+        state = c.approve('report', lambda *_: True, authority='local_harness_user')
+        self.assertEqual(state['state'], 'DELIVERY_READY')
+        self.assertEqual(state['approvals']['report']['authority'], 'local_harness_user')
+        self.assertFalse(read_json(self.run_dir / 'final-report.json')['delivery_executed'])
+
+    def test_native_decline_does_not_create_report_approval(self):
+        c = self.approved()
+        c.run()
+        with self.assertRaisesRegex(ValueError, 'declined'):
+            c.approve('report', lambda *_: False, authority='local_harness_user')
+        self.assertNotIn('report', c.state['approvals'])
+        self.assertEqual(c.state['state'], 'REPORT_PENDING')
+
     def test_rejected_report_can_be_revised_without_authorizing_a_retry(self):
         c = self.approved()
         c.run()
