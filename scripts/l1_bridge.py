@@ -24,7 +24,7 @@ def dispatch(message, bridge):
     try:
         if method == 'initialize':
             result = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}},
-                      'serverInfo': {'name': 'l1-dot-bridge', 'version': '3.0.0'},
+                      'serverInfo': {'name': 'l1-dot-bridge', 'version': '3.0.1'},
                       'instructions': 'Read L1.md. L1 approves intermediate baselines; user reviews only the final report. Never fake human approval.'}
         elif method == 'ping':
             result = {}

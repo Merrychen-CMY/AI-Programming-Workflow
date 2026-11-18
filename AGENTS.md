@@ -23,3 +23,5 @@
 嵌入式C读 [规范入口](standards/embedded-c/README.md)：华为DKBA 2826-2011.5、145个父项及50个子项、Doxygen的12项采用决定及33子项均保留。冲突时华为优先。DOT维护适用性与工具配置，独立验证核对条款证据；仓库CI不证明产品合规。
 
 维护本仓库遵循 [CONTRIBUTING.md](CONTRIBUTING.md)；不因此授权操作其他产品。
+
+新增必读：嵌入式C还须应用[通用编程与交付约束](standards/embedded-c/v1.3/project-constraints/README.md)的PC-U01～U26：if调用先保存结果且保持短路、Allman括号、自然中文及行后说明、定义上方完整Doxygen、语义布尔接口和头源同步。原B330文件/行号/阶段范围不带入新项目；当前任务路径与委托仍有效，华为优先。

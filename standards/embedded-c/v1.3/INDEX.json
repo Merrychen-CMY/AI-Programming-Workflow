@@ -129,5 +129,12 @@
     "catalog": "standards/embedded-c/v1.3/doxygen/adoption.json",
     "source": "standards/embedded-c/v1.3/doxygen/source.json",
     "huawei_takes_precedence": true
+  },
+  "project_constraints_supplement": {
+    "entrypoint": "standards/embedded-c/v1.3/project-constraints/README.md",
+    "catalog": "standards/embedded-c/v1.3/project-constraints/adoption.json",
+    "source": "standards/embedded-c/v1.3/project-constraints/source.json",
+    "revision": 1,
+    "rules": 26
   }
 }

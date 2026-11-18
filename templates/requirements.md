@@ -61,3 +61,5 @@
 嵌入式C规范补充引用：华为逐条覆盖清单revision 3及采用的仓库commit。DOT建立适用性并按任务影响映射HW条款ID，用户无需重复填表。
 
 Doxygen补充：引用[DOX采用清单](../standards/embedded-c/v1.3/doxygen/README.md) revision 1和仓库commit，冲突以华为为准。DOT准备`verification.doxygen`中的实际工具路径、精确版本、自有源码include范围及超时，纳入原执行计划审核；L4检查工具报告和语义，新增/修改源码后重新验证。
+
+用户通用约束补充：[PC-U01～U26](../standards/embedded-c/v1.3/project-constraints/README.md) revision 1，引用实际仓库commit。自有代码适用范围推广至新项目，旧文件/行号/阶段绑定取消；当前任务允许路径、行为保持要求及条件项由L1/DOT记录。

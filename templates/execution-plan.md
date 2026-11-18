@@ -43,3 +43,5 @@
 L1批准的计划版本与摘要、绑定需求摘要、真实批准来源/时间、明确变更事项：待填写。保持DRAFT直到独立审查和L1批准完成；记录原始委托、L1/审查会话及证据，不能冒充用户批准。修改已批准文件使原批准失效；计划说明与可执行配置一并纳入摘要。
 
 Doxygen补充：引用[DOX采用清单](../standards/embedded-c/v1.3/doxygen/README.md) revision 1和仓库commit，冲突以华为为准。DOT准备`verification.doxygen`中的实际工具路径、精确版本、自有源码include范围及超时，纳入原执行计划审核；L4检查工具报告和语义，新增/修改源码后重新验证。
+
+项目约束补充：[PC-U01～U26](../standards/embedded-c/v1.3/project-constraints/README.md)。DOT在现有任务与review_instructions中记录适用项/理由、检查对象、期望及证据；重点验证if拆分后的调用顺序与短路、注释事实、布尔兼容性和清理依赖。清理/流程图/仅文件清单等条件项不默认每次执行。规范摘要变化使旧批准失效；修改获批内容后按现有L1路径重审。

@@ -1,0 +1,485 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "source": "source.json",
+  "scope": "all_applicable_owned_C_and_H_and_development_tasks",
+  "precedence": "Huawei_first_then_project_requirements_and_Doxygen_adoption",
+  "normative_origin": "user_project_supplement_not_Huawei_clauses",
+  "new_project_legacy_file_allowlist": null,
+  "legacy_scope_is_global": false,
+  "current_task_authorization_required": true,
+  "extra_user_forms_required": false,
+  "finding_intake": "DOT/L2",
+  "review_mode": "independent_candidate_bound_review_and_risk_based_checks",
+  "all_rules_automatically_checked": false,
+  "requirements": [
+    {
+      "id": "PC-U01",
+      "source_id": "U01",
+      "title": "规范来源与优先级",
+      "source_kind": "explicit",
+      "disposition": "retained",
+      "level": "MUST",
+      "scope": "适用的自有C/H及开发任务",
+      "requirements": [
+        "继续执行华为DKBA 2826-2011.5、仓库项目差异和Doxygen采用规则；本补充是用户项目要求，不冒充华为原文。冲突时华为优先，记录具体冲突与处理依据。",
+        "SDK保留上游接口/规范；生成代码改生成器或模板；AI编写的普通代码不属于生成代码豁免。"
+      ],
+      "verification": "记录规范commit、适用性和冲突决定，核对HW条款与本补充分别追踪。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U02",
+      "source_id": "U02",
+      "title": "先理解逻辑和框架",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "开发、整改和审查",
+      "requirements": [
+        "先梳理入口、调用者、输入来源、输出消费者、主要分支、失败去向和模块职责，再实施本次授权变更；不能仅调整格式或堆注释。"
+      ],
+      "verification": "按当前源码核对调用关系、职责和整改依据。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U03",
+      "source_id": "U03",
+      "title": "可读的执行主线",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "自有实现和审查",
+      "requirements": [
+        "执行顺序、判断条件与变量用途应能直接理解；按真实职责组织逻辑，不用无语义拆分掩盖复杂度。"
+      ],
+      "verification": "独立审查业务主线及条件场景，记录具体函数和证据。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U04",
+      "source_id": "U04",
+      "title": "按任务保持行为",
+      "source_kind": "explicit",
+      "disposition": "conditional",
+      "level": "MUST",
+      "scope": "声明不改逻辑的整理、注释或重构任务",
+      "requirements": [
+        "保持调用次数、顺序、短路、状态转换、退出与错误返回、边界比较、数据长度/布局、MMIO读取和中断恢复时机。适用时核对擦写、校验、提交和复位条件。",
+        "问题讨论不构成行为变更授权；发现既有缺陷先交DOT分析。新项目允许实现已批准功能，不继承全项目永久禁止修改逻辑的限制。"
+      ],
+      "verification": "比较前后控制流与调用轨迹，按风险执行实际C测试及必要目标/硬件验证。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U05",
+      "source_id": "U05",
+      "title": "取消历史文件范围绑定",
+      "source_kind": "phase",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "所有新项目和当前任务范围",
+      "requirements": [
+        "通用规范适用于新项目所有适用的自有C/H及开发任务，不限于原B330文件、函数、某天修改文件或固定行号。",
+        "实际允许修改路径仍来自当前需求、委托与批准计划；规范适用范围不是无限编辑授权。不得把阅读材料、历史问答或移除旧白名单当作全仓重构许可。"
+      ],
+      "verification": "将规范适用范围与本次allowed_paths分别核对，检查超范围差异。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U06",
+      "source_id": "U06",
+      "title": "按确认顺序整改",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "有已确认整改顺序或依赖的任务",
+      "requirements": [
+        "依已确认顺序和依赖推进；实质调整由DOT协调并按既有L1代理审批规则处理，不夹带无关功能。"
+      ],
+      "verification": "比对计划依赖、实际变更顺序和调整记录。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U07",
+      "source_id": "U07",
+      "title": "if判断前保存调用结果",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "自有C的if及else if条件",
+      "requirements": [
+        "不得在if条件中直接调用函数；包括嵌套调用和实际执行函数的包装宏。先以语义明确的变量保存结果，再判断；sizeof等语言运算符不当作函数。",
+        "保持原来每次调用的可达条件、次数、先后、短路与MMIO/临界区时机。不能为提取条件而无条件提前调用原本不会执行的函数。else if中的调用需在前一分支未命中后再求值，必要时使用等价嵌套else。",
+        "for、while、do/while、三目条件的同类拆分是建议，不把本来源的if要求扩写为所有表达式禁令。"
+      ],
+      "verification": "检查直接/间接调用和宏展开；以路径/调用记录验证短路保持，格式检查不能替代语义审查。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U08",
+      "source_id": "U08",
+      "title": "统一Allman括号",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "新自有C代码及获准风格迁移的旧代码",
+      "requirements": [
+        "函数与控制块花括号独占一行；else和else if另起一行，else if保留为同一短语。控制语句统一加括号，保留4空格缩进、一行一语句。",
+        "这是华为允许范围内的项目选择，不是华为唯一格式。旧代码迁移受当前任务范围约束；不据此擅自改SDK或批量重排。"
+      ],
+      "verification": "对照已批准格式配置和实际差异检查。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U09",
+      "source_id": "U09",
+      "title": "有语义的变量名",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "自有命名及授权改名",
+      "requirements": [
+        "变量、结果及常量名称体现业务意义和必要单位，不用含混i/q/p等单字符表达复杂状态；保留华为g_/s_、宏常量及现有兼容性要求。不要机械统一成ret或result。"
+      ],
+      "verification": "结合读写用途审查名称，公开改名核对调用方和ABI。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U10",
+      "source_id": "U10",
+      "title": "保留简单循环计数例外",
+      "source_kind": "explicit",
+      "disposition": "retained",
+      "level": "MUST",
+      "scope": "短小局部循环",
+      "requirements": [
+        "允许i等清晰的局部循环计数名；不把U09变成单字符变量一律禁止，不为长名字机械改写自明循环。"
+      ],
+      "verification": "核对作用域、用途和阅读歧义。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U11",
+      "source_id": "U11",
+      "title": "业务值具名化",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "表达业务含义的数值",
+      "requirements": [
+        "地址、偏移、超时、容量、状态等业务数值用含义明确的具名常量并注明单位；不要求每个0、1或普通递增量都变成宏。不得把原B330示例数值或硬件参数带入新产品。"
+      ],
+      "verification": "追溯参数来源、单位、取值范围和实际用途。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U12",
+      "source_id": "U12",
+      "title": "解释变量和判断场景",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "关键变量、业务判断和关键步骤",
+      "requirements": [
+        "说明实际含义、单位、有效期、触发场景、后续状态及失败去向；涉及共享状态时说明快照/中断边界，涉及部分写入时说明真实副作用。不要机械翻译每一行。"
+      ],
+      "verification": "对照代码路径和资源状态核查，不以注释行数或标签数量验收。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U13",
+      "source_id": "U13",
+      "title": "关键函数完整说明",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "所有模块适用的关键、复杂或公开函数",
+      "requirements": [
+        "关键函数的入口/调用者、主要变量、步骤、预算、状态与失败去向都应讲清；从原指定函数推广到各项目关键函数，不固定为USB升级或某个函数名。循环处理预算、协议包长等不同量不得混写。"
+      ],
+      "verification": "按风险选出关键函数清单，核对调用关系、时序、状态和单位。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U14",
+      "source_id": "U14",
+      "title": "自然中文且事实准确",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "自有代码说明",
+      "requirements": [
+        "使用自然、直接、易懂的中文，保留准确英文标识符与单位，避免模板化空话。可以简化语言，不能牺牲技术事实；成功失败、长度单位、已发生的写入、接收状态、中断恢复及复位条件必须真实。"
+      ],
+      "verification": "独立比较注释与实现、接口及实际失败路径。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U15",
+      "source_id": "U15",
+      "title": "C实现中的行后说明",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": ".c中的变量、业务条件和关键语句说明",
+      "requirements": [
+        "对应说明放在同一行右侧，同一逻辑块内注释正文左边界尽量对齐；不规定全工程统一起始列。不要为对齐形成难读长行。",
+        "函数文档使用U16的上方块，头文件函数使用U17；类型和宏按既有Doxygen规则置于声明/定义上方。适合尾注的文档化变量/成员用正确的/**<标记，普通语句用普通注释，避免实体错绑。",
+        "长说明先精简或移入函数上方说明；确需实体长说明时依华为位置/清晰性及DOX-04/06等规则置于目标上方，记录原因。不得独立放在目标下方，亦不能把所有行后注释静默迁回上方。"
+      ],
+      "verification": "检查真实指向、同块对齐和生成关联；冲突按HW-R-8.5、HW-P-8.3等具体条款处理。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U16",
+      "source_id": "U16",
+      "title": "函数定义上方完整文档",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "自有函数定义，说明详略随职责和复杂度",
+      "requirements": [
+        "完整函数说明紧邻定义上方，采用Doxygen；按真实情况说明用途、参数方向/单位、返回语义、前置条件、调用上下文、主要步骤和副作用。不能仅在头文件写说明而在实现只留空壳。",
+        "简单内部函数保持精练；无参数或void返回不编造标签，无风险不填空警告。华为要求的声明处契约保留，定义文档补全实现，声明与定义内容必须同步。"
+      ],
+      "verification": "核对定义上方内容和签名/实现；Doxygen生成成功不证明完整语义或文档位置均合规。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U17",
+      "source_id": "U17",
+      "title": "头文件函数注释放上方",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": ".h中的函数说明",
+      "requirements": [
+        "函数说明位于声明正上方，不写在声明右侧；重要、复杂或公开函数保留华为HW-R-8.3要求的完整接口契约，不能以实现已有说明为由删减调用者需要的信息。其他简单声明按适用性处理，不机械复制长模板。"
+      ],
+      "verification": "核对声明处功能、输入输出、返回、性能/重入约束与实现的一致性。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U18",
+      "source_id": "U18",
+      "title": "语义布尔接口",
+      "source_kind": "explicit_with_interpretation",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "可兼容修改、真正表达是/否或成功/失败的自有接口",
+      "requirements": [
+        "语义布尔返回使用bool，并同步.h、.c、调用方和测试替身。先确认旧返回约定；0代表成功的状态码不能按数值直接转换成失败。",
+        "数量、索引、错误码即使当前只取0/1也不自动改bool；不得破坏SDK签名、回调、协议/持久化布局、共享结构或ABI。平台约束保留并说明适用边界。bool类型和TRUE/FALSE定义由统一兼容层提供，不在各文件重复定义。"
+      ],
+      "verification": "核对签名、调用点、错误映射、类型定义和兼容性，编译并验证成功/失败路径。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U19",
+      "source_id": "U19",
+      "title": "布尔返回使用TRUE/FALSE",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "U18适用的自有布尔接口的常量返回",
+      "requirements": [
+        "常量返回使用TRUE/FALSE表达真/假，不写裸0/1；统一定义应与bool兼容，通常通过项目公共兼容头映射到语言/平台既有真/假定义，不重定义冲突的SDK符号。其他非布尔API保留其真实返回约定。",
+        "这是用户项目风格，不冒充华为统一要求，也不自动强迫改变已经确定的外部接口。"
+      ],
+      "verification": "核对TRUE/FALSE唯一来源、定义值、类型兼容性及调用方语义。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U20",
+      "source_id": "U20",
+      "title": "头源调用方同步",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "接口类型、名称、参数、公开常量或注释变化",
+      "requirements": [
+        "同步检查声明、定义、调用方、测试替身、头文件注释和示例；不能只改.c而留下过时.h或错误的调用假设。"
+      ],
+      "verification": "记录受影响接口及调用者，编译/检查覆盖适用配置。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U21",
+      "source_id": "U21",
+      "title": "有依据的未使用项清理",
+      "source_kind": "explicit",
+      "disposition": "conditional",
+      "level": "MUST",
+      "scope": "本次计划明确包含清理的文件/变量",
+      "requirements": [
+        "删除前核对所有适用构建目标、条件编译、配置、函数指针、回调、ISR、汇编、弱符号和链接脚本；无文本引用不等于无用。保留MMIO读取、外部可见状态、调试副作用及必要共享快照。",
+        "确认后在授权范围内清理并同步构建入口，重新构建；不能删除安全快照或从原讨论推导批量清理许可。交付不混入旧产物。"
+      ],
+      "verification": "保留依赖分析、删除依据和当前构建/回归证据。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U22",
+      "source_id": "U22",
+      "title": "复核与证据真实",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "所有适用变更的交付前复核",
+      "requirements": [
+        "复核正确性、规范与可读性；标明检查对象及版本，区分注释/排版、接口、清理和逻辑变更。",
+        "按风险选择静态审查、编译、测试和板上验证，分别记录主机测试、目标构建、硬件结果及未覆盖项。历史elf/bin/map不是当前源码已构建的证据；只检查压缩包时不得声称访问了另一个本地工程。"
+      ],
+      "verification": "核对候选、工具、实际执行记录及限制；缺必需验证不得PASS。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U23",
+      "source_id": "U23",
+      "title": "按请求提供文件清单",
+      "source_kind": "explicit",
+      "disposition": "conditional",
+      "level": "MUST",
+      "scope": "用户明确要求仅列变更文件时",
+      "requirements": [
+        "只列文件名/相对路径，不加行号、逐行diff或大段细节；同名文件带目录，新增/删除不可遗漏。明确比较基准。",
+        "此格式仅约束文件清单，不删减最终报告的结果、风险、失败记录和必要证据；用户另要分析时照常提供细节。"
+      ],
+      "verification": "核对文件差异集合、比较版本及实际交付格式。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U24",
+      "source_id": "U24",
+      "title": "基于当前源码的流程说明",
+      "source_kind": "explicit",
+      "disposition": "conditional",
+      "level": "MUST",
+      "scope": "用户要求流程说明或本次变更影响已有流程文档时",
+      "requirements": [
+        "说明实际模块入口、主要函数、职责、顺序和成功/等待/失败等分支，流程图标注主要调用函数。以当前函数/源码为准，不继承原文件、固定行号或USB专属流程。",
+        "不要求每次纯注释修改重画流程图；适用时更新受影响文档。"
+      ],
+      "verification": "对照当前候选调用链、分支及文档版本。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U25",
+      "source_id": "U25",
+      "title": "可取得的版本化交付物",
+      "source_kind": "explicit",
+      "disposition": "conditional",
+      "level": "MUST",
+      "scope": "任务要求文件或工程包交付时",
+      "requirements": [
+        "交付本次实际生成的文件/代码/工程包及接收者可取得的直接链接或附件；版本与说明一致，修复失效入口，不用仅在执行机存在的路径字符串声称交付。",
+        "包内排除旧文件和历史构建结果；有意保留的历史资料明确标识。链接/附件交付不等于授权发布、部署或刷写。"
+      ],
+      "verification": "检查包清单、摘要、链接目标及访问结果，未能验证可达时如实说明。",
+      "product_status": "NOT_RUN"
+    },
+    {
+      "id": "PC-U26",
+      "source_id": "U26",
+      "title": "可复用约束记录",
+      "source_kind": "explicit",
+      "disposition": "generalized",
+      "level": "MUST",
+      "scope": "项目约束落地及后续维护",
+      "requirements": [
+        "以Markdown和机器清单保存通用要求、当前项目事实、阶段范围、冲突决定与适用性；用户明确要求、执行解释和工程建议分开，保持可追溯版本。",
+        "L1引用规范并在委托内批准适用计划；DOT安排实施与独立审查；发现统一回DOT/L2。用户不增加填表任务，仍只提供原始信息及审核L1最终报告。"
+      ],
+      "verification": "检查Agent入口、计划、候选基线及最终证据能定位本补充版本。",
+      "product_status": "NOT_RUN"
+    }
+  ],
+  "excluded_legacy_bindings": [
+    {
+      "id": "X01",
+      "source": "§3",
+      "binding": "原固定文件白名单和“昨天修改”的时间窗口",
+      "new_project": "取消旧绑定；适用所有自有C/H，实际编辑仍限当前批准路径。"
+    },
+    {
+      "id": "X02",
+      "source": "U13、U24、§9.1",
+      "binding": "原关键函数名称和某文件固定行号",
+      "new_project": "改用当前模块实际入口/关键函数和当前源码定位。"
+    },
+    {
+      "id": "X03",
+      "source": "§3、§6.1",
+      "binding": "原阶段仅改注释或不得改逻辑",
+      "new_project": "不作永久限制；只在本次任务明确要求行为保持时适用。"
+    },
+    {
+      "id": "X04",
+      "source": "§4、§7、§8",
+      "binding": "原工程路径、硬件值、包长度、升级/复位分支",
+      "new_project": "来自新项目需求与源码，不能从案例推测或照搬。"
+    },
+    {
+      "id": "X05",
+      "source": "§7",
+      "binding": "问答中的待讨论改法",
+      "new_project": "不是自动授权，不据此改变中断、错误码、失败停机、队列或复位策略。"
+    },
+    {
+      "id": "X06",
+      "source": "§5.5",
+      "binding": "未取得的截图和另一个复审文档",
+      "new_project": "仅采用本次文件明示要求，不声称读取其他材料。"
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "REC-01",
+      "level": "SHOULD",
+      "requirement": "循环和三目等其他业务条件也可保存调用结果以提高清晰性；不是所有表达式的硬性禁令。"
+    },
+    {
+      "id": "REC-02",
+      "level": "SHOULD",
+      "requirement": "控制行后说明长度，以函数上方说明承载较长背景；不强制统一注释起始列。"
+    },
+    {
+      "id": "REC-03",
+      "level": "SHOULD",
+      "requirement": "文件清单可按新增、修改、删除分组；只要完整且清楚即可。"
+    },
+    {
+      "id": "REC-04",
+      "level": "SHOULD",
+      "requirement": "工程包可解压到空目录以避免旧文件残留；不是程序功能要求。"
+    }
+  ],
+  "conflict_decisions": [
+    {
+      "id": "D01",
+      "topic": "括号位置",
+      "decision": "华为HW-R-9.5允许项目统一选择；本次用Allman替换此前短控制块同行默认。"
+    },
+    {
+      "id": "D02",
+      "topic": "函数声明/定义文档",
+      "decision": "U16要求定义上方完整说明；HW-R-8.3仍要求重要/复杂/公开函数声明处契约，不能只保留.h一句话。两处分别服务调用者和实现阅读并同步，简单函数不填空模板。"
+    },
+    {
+      "id": "D03",
+      "topic": "行后与长注释",
+      "decision": "普通.c变量/条件/关键语句采用行后说明；类型、宏、函数及长成员文档遵守既有Doxygen与华为位置/清晰性要求。不采用独立下方尾注。"
+    },
+    {
+      "id": "D04",
+      "topic": "布尔与ABI",
+      "decision": "bool及TRUE/FALSE是项目要求；SDK、回调、协议、持久化布局和非布尔返回契约不得机械转换。"
+    },
+    {
+      "id": "D05",
+      "topic": "可读性与准确性",
+      "decision": "不采纳历史“可牺牲准确性”的字面解释；只简化表达，不改变关键技术事实。"
+    }
+  ]
+}

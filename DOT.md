@@ -34,3 +34,5 @@ DOT按 [最终报告模板](templates/final-report.md) 输出AC结果、证据�
 嵌入式C继续使用 [华为规范和Doxygen](standards/embedded-c/README.md)。Doxygen检查在独立审核前执行；版本、自有源码范围和工具证据绑定计划/候选，语义由独立审核验证。华为优先级、145父项/50子项与DOX12项/33子项均不因流程精简而减少。
 
 运行方式见 [Harness接入](docs/guides/l1-harness.md)。历史人工终端模式仅保留兼容，不是默认使用路径。
+
+将[通用编程与交付约束](standards/embedded-c/v1.3/project-constraints/README.md)的适用PC-U项纳入任务、验证及最终证据；新项目不限定原B330文件。if拆分要保持原可达路径/短路，布尔转换核对SDK/ABI，清理须有范围与依赖依据。运行器向C会话注入清单并绑定其摘要；独立审查记录适用项、结果与限制，Doxygen成功不能替代语义审核。

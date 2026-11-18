@@ -3,7 +3,7 @@
  * @brief 有界采样累加器的合成教学接口，演示 Doxygen 注释与接口契约。
  * @author Codex（AI 生成的教学示例，不代表任何产品作者或员工身份）
  * @date 2026-11-17
- * @version teaching-fixture-1.0
+ * @version teaching-fixture-1.1
  * @copyright 本示例不声明产品版权归属；产品文件必须使用已核实的版权信息。
  * @details 本文件与 commented_module.c 配套，仅使用 C99 标准类型。
  * 所有采样值均为无量纲整数，接口不访问设备、不分配内存、不执行异步操作。
@@ -108,7 +108,8 @@ void sample_accumulator_reset(sample_accumulator *accumulator);
  *
  * sample_accumulator_reset(&accumulator);
  * status = sample_accumulator_add(&accumulator, values, 2U);
- * if (status != SAMPLE_STATUS_OK) {
+ * if (status != SAMPLE_STATUS_OK)
+ * {
  *     // 调用者处理失败，不能把错误当成一次成功的追加。
  *     sample_accumulator_reset(&accumulator);
  * }

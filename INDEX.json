@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.0.0",
+  "workflow_version": "3.0.1",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -115,6 +115,15 @@
       "docs/guides/l1-harness.md",
       "templates/l1-bridge.example.json",
       "policy/l1-rejection-tests.json"
+    ],
+    "embedded_c_project_constraints": [
+      "standards/embedded-c/v1.3/project-constraints/README.md",
+      "standards/embedded-c/v1.3/project-constraints/adoption.json",
+      "standards/embedded-c/v1.3/project-constraints/source.json"
+    ],
+    "embedded_c_project": [
+      "standards/embedded-c/README.md",
+      "standards/embedded-c/v1.3/project-constraints/README.md"
     ]
   },
   "full_reference": [
@@ -285,7 +294,7 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.0.0-validation.md",
+    "validation_record": "docs/reports/3.0.1-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false

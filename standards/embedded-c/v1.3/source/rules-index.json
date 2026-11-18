@@ -302,5 +302,11 @@
     }
   ],
   "coding_reference": "DKBA 2826-2011.5",
-  "clause_coverage": "standards/embedded-c/v1.3/huawei/coverage.json"
+  "clause_coverage": "standards/embedded-c/v1.3/huawei/coverage.json",
+  "project_constraints": {
+    "catalog": "standards/embedded-c/v1.3/project-constraints/adoption.json",
+    "source": "standards/embedded-c/v1.3/project-constraints/source.json",
+    "revision": 1,
+    "rules": 26
+  }
 }

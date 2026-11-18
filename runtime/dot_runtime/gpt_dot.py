@@ -15,6 +15,7 @@ import uuid
 from .adapter import RESULT_SCHEMA, ROOT_CAUSES, _valid_report
 from .controller import atomic_json, read_json, digest, validate_plan
 from .delegation import validate_delegation, check_plan_bounds
+from .project_constraints import prompt as constraints_prompt
 
 
 def function(name, properties):
@@ -107,7 +108,8 @@ def propose_plan(client, requirements, example, context):
         'Use exact known commands/tool paths from environment context; missing critical facts must cause stop. '
         'For C keep Huawei and Doxygen. No product commands execute here.\nREQUIREMENTS:\n' + requirements
         + '\nDELEGATION:\n' + json.dumps(client.delegation, ensure_ascii=False)
-        + '\nKNOWN ENVIRONMENT:\n' + context + '\nEXAMPLE SHAPE:\n' + json.dumps(example, ensure_ascii=False),
+        + '\nKNOWN ENVIRONMENT:\n' + context + '\nEXAMPLE SHAPE:\n' + json.dumps(example, ensure_ascii=False)
+        + constraints_prompt(),
         tools=[function('propose_plan', {'plan_json': {'type': 'string'}}),
                function('stop', {'reason': {'type': 'string'}})])
     call, arguments = one_call(response, {'propose_plan', 'stop'})

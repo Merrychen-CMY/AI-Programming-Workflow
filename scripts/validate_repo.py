@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from huawei_coverage import check_repository_coverage
 from doxygen_reference import check_doxygen_reference
+from project_constraints import check_project_constraints
 
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED = {'.git', '__pycache__', '.venv', 'local-project', 'private-evidence'}
@@ -247,6 +248,16 @@ def validate_embedded_c_policy(policy, source_rules):
         'coding.goto_prohibition_origin': 'retained_project_requirement_stricter_than_Huawei_suggestion_6.3',
         'coding.column_target_origin': 'project_choice_allowed_by_Huawei_rule_9.3',
         'coding.column_target': 80, 'coding.column_target_is_hard_limit': False,
+        'coding.brace_placement': 'allman_project_choice_allowed_by_Huawei_9.5',
+        'coding.if_function_call_requires_named_result': True,
+        'coding.boolean_return_constants': ['FALSE', 'TRUE'],
+        'coding.definition_documentation': 'complete_Doxygen_above_definition_with_header_contract_preserved',
+        'project_constraints.revision': 1,
+        'project_constraints.rules': 26,
+        'project_constraints.huawei_takes_precedence': True,
+        'project_constraints.legacy_file_scope_inherited': False,
+        'project_constraints.current_task_scope_required': True,
+        'project_constraints.all_rules_automatically_checked': False,
         'readability.review_triggers_are_hard_limits': False,
         'readability.trigger_requires_recorded_review': True,
         'readability.mechanical_split_counts_as_fix': False,
@@ -409,6 +420,7 @@ def validate_repository(root):
         errors.append('Reference scenarios must not claim real execution; store actual results in the product project')
     errors.extend(validate_capabilities(index))
     errors.extend(check_doxygen_reference(root))
+    errors.extend(check_project_constraints(root))
     if not (root / 'runtime/dot_runtime').is_dir():
         errors.append('Advertised local runtime implementation is missing')
     for name in ('project-context', 'task-draft'):

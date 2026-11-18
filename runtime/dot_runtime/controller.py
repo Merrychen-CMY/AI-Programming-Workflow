@@ -228,7 +228,9 @@ class Controller:
         self.save()
 
     def baseline(self):
+        from .project_constraints import baseline_digest
         value = {'requirements': file_hash(self.state['requirements']), 'plan': file_hash(self.state['plan']),
+                'project_constraints': baseline_digest(),
                 'catalog': file_hash(CATALOG), 'initial_project': self.state['initial_snapshot']['id'],
                 'doxygen': digest({'checker': file_hash(DOXYGEN_CHECKER),
                     **{p.relative_to(DOXYGEN_REFERENCE).as_posix(): file_hash(p)
@@ -539,6 +541,8 @@ class Controller:
         if self.state.get('candidate'):
             text += '\nCANDIDATE: ' + self.state['candidate']['id']
         if plan['coding_standard'] == 'huawei-c':
+            from .project_constraints import prompt as constraints_prompt
+            text += constraints_prompt()
             text += '\nCoding baseline: strictly apply Huawei DKBA 2826-2011.5 and Doxygen. Read this catalog: ' + str(CATALOG)
             text += ('\nDoxygen reference: viys/doxygen_stu. When its examples or style conflict with Huawei, '
                      'Huawei takes precedence. Read the normative adoption decisions below; do not copy upstream '

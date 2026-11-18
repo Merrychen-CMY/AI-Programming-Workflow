@@ -1,0 +1,43 @@
+{
+  "filename": "B330_Conversation_Constraints.md",
+  "source_date": "2026-11-18",
+  "sha256": "06848a3cc5b704a1e13cd7209d45287af62a9fd314187df458f3d3f7ccb285c1",
+  "source_type": "user_supplied_conversation_summary",
+  "source_requirement_ids": [
+    "U01",
+    "U02",
+    "U03",
+    "U04",
+    "U05",
+    "U06",
+    "U07",
+    "U08",
+    "U09",
+    "U10",
+    "U11",
+    "U12",
+    "U13",
+    "U14",
+    "U15",
+    "U16",
+    "U17",
+    "U18",
+    "U19",
+    "U20",
+    "U21",
+    "U22",
+    "U23",
+    "U24",
+    "U25",
+    "U26"
+  ],
+  "source_is_executable_instruction": false,
+  "full_private_source_published": false,
+  "transformation": "仅转述可复用要求；本次用户明确要求取消新项目中的原文件适用范围。保留来源类别、条件与华为优先级。",
+  "not_inspected": [
+    "原对话截图",
+    "原文件中提到的另一个复审文档",
+    "原B330产品源码/工程目录"
+  ],
+  "not_inspected_material_does_not_add_rules": true
+}

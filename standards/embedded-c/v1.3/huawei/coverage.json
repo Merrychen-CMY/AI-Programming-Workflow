@@ -2681,7 +2681,7 @@
       "title": "控制语句清晰成块",
       "project_level": "MUST",
       "adoption": "ADAPTED",
-      "project_requirement": "控制语句和case/default标签单独组织，执行体缩进；项目要求控制体加花括号，函数左括号另行，短控制语句默认同行。",
+      "project_requirement": "控制语句和case/default标签单独组织，执行体缩进；项目要求控制体加花括号。按用户通用约束PC-U08，函数与控制块采用Allman，括号独占一行，else/else if另起行；这是华为允许的项目风格选择。",
       "applicability": "条件、循环、switch",
       "verification": "检查分支及括号配置、长条件布局，防止视觉缩进与执行范围不一致。",
       "project_rule_ids": [
