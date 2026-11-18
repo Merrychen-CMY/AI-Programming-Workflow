@@ -4,7 +4,7 @@
 
 ## 安装和首次使用
 
-1. 获取本仓库 3.1.1 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
+1. 获取本仓库 3.1.2 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
 2. 在 DeepSeek Harness 的插件管理中添加本地插件包/目录。也可让 Harness 自身有插件管理能力的 Agent 使用 `plugin_manager install_bundle` 安装本地来源；实际参数以宿主工具声明为准。本仓库不直接修改你的 Harness 配置文件。
 3. 创建新会话，选择 **AI 编程 L1**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。旧会话可能仍保留旧 preset，不能用来判断新插件是否生效。
 4. 对 L1 说：**“开始一个项目，请按配置模型和密钥、检查环境、沟通需求的顺序引导我，再集中确认开工。”** L1 会提供本机配置页链接。在页面填写 GPT API 模型 ID、密钥及 Python/Codex 可执行文件路径。这里的 GPT 就是 DOT，不是另一个人工操作入口；L1 自己的模型仍由 Harness 设置。
@@ -23,6 +23,29 @@
 实际构建、测试、Doxygen、独立审核与适用 HIL 仍在批准后的运行器中产生证据。插件不把环境检查当作产品验收，不自动安装软件、关闭安全机制或修改设备。
 
 ## 状态与恢复
+
+### 配置或API测试失败
+
+3.1.2配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
+
+| 错误编号 | 含义与处理 |
+| --- | --- |
+| CONFIG_INVALID / KEY_FORMAT | 检查字段和粘贴格式；不在聊天中提供密钥。 |
+| CONFIG_READ / CONFIG_WRITE | 检查本地配置格式或目录权限。 |
+| CREDENTIAL_READ / CREDENTIAL_WRITE | Harness凭据服务读写失败，检查宿主凭据功能。 |
+| SETUP_REQUIRED | 先保存模型和密钥。 |
+| API_AUTH（401） | 核对API密钥、项目/组织及IP访问权限，不能仅凭401确定密钥无效。 |
+| API_ACCESS / API_REGION（403） | 核对账户/模型权限、官方支持地区和网络访问策略。 |
+| API_MODEL（404） | 核对准确模型ID及当前项目访问权。 |
+| API_QUOTA / API_RATE / API_LIMIT（429） | 分别表示已识别的额度限制、速率限制或无法区分；按实际类别检查。 |
+| NETWORK_* | 连接、DNS、证书或超时问题；核对Harness进程网络，浏览器可访问不等于宿主可访问。不要关闭证书验证。 |
+| API_OUTPUT_LIMIT / API_INCOMPLETE | 响应未完成，不能据此判定密钥无效；可能已计费。输出上限类需另行调整探测预算/推理设置，插件不会自行增加费用或重试。 |
+| API_REQUEST / API_TOOL_FORMAT / API_JSON_FORMAT | 请求或输出不符合所选模型的兼容性要求。 |
+| API_SERVER / API_HTTP / API_RESPONSE | 服务或响应异常，保留安全诊断用于排查。 |
+
+错误分类依据[官方错误码](https://developers.openai.com/api/docs/guides/error-codes)与[推理输出限制](https://developers.openai.com/api/docs/guides/reasoning?api-mode=responses)。提示只包含本地固定文字、白名单分类及数字状态，不回显API错误正文、凭据服务异常、模型返回内容或请求头。每次点击最多两次请求、每次2048输出token和45秒超时；遇到失败立即停止，不自动重试、不切换模型、不扩大预算。
+
+尚未开工的旧版用户可安装新版插件并重新加载宿主、新建AI编程L1会话和配置页。确认顶部版本后，保留已有配置，手动点击一次测试，把显示的错误编号与阶段交给维护者。正常升级保留宿主密钥和设置文件；不要删除配置或运行记录。已开工任务遵循下述固定版本与恢复规则。
 
 ```mermaid
 flowchart TD
@@ -62,4 +85,4 @@ flowchart TD
 
 插件入口为 `harness/index.js`，打包根为仓库根。`harness/cordis.patch.yml` 声明专用 L1 preset。`workflow_reference` 提供受限只读规则读取；内部 Python 管道不直接暴露给模型。开工和最终确认来自 `ctx.userQuestions` 的原生人类答复，模型无法传入 `confirmed=true`。
 
-运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/ai-programming-workflow-3.1.1.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.1.1验证记录](../reports/3.1.1-validation.md)。
+运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/ai-programming-workflow-3.1.2.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.1.2验证记录](../reports/3.1.2-validation.md)。

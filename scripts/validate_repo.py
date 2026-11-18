@@ -439,6 +439,7 @@ def validate_repository(root):
         'external_delivery_executor': False,
         'interruption': 'persist_UNKNOWN_before_dispatch_no_automatic_replay',
         'base_environment_before_requirements': True,
+        'setup_diagnostics': 'allowlisted_code_stage_http_status_no_raw_errors',
     }
     for key, expected in expected_onboarding.items():
         if onboarding.get(key) != expected or type(onboarding.get(key)) is not type(expected):

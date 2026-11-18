@@ -130,7 +130,7 @@ test('API probe validates two actual response shapes; refuses incomplete result'
   const result=await probeModel(secret,'fixture-model',fetchImpl);assert.equal(result.api_calls,2);
   assert.ok(requests.every(r=>r.options.redirect==='error' && JSON.parse(r.options.body).store===false));
   assert.ok(!JSON.stringify(result).includes(secret));
-  await assert.rejects(probeModel(secret,'fixture-model',async()=>({ok:true,text:async()=>'{"status":"incomplete"}'})),/did not complete/);
+  await assert.rejects(probeModel(secret,'fixture-model',async()=>({ok:true,text:async()=>'{"status":"incomplete"}'})),error=>error.code==='API_INCOMPLETE');
 });
 test('local setup rejects missing token/origin; never echoes saved key',async t=>{
   const directory=await mkdtemp(resolve(tmpdir(),'l1-setup-'));t.after(()=>rm(directory,{recursive:true,force:true}));

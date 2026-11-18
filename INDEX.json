@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.1.1",
+  "workflow_version": "3.1.2",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -323,7 +323,7 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.1.1-validation.md",
+    "validation_record": "docs/reports/3.1.2-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false,
