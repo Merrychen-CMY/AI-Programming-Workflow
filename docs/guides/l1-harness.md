@@ -1,6 +1,6 @@
 # L1 DeepSeek Harness → GPT/DOT接入
 
-版本3.0.1：用户只与L1沟通原始需求、审核最终报告。以下配置由L1或安装维护者准备一次，运行时用户不手动搬运需求/计划。
+版本3.0.2：用户只与L1沟通原始需求、审核最终报告。以下配置由L1或安装维护者准备一次，运行时用户不手动搬运需求/计划。
 
 ## 已有能力及插件边界
 
@@ -74,3 +74,7 @@ python scripts/dot.py approve report --run-dir ABSOLUTE_TASK/control/run
 API日志保存请求、响应、实际usage和调度结果。调用次数与输出上限不是人民币/美元硬限额；若需要账户费用硬上限，还须配置账户侧预算，不能称本运行器已经实现货币计费门禁。语义审查和本地记录不构成受保护审批服务。实际测试命令直接执行，需要已有项目隔离；无人值守正式环境应在独立账户/容器或受保护执行器中部署。
 
 本版没有宣称真实API、Harness插件挂载和完整多会话产品任务已联调。验证范围见 [验证记录](../reports/3.0.0-validation.md)。API实现依据 [官方Function calling](https://developers.openai.com/api/docs/guides/function-calling)，传输依据 [MCP stdio](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports)。
+
+## 沟通约束
+
+初始化指令与GPT开发者提示已接入[合作沟通约束](l1-dot-communication.md)。无需新工具、表单或确认回合。说明放入已有字符串字段，不扩展JSON结构；无状态API保持必要完整输入，未实现自动增量/摘要传输。规则变化按既有基线流程重审。

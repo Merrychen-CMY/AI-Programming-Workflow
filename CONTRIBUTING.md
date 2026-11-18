@@ -58,3 +58,7 @@ CI单独下载固定官方Doxygen版本并核对SHA-256，执行示例和拒绝�
 ## 用户通用约束补充维护
 
 `standards/embedded-c/v1.3/project-constraints/adoption.json`为U01～U26的通用化采用表，`source.json`保留原文件指纹和未读取材料边界。它不增加华为/DOX条款计数。通用规则、条件任务、阶段范围、执行解释和建议必须区分；取消历史文件范围不能变成越过当前授权。运行`python scripts/project_constraints.py --write`生成README，静态校验核对全集及边界；规则变更同时同步正文/分节、策略、示例和运行器提示/摘要。测试静态拒绝与旧批准失效，不将其称为产品语义已合规。
+
+## 合作沟通规则维护
+
+`policy/communication.json`记录四项准则及本项目执行边界，`docs/guides/l1-dot-communication.md`说明适用与模板。变更同步L1/DOT入口、GPT开发者提示、MCP初始化与独立审查接线；通过`runtime/dot_runtime/communication.py`统一读取。简短不能覆盖授权、证据、失败或未知；不得新加人工关卡或改变工具参数。静态/提示传播测试不证明模型真实遵守或效率已提高，量化结论须有实际任务证据。

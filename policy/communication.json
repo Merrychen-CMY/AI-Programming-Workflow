@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "scope": "L1_DOT_communication_and_supporting_worker_reports",
+  "source": {
+    "author": "H. P. Grice",
+    "title": "Logic and Conversation",
+    "year": 1975,
+    "pages": "45-47",
+    "url": "https://www.sfu.ca/~jeffpell/Cogs300/GriceLogicConvers75.pdf",
+    "adoption": "project_operational_adaptation_not_original_agent_protocol",
+    "measured_efficiency_gain_claimed": false
+  },
+  "maxims": [
+    {
+      "id": "COMM-01",
+      "name": "quantity",
+      "title": "量：充分且不过量",
+      "level": "MUST",
+      "instruction": "先给当前结论或请求，提供足以行动的信息；已共享且可核实的基线用ID/版本/摘要引用，后续突出变化和影响。不能为简短省略硬约束、失败、阻断、风险、证据或累计消耗。",
+      "checks": ["接收方能决定下一步", "无无关历史重复", "增量依赖的基线确实可取得", "关键失败和限制未删减"]
+    },
+    {
+      "id": "COMM-02",
+      "name": "quality",
+      "title": "质：事实有据，不确定性显式",
+      "level": "MUST",
+      "instruction": "区分已观察事实、推断、假设和未知。结果绑定需求/计划/候选及真实证据；明确实际执行与未执行项。不得把建议写成已批准、把工具调用写成已成功、把无报错写成验收通过。",
+      "checks": ["事实能定位来源", "推断有依据和待验证处", "NOT_RUN/UNKNOWN如实保留", "批准和执行使用真实回执"]
+    },
+    {
+      "id": "COMM-03",
+      "name": "relation",
+      "title": "关系：围绕当前任务和决定",
+      "level": "MUST",
+      "instruction": "围绕当前需求、任务、问题或决定沟通；相关阻断与风险及时报告。独立问题分条，依赖问题一起说明，不引入任务外工作。L1负责委托内需求/批准，DOT负责方案、调度和根因分析；所有L4/L5发现先回DOT/L2。",
+      "checks": ["关联具体任务/AC/问题", "下一责任人正确", "关键相关风险没有被当作题外话删除", "不扩展范围"]
+    },
+    {
+      "id": "COMM-04",
+      "name": "manner",
+      "title": "方式：清楚、直接、有序",
+      "level": "MUST",
+      "instruction": "先结论，再变化/依据，再下一步；使用明确ID、版本、单位、条件和责任人。避免“按之前的”“应该好了”等无法定位的表述。待决问题给出最小必要背景、推荐动作及影响；无需长篇自我解释或逐轮复述。",
+      "checks": ["对象和版本明确", "事实/建议/请求不混淆", "动作和恢复条件明确", "无空洞确认往返"]
+    }
+  ],
+  "message_guide": {
+    "always": ["purpose_and_subject", "conclusion_or_requested_action"],
+    "when_applicable": ["changes_and_impact", "evidence_and_uncertainty", "blocker_or_decision", "next_owner_and_resume_condition"],
+    "purposes": ["REQUEST", "PROPOSAL", "DECISION", "RESULT", "BLOCKED"],
+    "guide_is_new_wire_schema": false,
+    "use_existing_tool_fields": true,
+    "fixed_word_limit": null,
+    "purpose_label_grants_authority": false,
+    "decision_requires_existing_approval_receipt": true
+  },
+  "boundaries": {
+    "evidence_and_hard_constraints_before_brevity": true,
+    "preserve_all_failures_and_attempts": true,
+    "silence_or_acknowledgment_is_approval": false,
+    "implicit_intent_grants_authority": false,
+    "cooperation_means_agreement": false,
+    "delta_requires_accessible_matching_baseline": true,
+    "reference_alone_proves_recipient_access": false,
+    "stateless_api_may_assume_prior_context": false,
+    "critical_missing_facts_block_dependent_work": true,
+    "unrelated_authorized_work_may_continue": true,
+    "extra_user_forms_or_checkpoints": false,
+    "extra_confirmation_round_required": false,
+    "changes_to_tool_schema_or_state_machine": false,
+    "all_message_semantics_automatically_verified": false
+  },
+  "operating_rules": [
+    "首次交接携带足够的目标、硬约束、AC、环境、权限和预算；字段来自既有需求、计划和委托，不让用户重填。",
+    "仅当接收方可取得且核对了对应基线时使用增量；新会话、无状态API或无法读取引用时补齐本次必需上下文。不能以本地路径/哈希代替接收方看不到的事实。",
+    "继续沿用工具结构；REQUEST/PROPOSAL/DECISION等只是说明中的目的标签，不新增JSON参数、状态、权限或假批准。格式美观不作为新的执行门禁。",
+    "澄清先用已有批准资料和证据；把相互关联的关键问题一次列清，说明缺口影响和建议。缺关键事实不猜测，停止依赖动作，按预算走既有回流或最终未完成报告。",
+    "接收方优先返回结果、具体反对理由或必要缺口，不增加收到/确认收到的礼节回合。存在歧义、版本不符、失败或权限不覆盖时必须明确反馈，不能将沉默当同意。",
+    "不改变原有重试/API/时间预算；无新事实不重复同一请求，UNKNOWN先核实旧动作，不能借沟通重试重放操作或重置计数。",
+    "完整原始证据保留在既有记录；摘要给出关键结果、失败/未验证项、结论范围和准确引用。最终报告不能只保留最后一次成功。",
+    "精简自然语言，不擅自缩短JSON协议必填字段、不删减结构化工具回执或审批材料；与既有授权、证据和编码规范冲突时，既有强制边界优先。"
+  ],
+  "evaluation": {
+    "status": "NOT_MEASURED",
+    "suggested_metrics": ["clarification_rounds", "repeated_context_tokens", "time_to_actionable_decision", "wrong_version_or_routing_rework", "missing_required_evidence"],
+    "speed_or_tokens_alone_define_success": false,
+    "new_dashboard_or_user_form_required": false
+  }
+}

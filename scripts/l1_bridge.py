@@ -12,6 +12,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'runtime'))
 from dot_runtime.bridge import Bridge
 from dot_runtime.controller import read_json
+from dot_runtime.communication import prompt as communication_prompt
 
 
 def dispatch(message, bridge):
@@ -24,8 +25,9 @@ def dispatch(message, bridge):
     try:
         if method == 'initialize':
             result = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}},
-                      'serverInfo': {'name': 'l1-dot-bridge', 'version': '3.0.1'},
-                      'instructions': 'Read L1.md. L1 approves intermediate baselines; user reviews only the final report. Never fake human approval.'}
+                      'serverInfo': {'name': 'l1-dot-bridge', 'version': '3.0.2'},
+                      'instructions': 'Read L1.md. L1 approves intermediate baselines; user reviews only the final report. '
+                                      'Never fake human approval.\n' + communication_prompt()}
         elif method == 'ping':
             result = {}
         elif method == 'tools/list':

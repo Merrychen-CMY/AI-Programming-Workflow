@@ -15,6 +15,8 @@ from doxygen_reference import check_doxygen_reference
 from project_constraints import check_project_constraints
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'runtime'))
+from dot_runtime.communication import validate_communication_policy
 IGNORED = {'.git', '__pycache__', '.venv', 'local-project', 'private-evidence'}
 ROUTES = {
     'implementation': 'L3', 'product_requirement': 'L1',
@@ -330,7 +332,7 @@ def validate_repository(root):
                 errors.extend(check_local_link(root, file, target))
     required = ['AGENTS.md', 'L1.md', 'DOT.md', 'templates/requirements.md',
                 'templates/execution-plan.md', 'templates/final-report.md', 'docs/guides/local-runtime.md', 'scripts/dot.py',
-                'policy/simple-flow.json', 'policy/embedded-c.json', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
+                'policy/simple-flow.json', 'policy/communication.json', 'policy/embedded-c.json', 'START_HERE.md', 'README.md', 'INDEX.json', 'VERSION',
                 'docs/core-rules.md', '.github/workflows/validate.yml',
                 'policy/workflow.json', 'policy/roles.json', 'policy/rejection-tests.json',
                 'policy/l4-failures.json', 'policy/l5-delivery.json']
@@ -421,6 +423,9 @@ def validate_repository(root):
     errors.extend(validate_capabilities(index))
     errors.extend(check_doxygen_reference(root))
     errors.extend(check_project_constraints(root))
+    errors.extend(validate_communication_policy(documents['policy/communication.json']))
+    if simple.get('communication_policy') != 'policy/communication.json' or policy.get('communication_policy') != 'policy/communication.json':
+        errors.append('Default and detailed workflows must reference the same communication policy')
     if not (root / 'runtime/dot_runtime').is_dir():
         errors.append('Advertised local runtime implementation is missing')
     for name in ('project-context', 'task-draft'):

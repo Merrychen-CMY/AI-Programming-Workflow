@@ -1,6 +1,6 @@
 # AI自动编程流程：只沟通需求，只审核最终报告
 
-**你向L1提供原始需求、参数和环境。L1生成、独立审查并批准需求与执行计划，通过GPT API调用DOT组织开发、测试、审核，最后由L1提交成功或失败报告给你审核。** 当前版本 **3.0.1**。
+**你向L1提供原始需求、参数和环境。L1生成、独立审查并批准需求与执行计划，通过GPT API调用DOT组织开发、测试、审核，最后由L1提交成功或失败报告给你审核。** 当前版本 **3.0.2**。
 
 ```mermaid
 flowchart TD
@@ -53,3 +53,5 @@ python -m unittest discover -s tests -v
 编程规范新增[通用编程与交付约束](standards/embedded-c/v1.3/project-constraints/README.md)：完整追踪用户材料U01～U26，并将适用范围推广至新项目的自有C/H。华为优先，Doxygen保留；规范摘要及独立审查接入运行器，源码语义仍需实际验证。
 
 本次约束整合的检查范围见[3.0.1验证记录](docs/reports/3.0.1-validation.md)。
+
+L1与DOT默认采用[合作沟通约束](docs/guides/l1-dot-communication.md)：信息足够、事实有据、聚焦任务、表达清楚。已接入现有API和L1工具桥提示，不增加工具或审批回合；尚未量化效率收益。

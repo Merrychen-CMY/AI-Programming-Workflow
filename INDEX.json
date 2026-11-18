@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.0.1",
+  "workflow_version": "3.0.2",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -11,7 +11,9 @@
       "L1.md",
       "templates/requirements.md",
       "docs/guides/l1-harness.md",
-      "templates/l1-delegation.example.json"
+      "templates/l1-delegation.example.json",
+      "docs/guides/l1-dot-communication.md",
+      "policy/communication.json"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -25,7 +27,9 @@
       "docs/reference/06-l2-orchestration.md",
       "docs/reference/13-state-machine.md",
       "docs/reference/14-adapters.md",
-      "docs/reference/20-reflow.md"
+      "docs/reference/20-reflow.md",
+      "docs/guides/l1-dot-communication.md",
+      "policy/communication.json"
     ],
     "L3": [
       "roles/implementer-l3.md",
@@ -46,13 +50,17 @@
       "roles/delivery-l5.md",
       "docs/reference/12-delivery.md",
       "docs/reference/20-reflow.md",
-      "docs/reference/21-acceptance.md"
+      "docs/reference/21-acceptance.md",
+      "docs/guides/l1-dot-communication.md",
+      "policy/communication.json"
     ],
     "DOT": [
       "DOT.md",
       "policy/simple-flow.json",
       "templates/execution-plan.md",
-      "templates/final-report.md"
+      "templates/final-report.md",
+      "docs/guides/l1-dot-communication.md",
+      "policy/communication.json"
     ]
   },
   "event_reading": {
@@ -124,6 +132,11 @@
     "embedded_c_project": [
       "standards/embedded-c/README.md",
       "standards/embedded-c/v1.3/project-constraints/README.md"
+    ],
+    "l1_dot_communication": [
+      "docs/guides/l1-dot-communication.md",
+      "policy/communication.json",
+      "templates/l1-dot-message.md"
     ]
   },
   "full_reference": [
@@ -294,7 +307,7 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.0.1-validation.md",
+    "validation_record": "docs/reports/3.0.2-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false

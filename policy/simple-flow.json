@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.0.1",
+  "workflow_version": "3.0.2",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -190,5 +190,6 @@
     "requirements": "L1",
     "execution_plan": "L1",
     "final_report": "user"
-  }
+  },
+  "communication_policy": "policy/communication.json"
 }

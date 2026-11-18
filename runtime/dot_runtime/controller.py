@@ -229,8 +229,10 @@ class Controller:
 
     def baseline(self):
         from .project_constraints import baseline_digest
+        from .communication import baseline_digest as communication_digest
         value = {'requirements': file_hash(self.state['requirements']), 'plan': file_hash(self.state['plan']),
                 'project_constraints': baseline_digest(),
+                'communication': communication_digest(),
                 'catalog': file_hash(CATALOG), 'initial_project': self.state['initial_snapshot']['id'],
                 'doxygen': digest({'checker': file_hash(DOXYGEN_CHECKER),
                     **{p.relative_to(DOXYGEN_REFERENCE).as_posix(): file_hash(p)

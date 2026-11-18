@@ -63,3 +63,5 @@
 Doxygen补充：引用[DOX采用清单](../standards/embedded-c/v1.3/doxygen/README.md) revision 1和仓库commit，冲突以华为为准。DOT准备`verification.doxygen`中的实际工具路径、精确版本、自有源码include范围及超时，纳入原执行计划审核；L4检查工具报告和语义，新增/修改源码后重新验证。
 
 用户通用约束补充：[PC-U01～U26](../standards/embedded-c/v1.3/project-constraints/README.md) revision 1，引用实际仓库commit。自有代码适用范围推广至新项目，旧文件/行号/阶段绑定取消；当前任务允许路径、行为保持要求及条件项由L1/DOT记录。
+
+沟通遵循[合作沟通约束](../docs/guides/l1-dot-communication.md)。首次交DOT要提供规划所必需的完整目标、AC、硬约束、环境和委托；已知事实、推断、待确认缺口分开。无需新增用户表单或工具参数。

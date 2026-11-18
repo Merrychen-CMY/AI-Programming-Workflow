@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from .project_constraints import prompt as constraints_prompt
+from .communication import prompt as communication_prompt
 
 
 def validate_delegation(value, enforce_time=True):
@@ -135,7 +136,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
                   'missing independent verification. Huawei C and Doxygen remain mandatory for C. '
                   'PASS requires specific source references and a complete reasoning-based review. '
                   'Do not execute project commands, edit files, approve anything or invent user decisions.'
-                  + constraints_prompt())
+                  + '\n' + communication_prompt() + constraints_prompt())
         try:
             result = reviewer.run('review', prompt, workspace, output, bounded_timeout(state, value['limits']['timeout_seconds']))
         except Exception as exc:
