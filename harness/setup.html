@@ -11,7 +11,7 @@
 <p><small>填写可执行文件本身，不附带参数。Codex 需要另行完成本机登录。凭据保存方式由 Harness 当前凭据服务决定，本插件不声称采用操作系统加密。</small></p>
 <button id="save">保存配置</button><button id="probe">测试 API（两次小额计费请求）</button>
 <p id="status" role="status">读取配置状态…</p>
-<p>测试只发送固定示例，不发送项目文件。测试通过后回到 L1，说明项目路径、原始需求和已知约束。L1 会检查环境并展示一份开工摘要，由你集中确认一次。</p>
+<p>测试只发送固定示例，不发送项目文件。测试通过后回到 L1，先检查基础环境；通过后再沟通原始需求，随后集中确认开工，由 L1 自动推进，最后由你审核报告。</p>
 <p><small>配置页仅监听本机，安装插件不会自动调用付费 API。会话被宿主释放或卸载插件后链接失效。不要分享本页链接。</small></p></main>
 <script>
 const token = location.hash.slice(1); history.replaceState(null, '', '/');
@@ -23,6 +23,6 @@ async function call(path, body) {
 async function run(action) { el('save').disabled=el('probe').disabled=true; el('status').textContent='处理中…';
  try {el('status').textContent=await action();} catch(e){el('status').textContent=e.message;} finally{el('save').disabled=el('probe').disabled=false;} }
 el('save').onclick=()=>run(async()=>{const value={model:el('model').value,python:el('python').value,codex:el('codex').value,key:el('key').value}; el('key').value=''; await call('/save',value);return '配置已保存。请点击 API 测试，检查模型是否支持工具调用和结构化输出。';});
-el('probe').onclick=()=>run(async()=>{await call('/probe',{});return 'API 兼容性检查通过。现在可以返回 L1，继续检查项目环境和确认开工。';});
+el('probe').onclick=()=>run(async()=>{await call('/probe',{});return 'API 兼容性检查通过。请返回 L1 先检查基础环境；通过后再沟通原始需求。';});
 run(async()=>{const data=await call('/status',{}); for(const id of ['model','python','codex'])el(id).value=data[id]; return `密钥：${data.configured?'已配置':'未配置'}\nAPI 检查：${data.probe?.status||'尚未执行'}`;});
 </script></html>

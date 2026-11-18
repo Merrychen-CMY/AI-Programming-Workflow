@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.1.0",
+  "workflow_version": "3.1.1",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -74,7 +74,7 @@
       "next": [
         "REVIEW_PENDING"
       ],
-      "guard": "L1 gathers facts and writes requirements; no product implementation"
+      "guard": "Native onboarding completes model/key setup and basic environment checks before L1 gathers facts; project-specific checks and consolidated user startup confirmation precede autonomous execution; no product implementation during discovery"
     },
     {
       "id": "REVIEW_PENDING",

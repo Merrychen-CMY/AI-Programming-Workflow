@@ -42,6 +42,13 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
     return { settings: { model: config.model, python: config.python, codex: config.codex,
       workflow_sha256: sha(await readFile(resolve(root, 'MANIFEST.json'))) }, key: key.value };
   }
+  async function environmentReady(task, settings) {
+    const path = `${task}/environment.json`;
+    if (!await exists(path)) throw new Error('请先调用 workflow_check_environment 检查基础环境，再沟通原始需求');
+    const record = await json(path);
+    if (record.ready !== true || JSON.stringify(record.settings) !== JSON.stringify(settings))
+      throw new Error('基础环境未通过或配置已改变；请重新检查环境，再整理需求');
+  }
   async function ask(exec, id, question, approveLabel) {
     if (question.length > 65_000) throw new Error('审核内容超过界面上限，未创建批准；请缩小开工草案或使用最终报告终端审核');
     const result = await ctx.userQuestions.ask({ agent: exec.agent, signal: exec.signal,
@@ -65,7 +72,7 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
         const page = await setupPending;
         const config = await loadConfig(directory);
         return { url: page.url, model: config.model, credential_configured: Boolean(await credential()),
-          instruction: '请用户在配置页填写密钥，勿在聊天中索取。安装和打开页面不调用付费 API。' };
+          instruction: '先完成模型和密钥配置及API测试，再调用 workflow_check_environment；通过后再沟通原始需求。勿在聊天中索取密钥。安装和打开页面不调用付费 API。' };
       }
       if (name === 'workflow_reference') {
         if (Object.keys(args).some(k => !['path','offset'].includes(k)) || typeof args.path !== 'string' ||
@@ -82,10 +89,26 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       await mkdir(task, { recursive: true, mode: 0o700 });
       const call = (settings, action, payload = {}, key) => runner(settings.python, script,
         { action, task, session, ...payload }, { signal: exec.signal, key });
+      if (name === 'workflow_check_environment') {
+        if (Object.keys(args).length) throw new Error('Environment check accepts no model arguments');
+        if (await exists(`${task}/confirmation.json`)) throw new Error('任务已确认；请用 workflow_status 查看状态，不能重置开工流程');
+        const { settings } = await configured();
+        // Invalidate an old PASS before probing: interruption cannot preserve stale readiness.
+        let result = { ready: false, checks: [{ name: 'Python runner', required: true, status: 'UNKNOWN' }],
+          limits: '基础运行器尚未完成检查。请核对配置页中的Python 3.11+路径，再重新检查环境。' };
+        await save(`${task}/environment.json`, { settings, ...result });
+        try { result = await call(settings, 'environment', { settings }); }
+        catch { /* Read-only probe failure stays UNKNOWN; never infer execution or readiness. */ }
+        const record = { settings, ...result, checked_at: new Date().toISOString() };
+        await save(`${task}/environment.json`, record);
+        return { ...record, next: record.ready ? '沟通原始需求，再用 workflow_inspect 复核项目特有环境并准备开工摘要'
+          : '先修复环境或配置，再调用 workflow_check_environment；尚不进入需求沟通和执行' };
+      }
       if (name === 'workflow_inspect') {
         if (Object.keys(args).join() !== 'draft_json' || typeof args.draft_json !== 'string') throw new Error('draft_json required');
         if (await exists(`${task}/confirmation.json`)) throw new Error('任务已确认；不能重置委托或预算');
         const { settings } = await configured();
+        await environmentReady(task, settings);
         const draft = JSON.parse(args.draft_json);
         if (resolve(draft.project) === resolve(root)) throw new Error('Use a separate product directory, not the plugin installation');
         const result = await call(settings, 'inspect', { draft, settings });
@@ -97,6 +120,7 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
         if (await exists(`${task}/confirmation.json`)) throw new Error('已确认；不能再次开工或清零计数');
         const prepared = await json(`${task}/prepared.json`);
         const { settings } = await configured();
+        await environmentReady(task, settings);
         if (JSON.stringify(settings) !== JSON.stringify(prepared.settings)) throw new Error('配置已改变，请重新检查');
         if (!prepared.inspection.ready) throw new Error('必需环境检查失败或未知，不能开工');
         await ask(exec, `start-${prepared.digest.slice(0,16)}`,
@@ -107,7 +131,8 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       const receipt = await exists(`${task}/confirmation.json`) ? await json(`${task}/confirmation.json`) : null;
       const settings = receipt?.settings || (await loadConfig(directory));
       if (name === 'workflow_status') {
-        return { ...await call(settings, 'status'), interrupted: await exists(`${task}/interrupted.json`), records: task };
+        return { ...await call(settings, 'status'), interrupted: await exists(`${task}/interrupted.json`), records: task,
+          environment: await exists(`${task}/environment.json`) ? await json(`${task}/environment.json`) : null };
       }
       if (!receipt) throw new Error('请先完成环境检查和真实用户开工确认');
       if (name === 'workflow_review_report') {
@@ -148,6 +173,7 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
 
 export const toolFields = {
   workflow_setup: {}, workflow_reference: { path: 'Repository-relative .md/.json path', offset: 'Character offset as a decimal string; begin with 0' },
+  workflow_check_environment: {},
   workflow_inspect: { draft_json: 'Complete JSON per templates/harness-start.example.json, prepared by L1 from user facts' },
   workflow_confirm_start: {}, workflow_status: {}, workflow_review_report: {},
   ...Object.fromEntries(Object.entries(modelTools).map(([name,fields])=>[name,Object.fromEntries(fields.map(f=>[f,f]))])),
@@ -155,6 +181,7 @@ export const toolFields = {
 export const descriptions = {
   workflow_setup: 'Open local model/secret configuration UI. Never ask for a key in chat. No API call on opening.',
   workflow_reference: 'Read packaged workflow rules or templates in bounded chunks. No filesystem writes.',
+  workflow_check_environment: 'After model/key setup, check Python, Git, Codex and login before requirements discovery. No project input, API call or worker dispatch.',
   workflow_inspect: 'Stage draft and inspect project/environment, no GPT call or product modification.',
   workflow_confirm_start: 'Ask the real user once to confirm the exact prepared startup summary. No model-provided approval.',
   workflow_status: 'Read setup/task/report status and interruption flag, without dispatch.',

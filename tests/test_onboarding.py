@@ -10,7 +10,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'runtime'))
 from dot_runtime import onboarding as o
-from dot_runtime.controller import Controller, digest, read_json
+from dot_runtime.controller import Controller, atomic_json, digest, read_json
 
 
 class OnboardingTests(unittest.TestCase):
@@ -36,6 +36,8 @@ class OnboardingTests(unittest.TestCase):
         return o.dispatch({'task':str(self.task),'session':'native-session','action':action, **kwargs})
 
     def prepare(self):
+        environment = self.request('environment',settings=self.settings)
+        atomic_json(self.task/'environment.json', {'settings':self.settings, **environment})
         return self.request('inspect',draft=self.draft,settings=self.settings)
 
     def confirm(self, prepared=None):
@@ -47,6 +49,24 @@ class OnboardingTests(unittest.TestCase):
         self.assertTrue(result['inspection']['ready'])
         self.assertFalse((self.task/'confirmation.json').exists())
         self.assertEqual((self.project/'input.txt').read_text(),'original')
+
+    def test_basic_environment_needs_no_project_or_requirements(self):
+        with patch.object(o, 'fingerprint', side_effect=AssertionError('Must not read a project')):
+            result = self.request('environment',settings=self.settings)
+        self.assertTrue(result['ready'])
+        self.assertEqual(len(result['checks']),4)
+        self.assertFalse((self.task/'raw-input.md').exists())
+        self.assertFalse((self.task/'confirmation.json').exists())
+
+    def test_missing_basic_check_blocks_preparing_requirements(self):
+        with self.assertRaisesRegex(ValueError,'before requirements discovery'):
+            self.request('inspect',draft=self.draft,settings=self.settings)
+
+    def test_failed_basic_check_blocks_preparing_requirements(self):
+        self.task.mkdir()
+        atomic_json(self.task/'environment.json', {'settings':self.settings,'ready':False})
+        with self.assertRaisesRegex(ValueError,'Basic environment failed'):
+            self.request('inspect',draft=self.draft,settings=self.settings)
 
     def test_bridge_refuses_before_confirmation(self):
         self.prepare()
@@ -69,7 +89,8 @@ class OnboardingTests(unittest.TestCase):
 
     def test_tool_failure_blocks(self):
         with patch.object(o,'tool_check',return_value={'status':'FAIL'}):
-            self.assertFalse(self.prepare()['inspection']['ready'])
+            self.assertFalse(self.request('environment',settings=self.settings)['ready'])
+            with self.assertRaisesRegex(ValueError,'Basic environment failed'): self.prepare()
 
     def test_changed_project_during_confirmation_rejected(self):
         prepared = self.prepare()

@@ -84,14 +84,31 @@ def tool_check(executable, args):
         return {'status': 'FAIL', 'reason': 'Executable unavailable or probe timed out'}
 
 
-def inspect(draft, task, settings):
-    project = validate_draft(draft, task)
+def check_environment(settings):
+    """Check base tools before discovery; no project, requirements or API needed here."""
     checks = [
         {'name': 'Python >= 3.11', 'status': 'PASS' if sys.version_info >= (3, 11) else 'FAIL', 'required': True},
         {'name': 'Git', 'required': True, **tool_check('git', ['--version'])},
         {'name': 'Codex CLI', 'required': True, **tool_check(settings['codex'], ['--version'])},
         {'name': 'Codex login status', 'required': True, **tool_check(settings['codex'], ['login', 'status'])},
     ]
+    return {'checks': checks, 'ready': all(c['status'] == 'PASS' for c in checks),
+            'limits': 'Base tools only; project-specific toolchain, tests and hardware are checked after requirements are known.'}
+
+
+def require_environment(task, settings):
+    path = task / 'environment.json'
+    if not path.is_file():
+        raise ValueError('Complete the basic environment check before requirements discovery')
+    record = read_json(path)
+    if record.get('ready') is not True or record.get('settings') != settings:
+        raise ValueError('Basic environment failed, is unknown, or configuration changed; check again before discovery')
+
+
+def inspect(draft, task, settings):
+    require_environment(task, settings)
+    project = validate_draft(draft, task)
+    checks = check_environment(settings)['checks']
     for item in draft['environment_checks']:
         if item['kind'] == 'manual':
             status = 'USER_ATTESTED' if item['evidence'].strip() else 'UNKNOWN'
@@ -117,6 +134,10 @@ def dispatch(request):
     task = load_task(request)
     with run_lock(task):
         confirmed = (task / 'confirmation.json').exists()
+        if action == 'environment':
+            if confirmed:
+                raise ValueError('Existing task is pinned; use status without resetting onboarding')
+            return check_environment(request['settings'])
         if action == 'inspect':
             if confirmed:
                 raise ValueError('Existing task is pinned; new drafts cannot reset its records or budgets')

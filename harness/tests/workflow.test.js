@@ -21,8 +21,15 @@ async function fixture(t, answer='approve') {
   const ctx={credentials:{resolve:async()=>({value:secret})},userQuestions:{ask:async value=>{
     questions.push(value); const q=value.questions[0]; return {answers:answer==='skip'?[]:[{id:q.id,selected:[answer==='approve'?q.options[0].label:q.options[1].label]}]};}}};
   const task=resolve(directory,'tasks',sessionHash);
+  await mkdir(task,{recursive:true});
+  await writeFile(resolve(task,'environment.json'),JSON.stringify({settings,ready:true}));
+  const controls={environment:'PASS'};
   const runner=async(exe,script,request,options)=>{
     calls.push({request,options});
+    if(request.action==='environment') {
+      if(controls.environment==='throw')throw new Error('fixture runner unavailable');
+      return{ready:controls.environment==='PASS',checks:[{name:'Python/Git/Codex fixture',required:true,status:controls.environment}],limits:'base tools only'};
+    }
     if(request.action==='inspect')return{inspection:{ready:true,baseline:{id:'baseline'},checks:[],limits:'fixture only'},digest:'a'.repeat(64)};
     if(request.action==='confirm')await writeFile(resolve(task,'confirmation.json'),JSON.stringify({settings}));
     if(request.action==='report_preview')return{sha256:'b'.repeat(64),report:{outcome:'FAILED',evidence:['original']}};
@@ -32,7 +39,7 @@ async function fixture(t, answer='approve') {
   const exec={agent:{id:session},signal:new AbortController().signal};
   const draft=JSON.parse(await readFile(resolve(root,'templates/harness-start.example.json'),'utf8'));
   draft.project=resolve(directory,'product'); draft.raw_input='用户原始需求';
-  return{directory,task,flow,exec,draft,calls,questions,ctx};
+  return{directory,task,flow,exec,draft,calls,questions,ctx,controls};
 }
 
 test('tool schema offers no human receipt, key or forged L1 session parameter',()=>{
@@ -41,6 +48,35 @@ test('tool schema offers no human receipt, key or forged L1 session parameter',(
 });
 test('no native startup approval means no bridge calls',async t=>{
   const f=await fixture(t);await assert.rejects(f.flow.invoke('dot_run',{},f.exec),/真实用户开工确认/);assert.equal(f.calls.length,0);
+});
+test('environment check waits for model/key setup',async t=>{
+  const f=await fixture(t);await saveConfig(f.directory,{...settings,model:'',probe:null});
+  await assert.rejects(f.flow.invoke('workflow_check_environment',{},f.exec),/配置页/);
+  assert.equal(f.calls.length,0);
+});
+test('environment check needs neither project nor raw requirements and forwards no key',async t=>{
+  const f=await fixture(t);const result=await f.flow.invoke('workflow_check_environment',{},f.exec);
+  assert.equal(result.ready,true);assert.match(result.next,/沟通原始需求/);
+  assert.equal(f.calls[0].request.action,'environment');
+  assert.ok(!Object.hasOwn(f.calls[0].request,'draft'));assert.equal(f.calls[0].options.key,undefined);
+  assert.ok(!JSON.stringify(f.calls).includes(secret));
+});
+test('cannot prepare requirements without a current environment check',async t=>{
+  const f=await fixture(t);await rm(resolve(f.task,'environment.json'));
+  await assert.rejects(f.flow.invoke('workflow_inspect',{draft_json:JSON.stringify(f.draft)},f.exec),/先调用 workflow_check_environment/);
+  assert.equal(f.calls.length,0);
+});
+for(const failure of ['FAIL','throw'])test(`${failure} invalidates old environment PASS and blocks discovery`,async t=>{
+  const f=await fixture(t);f.controls.environment=failure;
+  const result=await f.flow.invoke('workflow_check_environment',{},f.exec);
+  assert.equal(result.ready,false);
+  assert.equal(JSON.parse(await readFile(resolve(f.task,'environment.json'),'utf8')).ready,false);
+  await assert.rejects(f.flow.invoke('workflow_inspect',{draft_json:JSON.stringify(f.draft)},f.exec),/基础环境未通过/);
+});
+test('environment tool cannot reset a confirmed task',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await assert.rejects(f.flow.invoke('workflow_check_environment',{},f.exec),/任务已确认/);
+  assert.equal(f.calls.length,0);
 });
 for(const answer of ['decline','skip'])test(`${answer} cannot authorize startup`,async t=>{
   const f=await fixture(t,answer);await f.flow.invoke('workflow_inspect',{draft_json:JSON.stringify(f.draft)},f.exec);

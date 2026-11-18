@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.1.0",
+  "workflow_version": "3.1.1",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -11,15 +11,48 @@
   "routine_intermediate_approval_owner": "L1_after_independent_review",
   "final_report_review_owner": "user",
   "external_delivery_executor": false,
-  "required_topics": ["requirements", "baseline", "scope", "functions", "acceptance", "test_environment", "test_plan", "delivery", "safety"],
+  "required_topics": [
+    "requirements",
+    "baseline",
+    "scope",
+    "functions",
+    "acceptance",
+    "test_environment",
+    "test_plan",
+    "delivery",
+    "safety"
+  ],
   "credential_ref": "AI_WORKFLOW_OPENAI_API_KEY",
   "credential_input": "local_setup_page_to_Harness_credential_provider",
   "credential_in_model_arguments": false,
   "credential_in_worker_environment": false,
   "api_endpoint": "https://api.openai.com/v1/responses",
-  "setup_probe": {"explicit_user_button": true, "calls": 2, "synthetic_inputs_only": true, "product_evidence": false},
-  "states_before_runtime": ["DISCOVERY", "PREPARED", "START_CONFIRMED"],
-  "invalidation": ["draft_change", "model_or_executor_change", "project_baseline_change", "required_environment_change"],
+  "setup_probe": {
+    "explicit_user_button": true,
+    "calls": 2,
+    "synthetic_inputs_only": true,
+    "product_evidence": false
+  },
+  "states_before_runtime": [
+    "DISCOVERY",
+    "PREPARED",
+    "START_CONFIRMED"
+  ],
+  "invalidation": [
+    "draft_change",
+    "model_or_executor_change",
+    "project_baseline_change",
+    "required_environment_change"
+  ],
   "interruption": "persist_UNKNOWN_before_dispatch_no_automatic_replay",
-  "security_boundary": "local_same_account_not_authenticated_approval_service"
+  "security_boundary": "local_same_account_not_authenticated_approval_service",
+  "base_environment_before_requirements": true,
+  "ordered_stages": [
+    "configure_model_and_key",
+    "check_environment",
+    "discuss_raw_requirements",
+    "confirm_start",
+    "l1_autonomous_execution",
+    "user_final_report_review"
+  ]
 }

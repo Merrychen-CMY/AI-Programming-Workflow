@@ -438,11 +438,15 @@ def validate_repository(root):
         'credential_in_worker_environment': False,
         'external_delivery_executor': False,
         'interruption': 'persist_UNKNOWN_before_dispatch_no_automatic_replay',
+        'base_environment_before_requirements': True,
     }
     for key, expected in expected_onboarding.items():
         if onboarding.get(key) != expected or type(onboarding.get(key)) is not type(expected):
             errors.append('Onboarding invariant drift: ' + key)
     topics = ['requirements', 'baseline', 'scope', 'functions', 'acceptance', 'test_environment', 'test_plan', 'delivery', 'safety']
+    if onboarding.get('ordered_stages') != ['configure_model_and_key', 'check_environment', 'discuss_raw_requirements',
+                                          'confirm_start', 'l1_autonomous_execution', 'user_final_report_review']:
+        errors.append('Onboarding stage order must be configuration, environment, requirements, start, execution, final review')
     if onboarding.get('required_topics') != topics or set(documents.get('templates/harness-start.example.json', {}).get('topics', {})) != set(topics):
         errors.append('Onboarding must preserve all nine discovery topics')
     package = documents.get('package.json', {})
