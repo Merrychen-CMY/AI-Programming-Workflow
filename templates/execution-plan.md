@@ -47,3 +47,5 @@ Doxygen补充：引用[DOX采用清单](../standards/embedded-c/v1.3/doxygen/REA
 项目约束补充：[PC-U01～U26](../standards/embedded-c/v1.3/project-constraints/README.md)。DOT在现有任务与review_instructions中记录适用项/理由、检查对象、期望及证据；重点验证if拆分后的调用顺序与短路、注释事实、布尔兼容性和清理依赖。清理/流程图/仅文件清单等条件项不默认每次执行。规范摘要变化使旧批准失效；修改获批内容后按现有L1路径重审。
 
 沟通遵循[合作沟通约束](../docs/guides/l1-dot-communication.md)。提交L1时先给方案与待决项，再给相对已共享基线的变化、影响和依据；完整批准内容仍保留，提案不是批准。无需新增用户表单或工具参数。
+
+面向L1的方案需保留反例、权衡和不满足项，不以突出优势为由删减必需验证或改换AC。L1的[用户表达规则](../docs/guides/l1-user-expression.md)仅用于可读说明，不改写本计划、执行参数或验证证据。

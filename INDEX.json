@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.0.2",
+  "workflow_version": "3.0.3",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -13,7 +13,8 @@
       "docs/guides/l1-harness.md",
       "templates/l1-delegation.example.json",
       "docs/guides/l1-dot-communication.md",
-      "policy/communication.json"
+      "policy/communication.json",
+      "docs/guides/l1-user-expression.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -137,6 +138,12 @@
       "docs/guides/l1-dot-communication.md",
       "policy/communication.json",
       "templates/l1-dot-message.md"
+    ],
+    "l1_user_communication": [
+      "docs/guides/l1-user-expression.md",
+      "policy/communication.json",
+      "templates/requirements.md",
+      "templates/final-report.md"
     ]
   },
   "full_reference": [
@@ -307,7 +314,7 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.0.2-validation.md",
+    "validation_record": "docs/reports/3.0.3-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false

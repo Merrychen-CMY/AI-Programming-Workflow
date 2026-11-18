@@ -65,3 +65,5 @@ Doxygen补充：引用[DOX采用清单](../standards/embedded-c/v1.3/doxygen/REA
 用户通用约束补充：[PC-U01～U26](../standards/embedded-c/v1.3/project-constraints/README.md) revision 1，引用实际仓库commit。自有代码适用范围推广至新项目，旧文件/行号/阶段绑定取消；当前任务允许路径、行为保持要求及条件项由L1/DOT记录。
 
 沟通遵循[合作沟通约束](../docs/guides/l1-dot-communication.md)。首次交DOT要提供规划所必需的完整目标、AC、硬约束、环境和委托；已知事实、推断、待确认缺口分开。无需新增用户表单或工具参数。
+
+表达遵循[L1用户沟通指南](../docs/guides/l1-user-expression.md)：先简述目标和硬约束，区分已确认信息与假设，主动记录矛盾、边界及异常场景。精简不丢参数、单位、AC或MUST/SHOULD强度；建议调整目标不能写成用户原始要求，也不能通过改写文档绕过已有审批。

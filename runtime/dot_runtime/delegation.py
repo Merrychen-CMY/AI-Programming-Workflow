@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from .project_constraints import prompt as constraints_prompt
-from .communication import prompt as communication_prompt
+from .communication import l1_prompt as communication_prompt
 
 
 def validate_delegation(value, enforce_time=True):

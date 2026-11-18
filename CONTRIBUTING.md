@@ -62,3 +62,5 @@ CI单独下载固定官方Doxygen版本并核对SHA-256，执行示例和拒绝�
 ## 合作沟通规则维护
 
 `policy/communication.json`记录四项准则及本项目执行边界，`docs/guides/l1-dot-communication.md`说明适用与模板。变更同步L1/DOT入口、GPT开发者提示、MCP初始化与独立审查接线；通过`runtime/dot_runtime/communication.py`统一读取。简短不能覆盖授权、证据、失败或未知；不得新加人工关卡或改变工具参数。静态/提示传播测试不证明模型真实遵守或效率已提高，量化结论须有实际任务证据。
+
+同一策略的L1用户表达部分为anti-defensive-writing的选择性改写，来源固定commit/哈希与MIT声明；取舍见[L1用户沟通指南](docs/guides/l1-user-expression.md)。不得整体导入上游SKILL、自动跟随上游或将学术叙事规则扩展到验收/原始证据。规则变化同步L1初始化/独立审查、需求/报告模板和采用记录，并测试失败/未知/授权边界；自然语言是否诚实完整不能靠关键字测试证明。

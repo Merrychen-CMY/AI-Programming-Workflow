@@ -32,3 +32,5 @@
 [返回导航](../START_HERE.md)
 
 嵌入式C任务按 [用户规范V1.3](../standards/embedded-c/README.md) 和 [职责映射](../policy/embedded-c.json) 补读本职责所需章节，维护规范规则到任务/验证证据的关联。
+
+面向用户的需求沟通与结论表达按[L1表达约束](../docs/guides/l1-user-expression.md)：保留真实异议、失败、未知与证据；语言精简不改变原始意图、AC和授权。

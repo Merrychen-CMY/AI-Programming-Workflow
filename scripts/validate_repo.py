@@ -16,7 +16,7 @@ from project_constraints import check_project_constraints
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'runtime'))
-from dot_runtime.communication import validate_communication_policy
+from dot_runtime.communication import validate_communication_policy, validate_l1_source_notice
 IGNORED = {'.git', '__pycache__', '.venv', 'local-project', 'private-evidence'}
 ROUTES = {
     'implementation': 'L3', 'product_requirement': 'L1',
@@ -424,6 +424,7 @@ def validate_repository(root):
     errors.extend(check_doxygen_reference(root))
     errors.extend(check_project_constraints(root))
     errors.extend(validate_communication_policy(documents['policy/communication.json']))
+    errors.extend(validate_l1_source_notice(root))
     if simple.get('communication_policy') != 'policy/communication.json' or policy.get('communication_policy') != 'policy/communication.json':
         errors.append('Default and detailed workflows must reference the same communication policy')
     if not (root / 'runtime/dot_runtime').is_dir():

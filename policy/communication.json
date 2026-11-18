@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "revision": 1,
-  "scope": "L1_DOT_communication_and_supporting_worker_reports",
+  "revision": 2,
+  "scope": "L1_user_and_L1_DOT_communication_and_supporting_worker_reports",
   "source": {
     "author": "H. P. Grice",
     "title": "Logic and Conversation",
@@ -18,7 +18,12 @@
       "title": "量：充分且不过量",
       "level": "MUST",
       "instruction": "先给当前结论或请求，提供足以行动的信息；已共享且可核实的基线用ID/版本/摘要引用，后续突出变化和影响。不能为简短省略硬约束、失败、阻断、风险、证据或累计消耗。",
-      "checks": ["接收方能决定下一步", "无无关历史重复", "增量依赖的基线确实可取得", "关键失败和限制未删减"]
+      "checks": [
+        "接收方能决定下一步",
+        "无无关历史重复",
+        "增量依赖的基线确实可取得",
+        "关键失败和限制未删减"
+      ]
     },
     {
       "id": "COMM-02",
@@ -26,7 +31,12 @@
       "title": "质：事实有据，不确定性显式",
       "level": "MUST",
       "instruction": "区分已观察事实、推断、假设和未知。结果绑定需求/计划/候选及真实证据；明确实际执行与未执行项。不得把建议写成已批准、把工具调用写成已成功、把无报错写成验收通过。",
-      "checks": ["事实能定位来源", "推断有依据和待验证处", "NOT_RUN/UNKNOWN如实保留", "批准和执行使用真实回执"]
+      "checks": [
+        "事实能定位来源",
+        "推断有依据和待验证处",
+        "NOT_RUN/UNKNOWN如实保留",
+        "批准和执行使用真实回执"
+      ]
     },
     {
       "id": "COMM-03",
@@ -34,7 +44,12 @@
       "title": "关系：围绕当前任务和决定",
       "level": "MUST",
       "instruction": "围绕当前需求、任务、问题或决定沟通；相关阻断与风险及时报告。独立问题分条，依赖问题一起说明，不引入任务外工作。L1负责委托内需求/批准，DOT负责方案、调度和根因分析；所有L4/L5发现先回DOT/L2。",
-      "checks": ["关联具体任务/AC/问题", "下一责任人正确", "关键相关风险没有被当作题外话删除", "不扩展范围"]
+      "checks": [
+        "关联具体任务/AC/问题",
+        "下一责任人正确",
+        "关键相关风险没有被当作题外话删除",
+        "不扩展范围"
+      ]
     },
     {
       "id": "COMM-04",
@@ -42,13 +57,32 @@
       "title": "方式：清楚、直接、有序",
       "level": "MUST",
       "instruction": "先结论，再变化/依据，再下一步；使用明确ID、版本、单位、条件和责任人。避免“按之前的”“应该好了”等无法定位的表述。待决问题给出最小必要背景、推荐动作及影响；无需长篇自我解释或逐轮复述。",
-      "checks": ["对象和版本明确", "事实/建议/请求不混淆", "动作和恢复条件明确", "无空洞确认往返"]
+      "checks": [
+        "对象和版本明确",
+        "事实/建议/请求不混淆",
+        "动作和恢复条件明确",
+        "无空洞确认往返"
+      ]
     }
   ],
   "message_guide": {
-    "always": ["purpose_and_subject", "conclusion_or_requested_action"],
-    "when_applicable": ["changes_and_impact", "evidence_and_uncertainty", "blocker_or_decision", "next_owner_and_resume_condition"],
-    "purposes": ["REQUEST", "PROPOSAL", "DECISION", "RESULT", "BLOCKED"],
+    "always": [
+      "purpose_and_subject",
+      "conclusion_or_requested_action"
+    ],
+    "when_applicable": [
+      "changes_and_impact",
+      "evidence_and_uncertainty",
+      "blocker_or_decision",
+      "next_owner_and_resume_condition"
+    ],
+    "purposes": [
+      "REQUEST",
+      "PROPOSAL",
+      "DECISION",
+      "RESULT",
+      "BLOCKED"
+    ],
     "guide_is_new_wire_schema": false,
     "use_existing_tool_fields": true,
     "fixed_word_limit": null,
@@ -83,8 +117,67 @@
   ],
   "evaluation": {
     "status": "NOT_MEASURED",
-    "suggested_metrics": ["clarification_rounds", "repeated_context_tokens", "time_to_actionable_decision", "wrong_version_or_routing_rework", "missing_required_evidence"],
+    "suggested_metrics": [
+      "clarification_rounds",
+      "repeated_context_tokens",
+      "time_to_actionable_decision",
+      "wrong_version_or_routing_rework",
+      "missing_required_evidence"
+    ],
     "speed_or_tokens_alone_define_success": false,
     "new_dashboard_or_user_form_required": false
+  },
+  "l1_user_expression": {
+    "scope": "L1_user_facing_requirements_and_reports",
+    "adoption": "selective_project_adaptation",
+    "source": {
+      "repository": "https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill",
+      "commit": "e65bd9d8bf8ed8b9af809e5aff8237d76370876d",
+      "skill_path": "skills/anti-defensive-writing/SKILL.md",
+      "skill_sha256": "6f072e66f6adf813bc1b4291754f2bc07ed4e65a398359844e97bfa215a1c28e",
+      "quick_prompt_sha256": "8a52d3a5d5def26d22acf9024ab31169f74cc4d944e1b6a7c6280c3886a01e86",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Adkid-Zephyr",
+      "license_path": "docs/licenses/anti-defensive-writing-MIT.txt",
+      "license_sha256": "fdf440e5214588d9edcdc1ec315cddbd8525fe509242c24989a8472d283325f4"
+    },
+    "boundaries": {
+      "existing_requirements_evidence_authority_and_c_standards_take_precedence": true,
+      "full_upstream_skill_enabled": false,
+      "automatic_upstream_updates": false,
+      "style_may_change_acceptance_or_outcome": false,
+      "style_may_hide_failures_risks_or_unknowns": false,
+      "style_may_rewrite_structured_receipts_or_evidence": false,
+      "blanket_negative_word_ban": false,
+      "extra_user_approval_or_model_call_required": false,
+      "measured_effectiveness_claimed": false
+    },
+    "rules": [
+      {
+        "id": "L1-EXPR-01",
+        "level": "MUST",
+        "instruction": "结论优先：需求沟通先说明当前理解或关键问题；建议说明理由；最终报告先写真实结果及适用范围，再给依据和下一步。未知时直接说明未知，不强行形成肯定结论。"
+      },
+      {
+        "id": "L1-EXPR-02",
+        "level": "MUST",
+        "instruction": "减少套话：删去重复背景、空泛道歉和无信息量的自我解释；保留会影响决定的条件与限制。不按词语一律屏蔽“失败”“未达到”“未验证”“风险”或“但是”，不以自信措辞替代证据。"
+      },
+      {
+        "id": "L1-EXPR-03",
+        "level": "MUST",
+        "instruction": "保留必要异议：主动查找需求遗漏、矛盾、边界和异常场景；先查已有资料，再集中澄清关键缺口并说明影响。不能诱导用户接受更容易实现的目标；委托内问题内部处理，不增加中间用户审批。"
+      },
+      {
+        "id": "L1-EXPR-04",
+        "level": "MUST",
+        "instruction": "事实不随措辞改变：保留原始意图、参数及单位、阈值、版本、AC、MUST/SHOULD强度、失败和未知、反例及证据。建议不写成事实，推断不写成定论；不得为突出成果换验收口径、掩盖未达标或重写结构化回执。真实基线变更仍走原审查、批准及重验流程。"
+      },
+      {
+        "id": "L1-EXPR-05",
+        "level": "MUST",
+        "instruction": "分层呈现：最终正文写明SUCCESS/FAILED/INCOMPLETE/UNKNOWN真实结果、候选与环境范围、关键AC证据、失败和重试概况、累计消耗、未验证项、剩余风险、产物及下一步。完整逐项结果和历史可放可取得的附件，但影响验收的事实必须在正文明确说明；结论须与DOT原报告一致。不得只呈现最后一次成功，不设导致遗漏的固定字数上限。"
+      }
+    ]
   }
 }

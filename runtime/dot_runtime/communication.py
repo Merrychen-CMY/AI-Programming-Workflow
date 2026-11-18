@@ -1,4 +1,4 @@
-"""Grice-inspired communication guidance; not a truth checker or approval channel."""
+"""Communication and scoped L1 expression guidance, never a truth or approval service."""
 import hashlib
 import json
 from pathlib import Path
@@ -21,6 +21,28 @@ BOUNDARIES = {
     'changes_to_tool_schema_or_state_machine': False,
     'all_message_semantics_automatically_verified': False,
 }
+L1_SOURCE = {
+    'repository': 'https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill',
+    'commit': 'e65bd9d8bf8ed8b9af809e5aff8237d76370876d',
+    'skill_path': 'skills/anti-defensive-writing/SKILL.md',
+    'skill_sha256': '6f072e66f6adf813bc1b4291754f2bc07ed4e65a398359844e97bfa215a1c28e',
+    'quick_prompt_sha256': '8a52d3a5d5def26d22acf9024ab31169f74cc4d944e1b6a7c6280c3886a01e86',
+    'license': 'MIT',
+    'copyright': 'Copyright (c) 2026 Adkid-Zephyr',
+    'license_path': 'docs/licenses/anti-defensive-writing-MIT.txt',
+    'license_sha256': 'fdf440e5214588d9edcdc1ec315cddbd8525fe509242c24989a8472d283325f4',
+}
+L1_BOUNDARIES = {
+    'existing_requirements_evidence_authority_and_c_standards_take_precedence': True,
+    'full_upstream_skill_enabled': False,
+    'automatic_upstream_updates': False,
+    'style_may_change_acceptance_or_outcome': False,
+    'style_may_hide_failures_risks_or_unknowns': False,
+    'style_may_rewrite_structured_receipts_or_evidence': False,
+    'blanket_negative_word_ban': False,
+    'extra_user_approval_or_model_call_required': False,
+    'measured_effectiveness_claimed': False,
+}
 
 
 def validate_communication_policy(value):
@@ -28,8 +50,8 @@ def validate_communication_policy(value):
     if not isinstance(value, dict):
         return ['Communication policy must be an object']
     errors = []
-    for name, expected in [('schema_version', 1), ('revision', 1),
-                           ('scope', 'L1_DOT_communication_and_supporting_worker_reports')]:
+    for name, expected in [('schema_version', 1), ('revision', 2),
+                           ('scope', 'L1_user_and_L1_DOT_communication_and_supporting_worker_reports')]:
         if type(value.get(name)) is not type(expected) or value.get(name) != expected:
             errors.append('Communication policy identity mismatch: ' + name)
     rows = value.get('maxims')
@@ -76,7 +98,44 @@ def validate_communication_policy(value):
             or evaluation.get('speed_or_tokens_alone_define_success') is not False
             or evaluation.get('new_dashboard_or_user_form_required') is not False):
         errors.append('Communication efficiency needs evidence without extra user forms')
+    errors.extend(_validate_l1_expression(value.get('l1_user_expression')))
     return errors
+
+
+def _validate_l1_expression(profile):
+    if not isinstance(profile, dict):
+        return ['Scoped L1 expression policy is missing']
+    errors = []
+    if (profile.get('scope') != 'L1_user_facing_requirements_and_reports'
+            or profile.get('adoption') != 'selective_project_adaptation'):
+        errors.append('L1 expression must remain a selective user-facing adaptation')
+    if profile.get('source') != L1_SOURCE:
+        errors.append('L1 writing source must retain the reviewed commit, hashes and attribution')
+    boundaries = profile.get('boundaries')
+    if not isinstance(boundaries, dict):
+        errors.append('L1 expression boundaries must be explicit')
+    else:
+        for key, expected in L1_BOUNDARIES.items():
+            if boundaries.get(key) is not expected:
+                errors.append('L1 expression boundary changed: ' + key)
+    rows = profile.get('rules')
+    if not isinstance(rows, list) or len(rows) != 5 or any(not isinstance(r, dict) for r in rows):
+        return errors + ['L1 expression requires five scoped rules']
+    for number, row in enumerate(rows, 1):
+        if row.get('id') != f'L1-EXPR-{number:02}' or row.get('level') != 'MUST':
+            errors.append('L1 expression rule identity or strength changed')
+        if not isinstance(row.get('instruction'), str) or not row['instruction'].strip():
+            errors.append('L1 expression rule lacks its instruction')
+    return errors
+
+
+def validate_l1_source_notice(root):
+    """Check the redistributed license locally; never fetch or activate upstream code."""
+    try:
+        actual = hashlib.sha256((root / L1_SOURCE['license_path']).read_bytes()).hexdigest()
+    except OSError:
+        return ['L1 writing source license is missing']
+    return [] if actual == L1_SOURCE['license_sha256'] else ['L1 writing source license changed']
 
 
 def _text_list(value):
@@ -97,8 +156,22 @@ def baseline_digest():
 
 def prompt():
     """Only operative guidance is sent, not source metadata or review checklists."""
-    value = load_policy()
+    return _shared_prompt(load_policy())
+
+
+def _shared_prompt(value):
     lines = ['L1/DOT COMMUNICATION — Grice-inspired project rules; preserve existing tool schemas.']
     lines.extend(row['id'] + ' ' + row['instruction'] for row in value['maxims'])
     lines += value['operating_rules']
+    return '\n'.join(lines)
+
+
+def l1_prompt():
+    """L1-only natural-language guidance; DOT receives only the shared rules."""
+    value = load_policy()
+    lines = [_shared_prompt(value),
+             'L1 USER EXPRESSION — 以下仅约束L1向用户沟通需求和汇报的自然语言表达；'
+             '独立审查据此核对完整性，不为作者辩护。原始需求、授权、验收、证据和华为/Doxygen规范优先。'
+             '不改变工具字段、原始回执、状态机或批准，不增加模型调用和用户审批。']
+    lines.extend(row['id'] + ' ' + row['instruction'] for row in value['l1_user_expression']['rules'])
     return '\n'.join(lines)
