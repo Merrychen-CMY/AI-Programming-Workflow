@@ -20,8 +20,24 @@ EXCLUDED_DIRECTORIES = frozenset({
 CHUNK_SIZE = 1024 * 1024
 
 
+def _filesystem_path(path: Path) -> Path:
+    """Use Win32 extended paths for file I/O without changing recorded path identities.
+
+    No registry change is needed. Normalize before adding the prefix; UNC shares
+    use the UNC device form. Link/reparse and overlap checks still apply.
+    """
+    if os.name != "nt":
+        return Path(path)
+    absolute = os.path.abspath(path)
+    if absolute.startswith("\\\\?\\"):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
+
+
 def _reject_link(path: Path) -> os.stat_result:
-    info = path.lstat()
+    info = _filesystem_path(path).lstat()
     if stat.S_ISLNK(info.st_mode) or (
         getattr(info, "st_file_attributes", 0)
         & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
@@ -33,18 +49,19 @@ def _reject_link(path: Path) -> os.stat_result:
 def _root(path: Path, *, exists: bool) -> Path:
     absolute = Path(os.path.abspath(path))
     for component in (absolute, *absolute.parents):
-        if component.exists() or component.is_symlink():
+        if _filesystem_path(component).exists() or _filesystem_path(component).is_symlink():
             _reject_link(component)
-    if exists and not absolute.is_dir():
+    if exists and not _filesystem_path(absolute).is_dir():
         raise ValueError(f"Project/snapshot directory does not exist: {absolute}")
     return absolute
 
 
 def _files(root: Path):
     def walk(directory):
-        for entry in sorted(directory.iterdir(), key=lambda p: p.name):
+        for item in sorted(_filesystem_path(directory).iterdir(), key=lambda p: p.name):
+            entry = directory / item.name
             info = _reject_link(entry)
-            if not entry.resolve(strict=True).is_relative_to(root):
+            if not _filesystem_path(entry).resolve(strict=True).is_relative_to(_filesystem_path(root).resolve(strict=True)):
                 raise ValueError(f"Candidate input escapes its root: {entry}")
             if stat.S_ISDIR(info.st_mode):
                 if entry.name not in EXCLUDED_DIRECTORIES:
@@ -60,7 +77,7 @@ def _files(root: Path):
 def _stable_digest(source: Path, destination: Path | None = None) -> str:
     before = _reject_link(source)
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(source, flags)
+    descriptor = os.open(_filesystem_path(source), flags)
     output = None
     try:
         with os.fdopen(descriptor, "rb") as stream:
@@ -70,8 +87,8 @@ def _stable_digest(source: Path, destination: Path | None = None) -> str:
             if not stat.S_ISREG(opened.st_mode):
                 raise ValueError(f"Candidate input is not a regular file: {source}")
             if destination is not None:
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                output = destination.open("xb")
+                _filesystem_path(destination.parent).mkdir(parents=True, exist_ok=True)
+                output = _filesystem_path(destination).open("xb")
             digest = hashlib.sha256()
             while chunk := stream.read(CHUNK_SIZE):
                 digest.update(chunk)
@@ -87,7 +104,7 @@ def _stable_digest(source: Path, destination: Path | None = None) -> str:
         if output is not None:
             output.close()
     if destination is not None:
-        os.chmod(destination, stat.S_IMODE(opened.st_mode))
+        os.chmod(_filesystem_path(destination), stat.S_IMODE(opened.st_mode))
     return digest.hexdigest()
 
 
@@ -117,13 +134,14 @@ def snapshot_project(project: Path, destination: Path) -> dict:
     destination = _root(Path(destination), exists=False)
     if destination.is_relative_to(project) or project.is_relative_to(destination):
         raise ValueError("Candidate destination and product directory must be disjoint")
-    if destination.exists() and (not destination.is_dir() or any(destination.iterdir())):
+    disk_destination = _filesystem_path(destination)
+    if disk_destination.exists() and (not disk_destination.is_dir() or any(disk_destination.iterdir())):
         raise ValueError("Candidate destination must be a new or empty directory")
     before = _inventory(project)
     modes = _modes(project)
     if not before:
         raise ValueError("Cannot freeze an empty product")
-    destination.mkdir(parents=True, exist_ok=True)
+    disk_destination.mkdir(parents=True, exist_ok=True)
     copied = {}
     for relative in before:
         copied[relative] = _stable_digest(project / relative, destination / relative)

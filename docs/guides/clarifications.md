@@ -62,3 +62,5 @@ ESP-IDF版本若决定接口和构建方案，应在规划前核实；串口若�
 自动化覆盖同任务缺口→补充→规划→独立审查、原确认与累计时间不变、相同缺口不盲重试、过期/修订预算、篡改历史、伪造身份、旧计划失效、未结束进程、终态拒绝及UNKNOWN不重放。模型使用模拟响应，真实API及产品/HIL结果仍须另行验证。
 
 3.3.0将资源变更与事实补充分开：[动态资源管理](adaptive-resources.md)允许L1在用户上限内调整，并通过独立原生界面申请扩大总上限或延期。clarification_policy中的expiry_extension_allowed:false专指事实补充工具无权改期限，不禁止经过用户批准的独立授权版本。累计时间和事实历史都不重置。
+
+3.6.0的[初始化恢复](initialization-recovery.md)是单独原生审核流程，仅接受无state.json的dot_initialize本地中断；l1_add_facts仍不能解除UNKNOWN。

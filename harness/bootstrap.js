@@ -4,9 +4,10 @@ import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { createUpdates, loadEngine } from './updates.js';
 import { upgradeTask } from './task-upgrades.js';
+import { recoverInitialization } from './initialization-recovery.js';
 
-export const updateFields = { workflow_updates: { action: 'status | check | enable | disable | upgrade_preview | upgrade | upgrade_recover. Upgrade requires native approval; no API/model calls or task reset. Enable/disable only at user request.' } };
-export const updateDescriptions = { workflow_updates: 'Check releases or migrate a quiescent confirmed task in this conversation. Preview is read-only; upgrade requests exact native approval; recover completes already-authorized local writes only. UNKNOWN/final reports cannot reopen.' };
+export const updateFields = { workflow_updates: { action: 'status | check | enable | disable | upgrade_preview | upgrade | upgrade_recover | initialization_preview | initialization_recover | initialization_finish. Initialization recovery supports only an uncommitted local initialization and requires exact native approval; no API, product action or usage reset. Enable/disable only at user request.' } };
+export const updateDescriptions = { workflow_updates: 'Check releases, review task upgrades, or review a failed initialization. Previews are read-only; native approval is mandatory for recovery and baseline adoption. finish only completes recorded authorized local writes. Product UNKNOWN and final reports cannot reopen.' };
 
 /** Stable host tool surface. Only the versioned workflow engine changes between invocations. */
 export function createBootstrap({ ctx, root, keyRef, fields,
@@ -21,8 +22,13 @@ export function createBootstrap({ ctx, root, keyRef, fields,
     try {
       const task = resolve(directory, 'tasks', createHash('sha256').update(session).digest('hex'));
       if (name === 'workflow_updates') {
-        if (Object.keys(args).join() !== 'action' || !['status', 'check', 'enable', 'disable', 'upgrade_preview', 'upgrade', 'upgrade_recover'].includes(args.action))
+        if (Object.keys(args).join() !== 'action' || !['status', 'check', 'enable', 'disable', 'upgrade_preview', 'upgrade', 'upgrade_recover', 'initialization_preview', 'initialization_recover', 'initialization_finish'].includes(args.action))
           throw new Error('Update action is invalid');
+        if (args.action.startsWith('initialization_')) {
+          const result = await recoverInitialization({ action: args.action, task, session, updates, fields, ctx, exec, runner: workflowOptions.runner });
+          seen.delete(session);
+          return result;
+        }
         if (args.action.startsWith('upgrade')) {
           const result = await upgradeTask({ action: args.action, task, session, updates, fields, ctx, exec, runner: workflowOptions.runner });
           seen.delete(session);

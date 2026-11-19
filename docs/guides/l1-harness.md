@@ -94,3 +94,5 @@ L1 AgentPreset同时读取[L1用户沟通指南](l1-user-expression.md)。桥的
 动态新任务的调用顺序、额度字段与明确限制见[资源管理指南](adaptive-resources.md)。l1_add_facts不能改期限，但独立的原生追加授权可批准具体延期；两者不是同一入口。旧MCP桥没有人类追加批准界面，不接受模型填写“已获批准”。
 
 已开工任务需要升级时，使用[原对话任务升级](task-upgrades.md)：upgrade_preview预检→upgrade原生确认→重新独立审核→DOT继续与完整验证。不得改写原开工确认或清零历史。
+
+原生ABI4入口另提供[未提交初始化恢复](initialization-recovery.md)；模型仅能请求预览/原生审核，手工MCP桥没有可伪造的用户批准字段。

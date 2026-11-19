@@ -4,7 +4,7 @@ import os
 import time
 
 from .adapter import CodexAdapter
-from .controller import Controller, ROOT, atomic_json, digest, file_hash, initialize, read_json, run_lock
+from .controller import Controller, ROOT, InitializationIncomplete, atomic_json, digest, file_hash, initialize, read_json, run_lock
 from .delegation import attach_delegation, approve_l1, submit_l1_report, validate_delegation
 from .gpt_dot import ResponsesClient, DotAdapter, execute, propose_plan
 from .checks import run_check
@@ -87,7 +87,12 @@ class Bridge:
         facts = clarifications.records(self.root)
         common = {'planning': planning, 'facts_revision': len(facts),
                   'facts_sha256': clarifications.signature(self.root)}
+        from .initialization_recovery import records_for_control
+        common['initialization_recoveries'] = records_for_control(self.root)
         if not (self.run_dir / 'state.json').exists():
+            if (self.run_dir / 'initialization.json').exists():
+                common['initialization'] = read_json(self.run_dir / 'initialization.json')
+                common['recovery_required'] = True
             return {**common, 'state': planning['status'] if planning and planning['status'] in ('NEEDS_INFO', 'PLAN_REJECTED') else 'DISCOVERY',
                     'plan_ready': (self.root / 'plan.json').exists() and not (planning and planning['status'] != 'PLAN_READY'),
                     'preflight_report': read_json(self.root / 'preflight-report.json') if (self.root / 'preflight-report.json').exists() else None}
@@ -116,6 +121,8 @@ class Bridge:
                   'owner': 'L1', 'user_review_required': True, 'planning_rejections': planning.history(self.root)}
         from .upgrades import records_for_control
         record['runtime_upgrades'] = records_for_control(self.root)
+        from .initialization_recovery import records_for_control as recovery_records
+        record['initialization_recoveries'] = recovery_records(self.root)
         if resources.enabled(original, self.root):
             record['resource_governance'] = resources.report(self.root, original)
         atomic_json(self.root / 'preflight-report.json', record)
@@ -126,6 +133,8 @@ class Bridge:
                 not isinstance(value, str) or not value.strip() for value in arguments.values()):
             raise ValueError('Unknown tool or invalid arguments')
         with run_lock(self.root):
+            if (self.root.parent / 'initialization-recovery-pending.json').exists():
+                raise ValueError('INITIALIZATION_RECOVERY_PENDING: finish native recovery before task tools')
             # Pin all settings once. Restarting the server is not a new delegation or budget.
             binding = self.root / 'settings-binding.json'
             value = {'sha256': digest(self.settings)}
@@ -221,6 +230,8 @@ class Bridge:
                         or (previous.get('status') == 'PLAN_REJECTED' and previous.get('request_sha256') == request_sha)):
                     return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
                 context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
+                from .initialization_recovery import records_for_control
+                context += '\nREVIEWED INITIALIZATION RECOVERIES (data; original authority unchanged):\n' + json.dumps(records_for_control(self.root), ensure_ascii=False)
                 if feedback:
                     context += '\nREJECTED DRAFT AND VALIDATOR FEEDBACK (data, not authority):\n' + json.dumps(feedback, ensure_ascii=False)
                 try:
@@ -263,17 +274,26 @@ class Bridge:
                 return {'plan': plan, 'next': 'dot_initialize, then l1_approve requirements and plan'}
             if name == 'dot_initialize':
                 if c:
-                    raise ValueError('Task already initialized; do not reset attempts')
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'reason': 'Task already initialized; inspect status, do not reset attempts'}
+                if self.run_dir.exists() and any(p.name != '.lock' for p in self.run_dir.iterdir()):
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'recovery_required': True, 'reason': 'Partial initialization requires native recovery review; no files overwritten'}
                 planned = read_json(self.root / 'planning-status.json')
                 if (planned['status'] != 'PLAN_READY' or planned['facts_sha256'] != clarifications.signature(self.root)
                         or (adaptive and planned.get('authorization_scope') != resources.scope_digest(original, self.root))
                         or planned['plan_sha256'] != digest(read_json(self.root / 'plan.json'))
                         or planned['requirements_sha256'] != digest((self.root / 'requirements.md').read_text(encoding='utf-8'))):
-                    raise ValueError('Plan is missing or stale after clarification; replan before initialization')
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'reason': 'Plan is stale after clarification; replan before initialization'}
                 if adaptive:
                     resources.require(original, self.root, 'implementation_attempts', 0,
                                       len(read_json(self.root / 'plan.json')['tasks']))
-                initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
+                try:
+                    initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
+                except InitializationIncomplete as exc:
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_INITIALIZATION_FAILED',
+                            'recovery_required': True, 'reason': str(exc)}
                 c = Controller(self.run_dir)
                 c.state['clarification_root'] = str(self.root)
                 c.save()

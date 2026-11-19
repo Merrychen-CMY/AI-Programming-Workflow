@@ -25,3 +25,5 @@
 新动态任务以[资源策略](../policy/resources.json)和[实施指南](guides/adaptive-resources.md)为准：用户确认目标/权限/总上限/截止时间，L1管理当前额度。桥层BUDGET_REVIEW_PENDING与AUTHORIZATION_PENDING保留runtime_state；恢复不重置累计消耗，扩大范围须原生用户授权并独立重审。历史固定预算示例不替代当前任务授权。
 
 插件自动更新只改变未开工会话后续选用的兼容运行版本；已确认任务默认由MANIFEST摘要固定代码和规则；可按[任务升级规则](guides/task-upgrades.md)预检并经原生用户确认迁移。迁移保留原授权、历史及已完成任务，失效旧审批/候选并重新审核验证，不能清零消耗或解除UNKNOWN/终态。详见[更新规则](guides/automatic-updates.md)。
+
+初始化的专用恢复见[初始化恢复规则](guides/initialization-recovery.md)：仅处理未提交运行状态的本地初始化，准确原生批准后归档部分文件与中断标记；允许明确接受新基线，随后重新规划和独立审核。原确认及累计消耗保留，产品UNKNOWN和终态不得借此解锁。

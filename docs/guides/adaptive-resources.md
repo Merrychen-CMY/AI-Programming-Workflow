@@ -66,3 +66,5 @@ L1调用`l1_request_authorization(proposal_json)`保存具体差异，格式见[
 最终报告包括原授权、后续用户决定、每次L1调整的前后值/理由/证据/收益判断、累计实际消耗、未完成工作与结果。`resource_governance`保存完整记录，API原始用量在账本中保留。失败或UNKNOWN报告审核不授权重试；不撤销历史报告来继续旧执行。
 
 拒绝测试见`tests/test_resources.py`和`harness/tests/workflow.test.js`：越上限、低于已用、没有实际新增容量、伪造批准、过期或陈旧申请、范围变化沿用旧计划、API/实现/审核/修订/设施额度暂停、诊断恢复、历史篡改及UNKNOWN/最终报告保护。它们是运行器测试，不是产品或HIL验收。
+
+3.6.0的[初始化恢复](initialization-recovery.md)单独核实并审核未提交初始化；普通调参权限不因此扩大。恢复记录纳入状态/报告，原额度与截止时间不变。

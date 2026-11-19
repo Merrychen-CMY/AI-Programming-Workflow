@@ -15,7 +15,7 @@ import re
 import sys
 import uuid
 
-from .snapshot import snapshot_project, verify_snapshot
+from .snapshot import snapshot_project, verify_snapshot, _filesystem_path
 from .checks import run_check
 from .documentation import CHECKER as DOXYGEN_CHECKER, REFERENCE as DOXYGEN_REFERENCE
 from .documentation import validate_settings as validate_doxygen_settings, validate_report as validate_doxygen_report
@@ -35,15 +35,15 @@ def digest(value):
 
 
 def file_hash(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    return hashlib.sha256(_filesystem_path(Path(path)).read_bytes()).hexdigest()
 
 
 def read_json(path):
-    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    return json.loads(_filesystem_path(Path(path)).read_text(encoding='utf-8-sig'))
 
 
 def atomic_json(path, value):
-    path = Path(path)
+    path = _filesystem_path(Path(path))
     temporary = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
     with temporary.open('w', encoding='utf-8', newline='\n') as stream:
         stream.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
@@ -193,7 +193,7 @@ def initialize(project, requirements, plan, run_dir):
     if run_dir in project.parents or run_dir in requirements.parents or run_dir in plan.parents:
         raise ValueError('Run directory must not contain project or input documents')
     validate_plan(read_json(plan))
-    if run_dir.exists() and any(run_dir.iterdir()):
+    if run_dir.exists() and any(p.name != '.lock' for p in run_dir.iterdir()):
         raise ValueError('Run directory must be new or empty; never reset an existing budget')
     run_dir.mkdir(parents=True, exist_ok=True)
     with run_lock(run_dir):
@@ -203,10 +203,29 @@ def initialize(project, requirements, plan, run_dir):
                  'infrastructure_retries': 0, 'root_cause_counts': {}, 'completed_tasks': [],
                  'history': [], 'sessions': [], 'issues': [], 'active_run': None,
                  'candidate': None, 'report': None, 'pending_repair': None}
-        # A source scan also rejects links and establishes the original baseline before approval.
-        state['initial_snapshot'] = snapshot_project(project, run_dir / 'initial-project')
-        atomic_json(run_dir / 'state.json', state)
+        # Persist the local operation, including an actionable failure, before copying.
+        # No subprocess or product write is permitted in this operation.
+        operation = {'operation': 'dot_initialize', 'id': uuid.uuid4().hex,
+                     'status': 'IN_PROGRESS', 'at': now(), 'pid': os.getpid(),
+                     'project': str(project), 'requirements_sha256': file_hash(requirements),
+                     'plan_sha256': file_hash(plan)}
+        atomic_json(run_dir / 'initialization.json', operation)
+        try:
+            state['initial_snapshot'] = snapshot_project(project, run_dir / 'initial-project')
+            atomic_json(run_dir / 'state.json', state)
+        except (OSError, ValueError) as exc:
+            if not (run_dir / 'state.json').exists():
+                operation.update(status='FAILED', failed_at=now(), error_type=type(exc).__name__, error=str(exc))
+                atomic_json(run_dir / 'initialization.json', operation)
+                raise InitializationIncomplete(str(exc)) from exc
+            raise
+        operation.update(status='SNAPSHOT_COMMITTED', completed_at=now())
+        atomic_json(run_dir / 'initialization.json', operation)
         return state
+
+
+class InitializationIncomplete(ValueError):
+    """A completed local failure with no committed run; partial files require review."""
 
 
 def operator_confirm(kind, path, sha):
@@ -644,6 +663,9 @@ class Controller:
                   'approval_service': 'local_delegated_l1_and_final_human' if self.state.get('delegation') else 'local_operator_receipt_only',
                   'delegation': self.state.get('delegation'), 'l1_reviews': self.state.get('l1_reviews', [])}
         record['runtime_upgrades'] = [h['upgrade'] for h in self.state['history'] if h.get('action') == 'runtime_upgrade']
+        if self.state.get('clarification_root'):
+            from .initialization_recovery import records_for_control
+            record['initialization_recoveries'] = records_for_control(self.state['clarification_root'])
         if self.state.get('clarification_root'):
             from .clarifications import records
             from .planning import history

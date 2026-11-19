@@ -7,7 +7,7 @@ import { githubCredential } from './github-auth.js';
 import { taskRuntime } from './task-runtime.js';
 
 export const REPOSITORY = 'Merrychen-CMY/ReqPilot';
-export const BOOTSTRAP_ABI = 3;
+export const BOOTSTRAP_ABI = 4;
 export const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const MAX_ARCHIVE = 8_000_000, MAX_EXPANDED = 32_000_000;
 const sha = data => createHash('sha256').update(data).digest('hex');
@@ -91,7 +91,7 @@ export async function verifyRuntime(root, expected, { pinned = false } = {}) {
     if (path !== 'MANIFEST.json' && sha(await readFile(current)) !== manifest.files[path]) fail('RUNTIME_INTEGRITY');
   }
   // Retain old engines until a separately reviewed migration through the stable tool contract.
-  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3] : [BOOTSTRAP_ABI]);
+  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4] : [BOOTSTRAP_ABI]);
   return { version: manifest.workflow_version, manifest_sha256: hash, root };
 }
 /** A GitHub credential is restricted to exact repository API URLs, never redirects/CDN. */
@@ -259,6 +259,7 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
   }
   async function forTask(task) {
     await ensureBundled();
+    if (await optional(resolve(task, 'initialization-recovery-pending.json'))) fail('INITIALIZATION_RECOVERY_PENDING_FINISH_REQUIRED');
     if (await optional(resolve(task, 'runtime-upgrade-pending.json'))) fail('TASK_UPGRADE_PENDING_RECOVER_REQUIRED');
     const receipt = await optional(resolve(task, 'confirmation.json'));
     if (receipt) {
@@ -272,6 +273,7 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
     return { ...await selected(), pinned: false };
   }
   async function upgradeTarget(task, recover = false) {
+    if (await optional(resolve(task, 'initialization-recovery-pending.json'))) fail('INITIALIZATION_RECOVERY_PENDING_FINISH_REQUIRED');
     if (!recover) return selected();
     const pending = await optional(resolve(task, 'runtime-upgrade-pending.json'));
     if (!pending) fail('TASK_NO_PENDING_UPGRADE');
@@ -279,6 +281,13 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
     if (!digest(hash)) fail('TASK_UPGRADE_INVALID');
     return verifyRuntime(resolve(cache, hash), hash);
   }
-  return { status, check, schedule, setEnabled, forTask, ensureBundled, upgradeTarget,
+  async function recoveryTarget(task, finish = false) {
+    if (!finish) return selected();
+    const pending = await optional(resolve(task, 'initialization-recovery-pending.json'));
+    const hash = pending?.entry?.target?.manifest_sha256;
+    if (!digest(hash)) fail('INITIALIZATION_NO_VALID_PENDING_RECOVERY');
+    return verifyRuntime(resolve(cache, hash), hash);
+  }
+  return { status, check, schedule, setEnabled, forTask, ensureBundled, upgradeTarget, recoveryTarget,
     dispose: () => { stopped = true; abort.abort(); }, settled: () => pending };
 }

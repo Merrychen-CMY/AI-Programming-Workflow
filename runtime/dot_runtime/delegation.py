@@ -166,6 +166,8 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
         if state.get('clarification_root'):
             from .clarifications import context
             (workspace / 'fact-supplements.json').write_text(context(state['clarification_root']), encoding='utf-8')
+            from .initialization_recovery import records_for_control
+            atomic_json(workspace / 'initialization-recoveries.json', records_for_control(state['clarification_root']))
         output = controller.run_dir / 'l1-reviews' / str(number)
         if adaptive:
             atomic_json(workspace / 'user-authorized-changes.json', resources.authority(original, resource_root))
@@ -179,6 +181,8 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
                   'Inspect requirements.md and plan.json. If user-authorized-changes.json exists, its approved '
                   'authorized_context and hard_constraints supersede earlier scope only as explicitly recorded; '
                   'retain the original input as history. '
+                  'If initialization-recoveries.json exists, check the explicitly adopted project baseline and '
+                  'required replanning. Recovery does not expand goals, acceptance, permissions or resource ceilings. '
                   'If current-resource-allocation.json exists, it is the enforced operating allocation within user ceilings; '
                   'plan budget fields are a historical planning snapshot and do not override the current allocation. '
                   'Reject missing critical facts, unauthorized changed user hard constraints or weakened AC, '

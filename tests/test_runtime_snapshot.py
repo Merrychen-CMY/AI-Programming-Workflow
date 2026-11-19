@@ -29,6 +29,31 @@ class SnapshotTests(unittest.TestCase):
         self.assertTrue(snapshot.verify_snapshot(self.candidate, manifest))
         self.assertEqual((self.candidate / "main.c").read_bytes(), (self.product / "main.c").read_bytes())
 
+    def test_deep_build_artifact_survives_long_snapshot_destination(self):
+        def cleanup_long_paths():
+            import shutil
+            expected = Path(self.temp.name).absolute()
+            if self.root.absolute() != expected or expected.parent != Path(tempfile.gettempdir()).absolute():
+                raise ValueError('Unexpected temporary cleanup target')
+            snapshot._root(expected, exists=True)
+            shutil.rmtree(snapshot._filesystem_path(expected))
+        self.addCleanup(cleanup_long_paths)
+        relative = Path("build") / ("component_" * 7) / ("object_" * 9) / "bootloader_flash.c.obj"
+        source = self.product / relative
+        snapshot._filesystem_path(source.parent).mkdir(parents=True)
+        snapshot._filesystem_path(source).write_bytes(b"firmware build fixture")
+        candidate = self.root / ("control_" * 9) / "initial-project"
+        self.assertGreater(len(str(candidate / relative)), 260)
+        manifest = snapshot.snapshot_project(self.product, candidate)
+        self.assertIn(relative.as_posix(), manifest["files"])
+        self.assertEqual(snapshot._filesystem_path(candidate / relative).read_bytes(), b"firmware build fixture")
+        self.assertTrue(snapshot.verify_snapshot(candidate, manifest))
+        # A long snapshot can also be read as the source of a later candidate.
+        second = self.root / "second"
+        self.assertEqual(snapshot.snapshot_project(candidate, second), manifest)
+        snapshot._filesystem_path(candidate / relative).write_bytes(b"tampered")
+        self.assertFalse(snapshot.verify_snapshot(candidate, manifest))
+
     def test_add_modify_delete_each_invalidates_candidate(self):
         manifest = snapshot.snapshot_project(self.product, self.candidate)
         main = self.candidate / "main.c"

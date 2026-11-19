@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -73,10 +73,25 @@ def validate_task_upgrade_policy(value):
             if type(value[k]) is not type(wanted) or value[k] != wanted]
 
 
+def validate_initialization_recovery_policy(value):
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0'],
+                'scope': 'uncommitted_local_initialization_only', 'native_confirmation_required': True,
+                'changed_baseline_requires_explicit_adoption_and_replan': True,
+                'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
+                'reset_usage_or_deadline': False, 'product_write_or_api_replay': False,
+                'initialized_task_or_final_report_recovery': False,
+                'recovery_interruption': 'finish_exact_approved_local_writes_only',
+                'guide': 'docs/guides/initialization-recovery.md'}
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Initialization recovery policy fields differ from implemented scope']
+    return ['Initialization recovery boundary drift: ' + k for k, v in expected.items()
+            if type(value[k]) is not type(v) or value[k] != v]
+
+
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 3,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 4,
         'default_enabled': True, 'check_interval_seconds': 21600,
         'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
         'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
@@ -544,13 +559,16 @@ def validate_repository(root):
     package = documents.get('package.json', {})
     errors.extend(validate_update_policy(documents.get('policy/updates.json')))
     errors.extend(validate_task_upgrade_policy(documents.get('policy/task-upgrades.json')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 3:
+    errors.extend(validate_initialization_recovery_policy(documents.get('policy/initialization-recovery.json')))
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 4:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
         if documents[key].get('update_policy') != 'policy/updates.json':
             errors.append('Workflow must reference automatic update policy: ' + key)
         if documents[key].get('task_upgrade_policy') != 'policy/task-upgrades.json':
             errors.append('Workflow must reference task upgrade policy: ' + key)
+        if documents[key].get('initialization_recovery_policy') != 'policy/initialization-recovery.json':
+            errors.append('Workflow must reference initialization recovery policy: ' + key)
     if package.get('version') != version or package.get('dsh', {}).get('bundle', {}).get('patch') != './harness/cordis.patch.yml':
         errors.append('Native plugin package/version mismatch')
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):

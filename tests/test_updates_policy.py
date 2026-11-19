@@ -6,10 +6,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from validate_repo import validate_update_policy, validate_task_upgrade_policy
+from validate_repo import validate_update_policy, validate_task_upgrade_policy, validate_initialization_recovery_policy
 
 
 class UpdatePolicyTests(unittest.TestCase):
+    def test_initialization_recovery_is_not_a_general_unknown_override(self):
+        value = json.loads((ROOT / 'policy/initialization-recovery.json').read_text())
+        self.assertEqual(validate_initialization_recovery_policy(value), [])
+        for key, v in value.items():
+            if type(v) is bool:
+                changed = copy.deepcopy(value); changed[key] = not v
+                self.assertTrue(validate_initialization_recovery_policy(changed))
+
     def test_task_upgrade_does_not_expand_authority_or_replay_work(self):
         policy = json.loads((ROOT / 'policy/task-upgrades.json').read_text())
         self.assertEqual(validate_task_upgrade_policy(policy), [])

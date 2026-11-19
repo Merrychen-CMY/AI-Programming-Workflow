@@ -176,6 +176,11 @@ def dispatch(request):
         if not confirmed:
             raise ValueError('Native user startup confirmation required before DOT tools')
         receipt = read_json(task / 'confirmation.json')
+        if action in ('initialization_preview', 'initialization_commit', 'initialization_finish'):
+            from .initialization_recovery import dispatch as recover_initialization
+            return recover_initialization(task, receipt, request)
+        if (task / 'initialization-recovery-pending.json').exists():
+            raise ValueError('INITIALIZATION_RECOVERY_PENDING: finish the approved local recovery before task tools')
         if action in ('upgrade_preview', 'upgrade_commit', 'upgrade_recover'):
             from .upgrades import dispatch as upgrade
             return upgrade(task, receipt, request)
@@ -243,6 +248,8 @@ def dispatch(request):
         if action != 'bridge':
             raise ValueError('Unknown private operation')
         name, arguments = request['name'], request['arguments']
+        from .initialization_recovery import effective_baseline
+        current_baseline = effective_baseline(task, receipt)
         if name in ('l1_approve', 'l1_submit_report', 'l1_add_facts', 'l1_adjust_limits', 'l1_request_authorization'):
             if 'l1_session_id' in arguments:
                 raise ValueError('L1 session identity comes from the host, not model arguments')
@@ -251,13 +258,13 @@ def dispatch(request):
             if digest(read_json(task / 'delegation.json')) != receipt['delegation_sha256']:
                 raise ValueError('Confirmed delegation changed')
             if (name not in ('l1_adjust_limits', 'l1_request_authorization')
-                    and not (bridge.run_dir / 'state.json').exists() and fingerprint(settings['project']) != receipt['baseline']):
+                    and not (bridge.run_dir / 'state.json').exists() and fingerprint(settings['project']) != current_baseline):
                 raise ValueError('Original project changed after startup confirmation; do not plan or initialize')
         result = bridge.call(name, arguments)
         if name == 'dot_initialize' and result.get('accepted') is not False:
             # Close the check/copy race: initialization cannot authorize any worker.
             state = read_json(bridge.run_dir / 'state.json')
-            if state['initial_snapshot']['id'] != receipt['baseline']['id']:
+            if state['initial_snapshot']['id'] != current_baseline['id']:
                 Controller(bridge.run_dir).stop_with_report('Initial snapshot differs from startup baseline')
                 raise ValueError('Initial snapshot differs from confirmed baseline')
             from .upgrades import records_for_control

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "supported_source_versions": ["3.5.0", "3.6.0"],
+  "scope": "uncommitted_local_initialization_only",
+  "native_confirmation_required": true,
+  "changed_baseline_requires_explicit_adoption_and_replan": true,
+  "archive_partial_files_and_marker": true,
+  "original_confirmation_immutable": true,
+  "reset_usage_or_deadline": false,
+  "product_write_or_api_replay": false,
+  "initialized_task_or_final_report_recovery": false,
+  "recovery_interruption": "finish_exact_approved_local_writes_only",
+  "guide": "docs/guides/initialization-recovery.md"
+}

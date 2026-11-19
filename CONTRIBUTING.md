@@ -75,6 +75,8 @@ policy/resources.json、runtime/dot_runtime/resources.py、原生授权界面与
 
 ## 自动更新维护
 
-遵循policy/updates.json和docs/guides/automatic-updates.md。兼容版本保留ABI3工具名称、参数及授权语义；新增工具需要宿主升级。发布资产通过scripts/package_release.py从清单构建，只有通过全部CI的v版本标签才发布。不得增加任意来源、安装脚本、付费探测或旧任务自动迁移；覆盖离线保留、损坏拒绝、版本固定、重启恢复、摘要过期及路径/重定向反例。
+遵循policy/updates.json和docs/guides/automatic-updates.md。兼容版本保留ABI4工具名称、参数及授权语义；新增工具需要宿主升级。发布资产通过scripts/package_release.py从清单构建，只有通过全部CI的v版本标签才发布。不得增加任意来源、安装脚本、付费探测或旧任务自动迁移；覆盖离线保留、损坏拒绝、版本固定、重启恢复、摘要过期及路径/重定向反例。
 
 任务升级遵循policy/task-upgrades.json和docs/guides/task-upgrades.md。增加受支持源版本必须验证其真实发布包、原生确认、跨进程互斥、准确快照、历史消耗不变、已完成任务不重派、独立复核与完整重测、迁移中断恢复及UNKNOWN/终态拒绝。不可改写原confirmation.json。
+
+初始化恢复维护：policy/initialization-recovery.json与专用原生入口、Python恢复事务、onboarding基线追加及报告保持一致。只允许未提交本地初始化，覆盖精确原生确认、历史保留、变更基线重规划、损坏/路径/并发/API未决/终态拒绝和恢复再次中断。不能把同账户本地审计表述为强身份认证；入口新增动作须提高bootstrap ABI并明确宿主安装要求。

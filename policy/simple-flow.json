@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.5.0",
+  "workflow_version": "3.6.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -221,5 +221,6 @@
     "other_supported_runtime_states": "REVIEW_PENDING",
     "UNKNOWN_or_final": "reject",
     "incomplete_local_migration": "block_task_tools_until_exact_recorded_writes_finish"
-  }
+  },
+  "initialization_recovery_policy": "policy/initialization-recovery.json"
 }

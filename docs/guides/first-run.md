@@ -28,3 +28,5 @@ python -m unittest discover -s tests -v
 动态资源首次验证还应覆盖：初始分配后才能调用DOT；当前实现额度不足进入BUDGET_REVIEW_PENDING；调整后先继续未完成的根因分析，再恢复诊断后的任务；超上限只能由原生用户批准；范围变化必须重审；已用次数和时间不清零；最终报告含全部调整理由和实际消耗。检查[资源管理指南](adaptive-resources.md)，不要通过删除记录测试恢复。
 
 已开工任务需要升级时，使用[原对话任务升级](task-upgrades.md)：upgrade_preview预检→upgrade原生确认→重新独立审核→DOT继续与完整验证。不得改写原开工确认或清零历史。
+
+初始化失败且没有state.json时，不反复调用dot_initialize；按[初始化恢复](initialization-recovery.md)先预览、原生批准，再继续。拒绝/跳过/确认期间变化不得清除标记；部分文件和已用额度保持。

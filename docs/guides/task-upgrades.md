@@ -46,3 +46,5 @@ confirmation.json、原始需求、委托、bridge.json不改写。目标、AC�
 写入前保存runtime-upgrade-pending.json，包含精确前后状态及迁移日志。迁移中断后所有普通任务工具暂停；`workflow_updates(action=upgrade_recover)`只在当前文件精确匹配已记录前/后内容、项目及其他记录未变化时，完成此前已获批准的本地写入。不会调用模型、重新派工、清除产品UNKNOWN或重置计数。任何意外变化、残留不匹配文件或记录损坏须人工核实，不自动覆盖或回滚产品。已完成迁移不支持自动撤销。
 
 原生界面的确切批准不能由模型参数提供，私有Python管道仅供受信本地入口调用；与现有控制器一致，不构成同账户恶意进程隔离。
+
+3.6.0同时支持3.5.0正常任务迁移。若是未提交初始化的UNKNOWN，普通upgrade仍拒绝；使用独立的[初始化恢复](initialization-recovery.md)预检及原生审核，不借升级自动解锁。

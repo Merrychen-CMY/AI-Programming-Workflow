@@ -54,3 +54,5 @@ L1调用`workflow_updates(action)`，常规action为status、check、enable或di
 没有可用Git登录时返回UPDATE_GITHUB_LOGIN_REQUIRED，保留当前版本和任务。先通过Git/Git Credential Manager的正常登录流程登录有本仓库读取权限的账号，再让L1检查更新；插件不会弹出自动登录或询问GPT密钥。凭据助手最多等待8秒，禁止交互提示；它不是新的凭据库。仅需读取仓库和发布资产的权限。
 
 3.4.0首版更新器仅支持公开下载，不能自动访问本私有仓库。当前首次安装应使用3.5.0（入口ABI3），3.4.x已安装用户需要这一次入口升级。ABI3保留已确认并缓存的ABI1/2工作流，默认按原摘要运行；经批准的3.4.0/3.4.1任务可迁入3.5.0。仍不自动迁移3.3.x旧任务。
+
+3.6.0为ABI4，需要宿主更新安装包才能增加初始化恢复入口。旧ABI3自动更新应提示HOST_UPDATE_REQUIRED。初始化恢复与普通升级独立，见[专用指南](initialization-recovery.md)；旧会话必须实际加载新入口后才能调用。

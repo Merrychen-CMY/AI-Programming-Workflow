@@ -34,21 +34,16 @@ def journal(task, receipt):
 
 def _snapshot(task):
     # Hash all historical evidence as well as the live project. Never follow links.
-    files = {}
-    for path in sorted(task.rglob('*')):
-        if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
-            raise ValueError('Task upgrade does not accept redirected records')
-        name = path.relative_to(task).as_posix()
-        if name in (JOURNAL, PENDING, STATE) or path.name == '.lock':
-            continue
-        if path.is_file():
-            files[name] = file_hash(path)
+    from .initialization_recovery import _files
+    files = {name: value for name, value in _files(task).items() if name not in (JOURNAL, PENDING, STATE)}
     from .onboarding import fingerprint
     settings = read_json(task / 'bridge.json')
     return digest({'files': files, 'project': fingerprint(settings['project'])})
 
 
 def _quiescent(task, receipt, session):
+    if (task / 'initialization-recovery-pending.json').exists():
+        raise ValueError('INITIALIZATION_RECOVERY_PENDING: finish the approved recovery first')
     if receipt['session'] != session:
         raise ValueError('Upgrade requires the original native session identity')
     settings = read_json(task / 'bridge.json')
