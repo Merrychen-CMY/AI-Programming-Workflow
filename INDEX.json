@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.4.1",
+  "workflow_version": "3.5.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -25,7 +25,8 @@
       "docs/guides/l1-plugin.md",
       "policy/onboarding.json",
       "templates/harness-start.example.json",
-      "docs/guides/automatic-updates.md"
+      "docs/guides/automatic-updates.md",
+      "docs/guides/task-upgrades.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -351,12 +352,13 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.4.1-validation.md",
+    "validation_record": "docs/reports/3.5.0-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false,
     "harness_plugin_entrypoint": "harness/index.js"
   },
   "resource_policy": "policy/resources.json",
-  "update_policy": "policy/updates.json"
+  "update_policy": "policy/updates.json",
+  "task_upgrade_policy": "policy/task-upgrades.json"
 }

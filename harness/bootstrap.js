@@ -3,9 +3,10 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { createUpdates, loadEngine } from './updates.js';
+import { upgradeTask } from './task-upgrades.js';
 
-export const updateFields = { workflow_updates: { action: 'status | check | enable | disable; no API/model calls. Enable/disable only at the user\'s request.' } };
-export const updateDescriptions = { workflow_updates: 'Inspect or check ReqPilot stable releases. Compatible updates need no new conversation before startup; confirmed tasks retain their exact runtime. No task reset.' };
+export const updateFields = { workflow_updates: { action: 'status | check | enable | disable | upgrade_preview | upgrade | upgrade_recover. Upgrade requires native approval; no API/model calls or task reset. Enable/disable only at user request.' } };
+export const updateDescriptions = { workflow_updates: 'Check releases or migrate a quiescent confirmed task in this conversation. Preview is read-only; upgrade requests exact native approval; recover completes already-authorized local writes only. UNKNOWN/final reports cannot reopen.' };
 
 /** Stable host tool surface. Only the versioned workflow engine changes between invocations. */
 export function createBootstrap({ ctx, root, keyRef, fields,
@@ -18,15 +19,20 @@ export function createBootstrap({ ctx, root, keyRef, fields,
     if (busy.has(session)) throw new Error('当前会话已有工作流操作；请等待结果，不要并发启动');
     busy.add(session);
     try {
+      const task = resolve(directory, 'tasks', createHash('sha256').update(session).digest('hex'));
       if (name === 'workflow_updates') {
-        if (Object.keys(args).join() !== 'action' || !['status', 'check', 'enable', 'disable'].includes(args.action))
-          throw new Error('Update action must be status, check, enable or disable');
+        if (Object.keys(args).join() !== 'action' || !['status', 'check', 'enable', 'disable', 'upgrade_preview', 'upgrade', 'upgrade_recover'].includes(args.action))
+          throw new Error('Update action is invalid');
+        if (args.action.startsWith('upgrade')) {
+          const result = await upgradeTask({ action: args.action, task, session, updates, fields, ctx, exec, runner: workflowOptions.runner });
+          seen.delete(session);
+          return result;
+        }
         let result;
         if (args.action === 'enable' || args.action === 'disable') result = await updates.setEnabled(args.action === 'enable');
         else result = await updates[args.action]();
-        return { ...result, instruction: '更新不调用GPT、不启动任务。READY指新版已就绪；已确认开工的任务仍固定原版本。旧任务缺原运行版本时保留记录并报告，不能清除UNKNOWN或预算。' };
+        return { ...result, instruction: '更新不调用GPT、不启动任务。READY指新版已就绪；已确认任务保持原版本，直到upgrade预检及原生确认通过。不能清除UNKNOWN、最终报告或预算。' };
       }
-      const task = resolve(directory, 'tasks', createHash('sha256').update(session).digest('hex'));
       const runtime = await updates.forTask(task);
       // Checks run in the background; this invocation keeps the selected immutable root.
       await updates.schedule().catch(() => {});

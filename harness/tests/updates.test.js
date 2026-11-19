@@ -16,7 +16,7 @@ import { PassThrough } from 'node:stream';
 
 const sha = data => createHash('sha256').update(data).digest('hex');
 const fields = { workflow_status: {}, workflow_confirm_start: {}, dot_run: {} };
-function release(v = '3.4.1', modify = files => files, abi = 2) {
+function release(v = '3.4.1', modify = files => files, abi = 3) {
   let files = {
     'package.json': JSON.stringify({ name: 'ai-programming-workflow', version: v, type: 'module', reqpilot: { bootstrap_abi: abi } }),
     'harness/workflow.js': `import {writeFile,mkdir,readFile} from 'node:fs/promises';
@@ -130,7 +130,7 @@ test('offline checks preserve selected code and redact raw diagnostics', async t
 });
 
 for (const [label, target] of [
-  ['major',release('4.0.0')], ['ABI',release('3.4.1', x=>x,3)],
+  ['major',release('4.0.0')], ['ABI',release('3.4.1', x=>x,4)],
   ['tool contract',release('3.4.1',x=>({...x,'harness/workflow.js':x['harness/workflow.js'].replace('workflow_status','new_tool')}))],
   ['import error',release('3.4.1',x=>({...x,'harness/workflow.js':'throw new Error("bad import");'}))],
 ]) test(`${label} update never becomes selected`,async t=>{
@@ -220,7 +220,7 @@ test('snapshot loader executes the actual Python status pipe without network or 
   await updates.setEnabled(false);
   const bootstrap=createBootstrap({root,directory,fields:actualFields,ctx:{},updates});t.after(()=>bootstrap.dispose());
   const result=await bootstrap.invoke('workflow_status',{}, {agent:{id:'真实管道只读会话'}});
-  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.4.1');
+  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.5.0');
   assert.equal(result.workflow_runtime.task_pinned,false);assert.equal(result.workflow_runtime.updates.enabled,false);
 });
 
@@ -228,7 +228,7 @@ test('compatible update invalidates prepared environment and prevents approval o
   const f=await fixture(t);const actualRoot=fileURLToPath(new URL('../../',import.meta.url));
   const target=release('3.4.1',files=>files); // synthetic release uses the actual engine below
   const content={...target.files};delete content['MANIFEST.json'];
-  for(const path of ['harness/workflow.js','harness/setup.js','harness/diagnostics.js','harness/process.js'])
+  for(const path of ['harness/workflow.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js'])
     content[path]=await readFile(resolve(actualRoot,path));
   content['MANIFEST.json']=Buffer.from(JSON.stringify({schema_version:1,workflow_version:'3.4.1',
     files:Object.fromEntries(Object.entries(content).map(([p,data])=>[p,sha(data)]))}));

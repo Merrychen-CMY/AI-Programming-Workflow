@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.4.1",
+  "workflow_version": "3.5.0",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -71,5 +71,6 @@
     "guide": "docs/guides/clarifications.md"
   },
   "resource_policy": "policy/resources.json",
-  "update_policy": "policy/updates.json"
+  "update_policy": "policy/updates.json",
+  "task_upgrade_policy": "policy/task-upgrades.json"
 }

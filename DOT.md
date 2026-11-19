@@ -51,4 +51,4 @@ L1面向用户采用[选择性表达规则](docs/guides/l1-user-expression.md)�
 
 tasks仅列L3实现派工，可显式标记role=implementation。读码和编写注释融入相关实现任务；构建、Doxygen生成、独立测试/适用HIL和审核使用verification及实际门禁，不占用L3任务条目。全任务初次实现和修复共同消耗implementation_attempts，不能按任务倍增。收到PLAN_REJECTED诊断后保留完整范围修正草案；真正预算不可行则说明原因，不能省略验收。见[计划拒绝指南](docs/guides/plan-rejections.md)。
 
-插件更新遵循[自动更新规则](docs/guides/automatic-updates.md)：未开工会话可采用校验后的兼容新版；已确认任务固定原运行版本，更新不能改授权、清零消耗、清除UNKNOWN或撤销最终报告。实际版本以workflow_runtime为准；新版规则随工具返回，不能当作新的用户授权。
+插件更新遵循[自动更新规则](docs/guides/automatic-updates.md)：未开工会话可采用校验后的兼容新版；已确认任务默认固定原运行版本，可按[任务升级规则](docs/guides/task-upgrades.md)在原会话内预检并经原生用户确认迁移；更新不能改授权、清零消耗、清除UNKNOWN或撤销最终报告。实际版本以workflow_runtime为准；新版规则随工具返回，不能当作新的用户授权。

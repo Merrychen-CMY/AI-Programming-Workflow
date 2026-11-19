@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.4.1",
+  "workflow_version": "3.5.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -213,5 +213,13 @@
   "resource_policy": "policy/resources.json",
   "authority_change_requires_user_decision": true,
   "in_scope_requirement_clarification_requires_user_decision": false,
-  "update_policy": "policy/updates.json"
+  "update_policy": "policy/updates.json",
+  "task_upgrade_policy": "policy/task-upgrades.json",
+  "task_upgrade_transitions": {
+    "confirmed_nonterminal_quiescent": "native_review_then_rebind_runtime_and_invalidate_approvals_and_candidate",
+    "existing_decision_pending": "preserve_decision_pending",
+    "other_supported_runtime_states": "REVIEW_PENDING",
+    "UNKNOWN_or_final": "reject",
+    "incomplete_local_migration": "block_task_tools_until_exact_recorded_writes_finish"
+  }
 }

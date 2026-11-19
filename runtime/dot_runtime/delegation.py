@@ -152,7 +152,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
         check_plan_bounds(dict(plan, budgets={}) if adaptive else plan, value)
         if adaptive:
             resources.require(original, resource_root, 'implementation_attempts',
-                              state['implementation_attempts'], len(plan['tasks']))
+                              state['implementation_attempts'], sum(t['id'] not in state['completed_tasks'] for t in plan['tasks']))
         baseline = controller.baseline()
         if kind == 'plan' and state['approvals'].get('requirements', {}).get('sha256') != baseline['requirements']:
             raise ValueError('Requirements changed before plan approval')

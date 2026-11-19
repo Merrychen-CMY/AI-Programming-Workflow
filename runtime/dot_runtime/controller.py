@@ -259,6 +259,8 @@ class Controller:
         if self.state.get('clarification_root'):
             from .clarifications import signature
             value['clarifications'] = signature(self.state['clarification_root'])
+        if self.state.get('runtime_upgrade'):
+            value['runtime_upgrade'] = self.state['runtime_upgrade']['sha256']
         return value
 
     def check_approvals(self):
@@ -641,6 +643,7 @@ class Controller:
                   'delivery_executed': False,
                   'approval_service': 'local_delegated_l1_and_final_human' if self.state.get('delegation') else 'local_operator_receipt_only',
                   'delegation': self.state.get('delegation'), 'l1_reviews': self.state.get('l1_reviews', [])}
+        record['runtime_upgrades'] = [h['upgrade'] for h in self.state['history'] if h.get('action') == 'runtime_upgrade']
         if self.state.get('clarification_root'):
             from .clarifications import records
             from .planning import history

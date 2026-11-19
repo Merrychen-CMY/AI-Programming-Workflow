@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "supported_source_versions": ["3.4.0", "3.4.1"],
+  "task_schema_version": 1,
+  "native_user_confirmation_required": true,
+  "preserve_original_authority_and_cumulative_usage": true,
+  "invalidate_approvals_and_candidate": true,
+  "replay_completed_implementation": false,
+  "clear_unknown_or_reopen_final_report": false,
+  "crash_recovery": "finish_exact_authorized_local_writes_only",
+  "guide": "docs/guides/task-upgrades.md"
+}

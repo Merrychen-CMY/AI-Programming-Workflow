@@ -68,6 +68,8 @@ class Bridge:
 
     def status(self):
         result = self._status()
+        from .upgrades import records_for_control
+        result['runtime_upgrades'] = records_for_control(self.root)
         original = read_json(self.settings['delegation'])
         if resources.enabled(original, self.root):
             state = read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None
@@ -112,6 +114,8 @@ class Bridge:
         original = read_json(self.settings['delegation'])
         record = {'outcome': 'FAILED', 'reason': reason, 'execution_started': False,
                   'owner': 'L1', 'user_review_required': True, 'planning_rejections': planning.history(self.root)}
+        from .upgrades import records_for_control
+        record['runtime_upgrades'] = records_for_control(self.root)
         if resources.enabled(original, self.root):
             record['resource_governance'] = resources.report(self.root, original)
         atomic_json(self.root / 'preflight-report.json', record)

@@ -59,10 +59,24 @@ def validate_manifest(root, manifest):
     return errors
 
 
+def validate_task_upgrade_policy(value):
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1'],
+                'task_schema_version': 1, 'native_user_confirmation_required': True,
+                'preserve_original_authority_and_cumulative_usage': True,
+                'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
+                'clear_unknown_or_reopen_final_report': False,
+                'crash_recovery': 'finish_exact_authorized_local_writes_only',
+                'guide': 'docs/guides/task-upgrades.md'}
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Task upgrade policy fields differ from implemented scope']
+    return ['Task upgrade boundary drift: ' + k for k, wanted in expected.items()
+            if type(value[k]) is not type(wanted) or value[k] != wanted]
+
+
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 2,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 3,
         'default_enabled': True, 'check_interval_seconds': 21600,
         'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
         'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
@@ -73,6 +87,7 @@ def validate_update_policy(value):
         'automatic_host_plugin_replacement': False,
         'new_tool_or_major_or_abi_change': 'host_install_required',
         'guide': 'docs/guides/automatic-updates.md',
+        'reviewed_task_migration': 'policy/task-upgrades.json',
     }
     if not isinstance(value, dict) or set(value) != set(expected):
         return ['Update policy fields differ from implemented scope']
@@ -528,11 +543,14 @@ def validate_repository(root):
         errors.append('Onboarding must preserve all nine discovery topics')
     package = documents.get('package.json', {})
     errors.extend(validate_update_policy(documents.get('policy/updates.json')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 2:
+    errors.extend(validate_task_upgrade_policy(documents.get('policy/task-upgrades.json')))
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 3:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
         if documents[key].get('update_policy') != 'policy/updates.json':
             errors.append('Workflow must reference automatic update policy: ' + key)
+        if documents[key].get('task_upgrade_policy') != 'policy/task-upgrades.json':
+            errors.append('Workflow must reference task upgrade policy: ' + key)
     if package.get('version') != version or package.get('dsh', {}).get('bundle', {}).get('patch') != './harness/cordis.patch.yml':
         errors.append('Native plugin package/version mismatch')
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):

@@ -4,6 +4,7 @@ import { resolve, relative, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { loadConfig, keyDigest, startSetup } from './setup.js';
 import { pythonCall } from './process.js';
+import { taskRuntime } from './task-runtime.js';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
 const exists = async path => { try { await readFile(path); return true; } catch(e) { if(e.code==='ENOENT')return false; throw e; } };
@@ -141,7 +142,7 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
         return await call(settings, 'confirm', { ...prepared });
       }
       const receipt = await exists(`${task}/confirmation.json`) ? await json(`${task}/confirmation.json`) : null;
-      const settings = receipt?.settings || (await loadConfig(directory));
+      const settings = receipt ? { ...receipt.settings, workflow_sha256: await taskRuntime(task, receipt) } : await loadConfig(directory);
       if (name === 'workflow_status') {
         return { ...await call(settings, 'status'), interrupted: await exists(`${task}/interrupted.json`), records: task,
           environment: await exists(`${task}/environment.json`) ? await json(`${task}/environment.json`) : null };

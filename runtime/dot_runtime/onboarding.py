@@ -176,6 +176,16 @@ def dispatch(request):
         if not confirmed:
             raise ValueError('Native user startup confirmation required before DOT tools')
         receipt = read_json(task / 'confirmation.json')
+        if action in ('upgrade_preview', 'upgrade_commit', 'upgrade_recover'):
+            from .upgrades import dispatch as upgrade
+            return upgrade(task, receipt, request)
+        if (task / 'runtime-upgrade-pending.json').exists():
+            raise ValueError('UPGRADE_PENDING: finish the recorded local migration before task tools')
+        if (task / 'runtime-upgrades.json').exists():
+            from .upgrades import journal
+            _, current = journal(task, receipt)
+            if current != file_hash(Path(__file__).resolve().parents[2] / 'MANIFEST.json'):
+                raise ValueError('Task must use its upgraded runtime')
         settings = read_json(task / 'bridge.json')
         if receipt['bridge_sha256'] != digest(settings) or receipt['draft_sha256'] != digest(read_json(task / 'draft.json')):
             raise ValueError('Confirmed configuration or draft changed')
@@ -250,4 +260,11 @@ def dispatch(request):
             if state['initial_snapshot']['id'] != receipt['baseline']['id']:
                 Controller(bridge.run_dir).stop_with_report('Initial snapshot differs from startup baseline')
                 raise ValueError('Initial snapshot differs from confirmed baseline')
+            from .upgrades import records_for_control
+            upgrades = records_for_control(bridge.root)
+            if upgrades and not state.get('runtime_upgrade'):
+                state['runtime_upgrade'] = upgrades[-1]
+                state['history'].extend({'action': 'runtime_upgrade', 'at': item['at'], 'upgrade': item,
+                                         'before_initialization': True} for item in upgrades)
+                atomic_json(bridge.run_dir / 'state.json', state)
         return result

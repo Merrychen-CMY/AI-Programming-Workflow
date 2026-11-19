@@ -4,9 +4,10 @@ import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { githubCredential } from './github-auth.js';
+import { taskRuntime } from './task-runtime.js';
 
 export const REPOSITORY = 'Merrychen-CMY/ReqPilot';
-export const BOOTSTRAP_ABI = 2;
+export const BOOTSTRAP_ABI = 3;
 export const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const MAX_ARCHIVE = 8_000_000, MAX_EXPANDED = 32_000_000;
 const sha = data => createHash('sha256').update(data).digest('hex');
@@ -89,8 +90,8 @@ export async function verifyRuntime(root, expected, { pinned = false } = {}) {
     if (!stat.isFile() || (size += stat.size) > MAX_EXPANDED) fail('RUNTIME_INTEGRITY');
     if (path !== 'MANIFEST.json' && sha(await readFile(current)) !== manifest.files[path]) fail('RUNTIME_INTEGRITY');
   }
-  // ABI2 changes updater authentication only; already-confirmed ABI1 engines keep their exact code.
-  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2] : [BOOTSTRAP_ABI]);
+  // Retain old engines until a separately reviewed migration through the stable tool contract.
+  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3] : [BOOTSTRAP_ABI]);
   return { version: manifest.workflow_version, manifest_sha256: hash, root };
 }
 /** A GitHub credential is restricted to exact repository API URLs, never redirects/CDN. */
@@ -258,9 +259,10 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
   }
   async function forTask(task) {
     await ensureBundled();
+    if (await optional(resolve(task, 'runtime-upgrade-pending.json'))) fail('TASK_UPGRADE_PENDING_RECOVER_REQUIRED');
     const receipt = await optional(resolve(task, 'confirmation.json'));
     if (receipt) {
-      const hash = receipt.settings?.workflow_sha256;
+      const hash = await taskRuntime(task, receipt);
       if (!digest(hash)) fail('TASK_RUNTIME_MISSING');
       try { return { ...await verifyRuntime(resolve(cache, hash), hash, { pinned: true }), pinned: true }; }
       catch { fail('TASK_RUNTIME_MISSING_OR_DAMAGED'); }
@@ -269,6 +271,14 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
     if (await optional(resolve(task, 'interrupted.json'))) fail('TASK_RUNTIME_REQUIRES_RECONCILIATION');
     return { ...await selected(), pinned: false };
   }
-  return { status, check, schedule, setEnabled, forTask, ensureBundled,
+  async function upgradeTarget(task, recover = false) {
+    if (!recover) return selected();
+    const pending = await optional(resolve(task, 'runtime-upgrade-pending.json'));
+    if (!pending) fail('TASK_NO_PENDING_UPGRADE');
+    const hash = pending.after_journal?.records?.at(-1)?.target?.manifest_sha256;
+    if (!digest(hash)) fail('TASK_UPGRADE_INVALID');
+    return verifyRuntime(resolve(cache, hash), hash);
+  }
+  return { status, check, schedule, setEnabled, forTask, ensureBundled, upgradeTarget,
     dispose: () => { stopped = true; abort.abort(); }, settled: () => pending };
 }
