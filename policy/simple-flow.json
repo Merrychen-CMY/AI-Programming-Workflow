@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.2.1",
+  "workflow_version": "3.2.2",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -196,6 +196,7 @@
   "communication_policy": "policy/communication.json",
   "startup_confirmation_required": true,
   "onboarding_policy": "policy/onboarding.json",
+  "planning_policy": "policy/planning.json",
   "clarification_policy": {
     "state": "NEEDS_INFO",
     "append_tool": "l1_add_facts",

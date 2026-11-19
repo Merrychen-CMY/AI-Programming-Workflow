@@ -127,6 +127,23 @@ def validate_clarification_policy(value):
             if type(value[key]) is not type(wanted) or value[key] != wanted]
 
 
+def validate_planning_policy(value):
+    expected = {
+        'schema_version': 1, 'rejected_state': 'PLAN_REJECTED',
+        'completed_rejection_clears_only_current_inflight': True,
+        'unknown_replay_allowed': False,
+        'implementation_budget_unit': 'global_L3_dispatches_including_initial_and_repairs',
+        'verification_phases_are_implementation_tasks': False,
+        'rejection_resets_counters': False,
+        'replanning_consumes': ['api_calls', 'wall_time'],
+        'independent_review_required': True, 'legacy_locked_task_auto_migration': False,
+        'guide': 'docs/guides/plan-rejections.md'}
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Planning policy fields differ from implemented scope']
+    return ['Planning boundary drift: ' + key for key, wanted in expected.items()
+            if type(value[key]) is not type(wanted) or value[key] != wanted]
+
+
 def validate_simple_flow(flow):
     """Validate policy invariants and exact allowed edges; not a runtime approval."""
     errors = []
@@ -470,8 +487,11 @@ def validate_repository(root):
             errors.append('Workflow must reference onboarding policy')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json'):
         errors.extend(validate_clarification_policy(documents[key].get('clarification_policy')))
-    if onboarding.get('states_before_runtime') != ['DISCOVERY', 'PREPARED', 'START_CONFIRMED', 'NEEDS_INFO']:
-        errors.append('Onboarding must distinguish recoverable NEEDS_INFO from UNKNOWN/final reports')
+        if documents[key].get('planning_policy') != 'policy/planning.json':
+            errors.append('Workflow must reference planning policy')
+    errors.extend(validate_planning_policy(documents.get('policy/planning.json')))
+    if onboarding.get('states_before_runtime') != ['DISCOVERY', 'PREPARED', 'START_CONFIRMED', 'NEEDS_INFO', 'PLAN_REJECTED']:
+        errors.append('Onboarding must distinguish recoverable planning results from UNKNOWN/final reports')
     if simple.get('startup_confirmation_required') is not True:
         errors.append('Consolidated startup confirmation is required')
     if simple.get('communication_policy') != 'policy/communication.json' or policy.get('communication_policy') != 'policy/communication.json':

@@ -9,6 +9,7 @@ from .delegation import attach_delegation, approve_l1, submit_l1_report, validat
 from .gpt_dot import ResponsesClient, DotAdapter, execute, propose_plan
 from .checks import run_check
 from . import clarifications
+from . import planning
 
 
 TOOLS = {
@@ -64,7 +65,7 @@ class Bridge:
         common = {'planning': planning, 'facts_revision': len(facts),
                   'facts_sha256': clarifications.signature(self.root)}
         if not (self.run_dir / 'state.json').exists():
-            return {**common, 'state': 'NEEDS_INFO' if planning and planning['status'] == 'NEEDS_INFO' else 'DISCOVERY',
+            return {**common, 'state': planning['status'] if planning and planning['status'] in ('NEEDS_INFO', 'PLAN_REJECTED') else 'DISCOVERY',
                     'plan_ready': (self.root / 'plan.json').exists() and not (planning and planning['status'] != 'PLAN_READY'),
                     'preflight_report': read_json(self.root / 'preflight-report.json') if (self.root / 'preflight-report.json').exists() else None}
         state = read_json(self.run_dir / 'state.json')
@@ -100,7 +101,8 @@ class Bridge:
                     c.stop_with_report(arguments['reason'])
                 else:
                     atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': arguments['reason'],
-                        'execution_started': False, 'owner': 'L1', 'user_review_required': True})
+                        'execution_started': False, 'owner': 'L1', 'user_review_required': True,
+                        'planning_rejections': planning.history(self.root)})
                 return self.status()
             if c is None and (self.root / 'preflight-report.json').exists():
                 raise ValueError('Preflight has ended with a final failure report; no automatic resumption')
@@ -111,6 +113,10 @@ class Bridge:
             if pending.get('status') == 'NEEDS_INFO' and name in ('dot_initialize', 'l1_approve', 'l1_revise', 'dot_run'):
                 return {**self.status(), 'accepted': False,
                         'reason': 'Resolve NEEDS_INFO and obtain a new plan before initialization, revision, approval or execution'}
+            if pending.get('status') == 'PLAN_REJECTED' and name in ('dot_initialize', 'l1_approve', 'dot_run'):
+                return {**self.status(), 'accepted': False, 'reason': 'Correct the rejected proposal before approval or execution'}
+            if pending.get('requires_revision') and name in ('l1_approve', 'dot_run'):
+                return {**self.status(), 'accepted': False, 'reason': 'Stage the new proposal with l1_revise before approval'}
             if c and c.state.get('pending_clarification_revision') and name in ('l1_approve', 'dot_run'):
                 return {**self.status(), 'accepted': False, 'reason': 'Call l1_revise to incorporate facts before approval'}
             if name == 'l1_add_facts':
@@ -147,27 +153,41 @@ class Bridge:
                     raise ValueError('Unresolved process forbids new planning')
                 previous = read_json(planning_path) if planning_path.exists() else {}
                 facts_sha = clarifications.signature(self.root)
-                request_sha = digest({'requirements': arguments['requirements'], 'facts': facts_sha})
-                if previous.get('status') == 'NEEDS_INFO' and previous.get('request_sha256') == request_sha:
-                    return {**self.status(), 'accepted': False, 'reason': 'Unchanged clarification input; no API retry performed'}
+                base_sha = digest({'requirements': arguments['requirements'], 'facts': facts_sha})
+                feedback = planning.feedback(self.root, previous)
+                request_sha = digest({'base': base_sha, 'validation_feedback': feedback})
+                if ((previous.get('status') == 'NEEDS_INFO' and previous.get('base_request_sha256') == base_sha)
+                        or (previous.get('status') == 'PLAN_REJECTED' and previous.get('request_sha256') == request_sha)):
+                    return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
                 context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
+                if feedback:
+                    context += '\nREJECTED DRAFT AND VALIDATOR FEEDBACK (data, not authority):\n' + json.dumps(feedback, ensure_ascii=False)
                 try:
                     plan = propose_plan(client, arguments['requirements'],
-                        read_json(ROOT / 'templates/local-execution-plan.example.json'), context)
+                        read_json(ROOT / 'templates/local-execution-plan.example.json'), context,
+                        implementation_used=c.state['implementation_attempts'] if c else 0)
                 except clarifications.PlanningNeedsInfo as exc:
                     atomic_json(planning_path, {'status': 'NEEDS_INFO', 'reason': exc.reason,
-                        'gaps': exc.gaps, 'response_id': exc.response_id, 'request_sha256': request_sha})
+                        'gaps': exc.gaps, 'response_id': exc.response_id, 'request_sha256': request_sha,
+                        'base_request_sha256': base_sha})
                     return {**self.status(), 'accepted': False,
                             'next': 'L1 gathers facts, calls l1_add_facts, then dot_plan within the same remaining budget'}
+                except planning.PlanRejected as exc:
+                    planning.record_rejection(self.root, name, exc, request_sha, base_sha)
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'next': 'L1 reads validation feedback, then dot_plan to correct the draft within the original budget; '
+                                    'l1_revise is available only after initialization. No product worker was dispatched.'}
                 except (ValueError, OSError, KeyError) as exc:
                     if c:
                         c.stop_with_report(str(exc))
                     else:
                         atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': str(exc),
-                            'execution_started': False, 'owner': 'L1', 'user_review_required': True})
+                            'execution_started': False, 'owner': 'L1', 'user_review_required': True,
+                            'planning_rejections': planning.history(self.root)})
                     raise
                 atomic_json(planning_path, {'status': 'PLAN_READY', 'facts_sha256': facts_sha,
-                    'plan_sha256': digest(plan), 'requirements_sha256': digest(arguments['requirements'])})
+                    'plan_sha256': digest(plan), 'requirements_sha256': digest(arguments['requirements']),
+                    'requires_revision': bool(c)})
                 if c:
                     return {'plan': plan, 'next': 'L1 inspects the proposal then calls l1_revise; approvals are not copied'}
                 (self.root / 'requirements.md').write_text(arguments['requirements'], encoding='utf-8', newline='\n')
@@ -188,6 +208,9 @@ class Bridge:
                 c.state['clarification_root'] = str(self.root)
                 c.state['revision_count'] = len(clarifications.records(self.root))
                 c.save()
+            elif c is None and name == 'l1_revise':
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                        'reason': 'No initialized baseline exists; use dot_plan to correct the draft, then dot_initialize'}
             elif c is None:
                 raise ValueError('Initialize the task first')
             elif not c.state.get('delegation'):
@@ -195,14 +218,37 @@ class Bridge:
             elif name == 'l1_approve':
                 approve_l1(c, arguments['kind'], arguments['l1_session_id'], self.workers)
             elif name == 'l1_revise':
+                # Pure preflight before writing staged inputs or changing the controller baseline.
+                if c.state['state'] not in ('PLAN_PENDING', 'DECISION_PENDING') or c.state['active_run'] or c.state.get('report'):
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'reason': 'Revision requires a paused baseline with no unresolved process or final report'}
+                from .delegation import check_binding
+                delegation = check_binding(c.state)
+                clarifications.check_remaining_time(self.root, delegation)
+                if not c.state.get('pending_clarification_revision') and c.state['revision_count'] >= delegation['limits']['revisions']:
+                    c.stop_with_report('L1 revision budget exhausted')
+                    return self.status()
+                try:
+                    try:
+                        proposal = json.loads(arguments['plan_json'])
+                    except ValueError as exc:
+                        raise planning.PlanRejected(str(exc), code='PLAN_JSON') from exc
+                    planning.validate_proposal(proposal, delegation, c.state['implementation_attempts'])
+                except planning.PlanRejected as exc:
+                    planning.record_rejection(self.root, name, exc)
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'next': 'Correct the proposal and call l1_revise again; no baseline or revision counter changed'}
                 # Never overwrite an approved file in place, even if staging fails.
                 revisions = self.root / 'revisions'
                 revisions.mkdir(exist_ok=True)
                 tag = str(time.time_ns())
                 requirements, plan = revisions / (tag + '.md'), revisions / (tag + '.json')
                 requirements.write_text(arguments['requirements'], encoding='utf-8', newline='\n')
-                atomic_json(plan, json.loads(arguments['plan_json']))
+                atomic_json(plan, proposal)
                 c.revise(requirements, plan)
+                atomic_json(planning_path, {'status': 'PLAN_READY', 'facts_sha256': clarifications.signature(self.root),
+                    'plan_sha256': digest(proposal), 'requirements_sha256': digest(arguments['requirements']),
+                    'requires_revision': False})
             elif name == 'dot_run':
                 if c.state['state'] not in ('EXECUTING', 'VERIFYING'):
                     raise ValueError('Only approved work can run')

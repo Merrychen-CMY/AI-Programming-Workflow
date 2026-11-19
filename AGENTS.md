@@ -31,3 +31,5 @@ L1与DOT沟通必须遵循[合作沟通约束](docs/guides/l1-dot-communication.
 L1与用户沟通另须遵循[L1表达约束](docs/guides/l1-user-expression.md)：结论优先、减少套话、保留必要异议、事实不随措辞改变、分层呈现。仅选择性采用上游写作思想；不得加载整套论文说服规则，不得换验收口径、隐去失败/未知或改写原始证据。
 
 事实补充按[同任务澄清指南](docs/guides/clarifications.md)：l1_add_facts追加来源和阶段，消耗原修订预算；NEEDS_INFO不等于UNKNOWN或最终失败。新事实必须绑定到独立审查和新批准，旧记录、已用消耗和授权不得重置。
+
+完整草案的纯校验拒绝按[计划拒绝指南](docs/guides/plan-rejections.md)进入PLAN_REJECTED，不当作中断或立即结案。tasks只列L3实现派工；实现预算是整个任务初次实现和修复的累计次数。保留全部独立验证要求，修正草案后重新审核，不能提高预算或清除真实UNKNOWN。

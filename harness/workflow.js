@@ -22,6 +22,7 @@ export function startupSummary(draft, settings, inspection, digest) {
     + Object.entries(labels).map(([key,label])=>`${label}：${draft.topics[key]}`).join('\n\n')
     + `\n\n原始信息与澄清记录：\n${draft.raw_input}\n\n不可降低的约束：\n${draft.hard_constraints.join('\n')}\n允许修改路径：${JSON.stringify(draft.allowed_paths)}\n`
     + `到期时间：${draft.expires_at}\n执行预算（次数、秒数和输出 token 上限）：\n${JSON.stringify(draft.limits,null,2)}\n环境检查：\n${JSON.stringify(inspection.checks,null,2)}\n${inspection.limits}\n\n`
+    + '预算含义：implementation_attempts 是整个任务累计的 L3 实现派工次数，包含初次实现和修复，不是每个子任务的重试次数。计划 tasks 只列实现派工；构建、Doxygen、独立测试和审核仍须完整安排在验证部分。规划调用消耗 API/时间预算，不消耗实现次数。\n\n'
     + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。超出范围、预算耗尽或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
 }
 
@@ -164,7 +165,8 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
         }
         return result;
       } catch (error) {
-        // Deliberately retain UNKNOWN even for a reported error; no silent replay.
+        // Only complete normal results (including COMPLETED_REJECTED) clear the marker.
+        // Exceptions may follow transport, writes or worker side effects; retain UNKNOWN.
         throw error;
       }
     } finally { busy.delete(session); }

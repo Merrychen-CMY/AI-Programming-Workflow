@@ -142,6 +142,26 @@ test('unknown transport failure still blocks facts and repeated planning',async 
   await assert.rejects(f.flow.invoke('dot_plan',{requirements:'new requirements'},f.exec),/UNKNOWN/);
   assert.equal(f.calls.length,count);
 });
+test('known plan rejection clears only this call marker and permits correction',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  f.controls.bridgeReply={state:'PLAN_REJECTED',accepted:false,operation_status:'COMPLETED_REJECTED'};
+  for(const [name,args] of [['dot_plan',{requirements:'all phases'}],['l1_revise',{requirements:'all phases',plan_json:'{}'}]]) {
+    const result=await f.flow.invoke(name,args,f.exec);
+    assert.equal(result.operation_status,'COMPLETED_REJECTED');
+    await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+  }
+  f.controls.bridgeReply={plan:{fixture:true}};
+  await f.flow.invoke('dot_plan',{requirements:'all phases retained; correct allocation'},f.exec);
+  assert.equal(f.calls.length,3);assert.equal(f.questions.length,0);
+});
+test('known rejection cannot clear a marker left by an earlier unknown operation',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await writeFile(resolve(f.task,'interrupted.json'),'prior unknown');
+  f.controls.bridgeReply={accepted:false,operation_status:'COMPLETED_REJECTED'};
+  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'x'},f.exec),/UNKNOWN/);
+  assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),'prior unknown');
+  assert.equal(f.calls.length,0);
+});
 test('credential provider errors do not expose provider details',async t=>{
   const f=await fixture(t);f.ctx.credentials.resolve=async()=>{throw new Error(secret);};
   await assert.rejects(f.flow.invoke('workflow_inspect',{draft_json:JSON.stringify(f.draft)},f.exec),error=>!error.message.includes(secret));

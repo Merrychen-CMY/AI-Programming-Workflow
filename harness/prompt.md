@@ -17,3 +17,5 @@
 长任务可能被宿主取消。取消只能记为 UNKNOWN，不证明所有子进程已停止。workflow_status 可读状态；禁止自动重放中断操作。先核实旧进程/证据，否则提交停止报告。配置与工作记录位于用户目录下 .ai-programming-workflow，不能作为产品输入。不要将 API 密钥带给 Codex、测试或审核工作会话。
 
 遵循 AGENTS.md 和 L1.md。按需用 workflow_reference 读取 INDEX.json、DOT.md、编码规范及模板，采用格赖斯沟通原则和 L1-EXPR-01～05。嵌入式 C 以华为为先，保留 Doxygen 和通用约束；这些规则不能因为插件化而弱化。
+
+规划校验返回PLAN_REJECTED/COMPLETED_REJECTED是已完成的拒绝，不调用l1_stop把它升级成最终失败。读取planning.reason/details，保留全部需求，修正tasks与verification的分配后再次dot_plan。tasks仅为L3派工；implementation_attempts是全任务初次实现和修复的累计上限，不是每项各有同样次数。初始化前不能用l1_revise替代dot_plan；初始化后的有效修订才重新批准。旧UNKNOWN标记和最终报告不自动清除。详见docs/guides/plan-rejections.md。

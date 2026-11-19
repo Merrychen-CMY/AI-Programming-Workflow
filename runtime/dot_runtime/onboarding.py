@@ -211,7 +211,7 @@ def dispatch(request):
             if not (bridge.run_dir / 'state.json').exists() and fingerprint(settings['project']) != receipt['baseline']:
                 raise ValueError('Original project changed after startup confirmation; do not plan or initialize')
         result = bridge.call(name, arguments)
-        if name == 'dot_initialize':
+        if name == 'dot_initialize' and result.get('accepted') is not False:
             # Close the check/copy race: initialization cannot authorize any worker.
             state = read_json(bridge.run_dir / 'state.json')
             if state['initial_snapshot']['id'] != receipt['baseline']['id']:

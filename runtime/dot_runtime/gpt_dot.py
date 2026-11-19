@@ -13,11 +13,12 @@ import urllib.request
 import uuid
 
 from .adapter import RESULT_SCHEMA, ROOT_CAUSES, _valid_report
-from .controller import atomic_json, read_json, digest, validate_plan
-from .delegation import validate_delegation, check_plan_bounds
+from .controller import atomic_json, read_json, digest
+from .delegation import validate_delegation
 from .project_constraints import prompt as constraints_prompt
 from .communication import prompt as communication_prompt
 from .clarifications import PlanningNeedsInfo, STAGES
+from .planning import PlanRejected, validate_proposal
 
 
 def function(name, properties):
@@ -66,6 +67,8 @@ class ResponsesClient:
             'started_at': time.time(), 'attempts': []}
         if ledger['delegation_sha256'] != digest(self.delegation) or ledger['model'] != self.model:
             raise ValueError('Cannot change model/delegation or reset API accounting in an existing session')
+        if any(attempt['status'] != 'COMPLETED' for attempt in ledger['attempts']):
+            raise ValueError('Prior API attempt is unresolved; reconcile before any new request')
         limits = self.delegation['limits']
         elapsed = time.time() - ledger['started_at']
         if elapsed >= limits['wall_time_seconds'] or len(ledger['attempts']) >= limits['api_calls']:
@@ -105,9 +108,18 @@ def one_call(response, names):
     return calls[0], arguments
 
 
-def propose_plan(client, requirements, example, context):
+def propose_plan(client, requirements, example, context, implementation_used=0):
     response = client.request('Draft an execution plan JSON for L1 review, not approval. '
         'Use the supplied schema/example shape, replace all placeholders, preserve independent tests/review. '
+        'tasks is ONLY the list of L3 implementation dispatches, each with role=implementation. '
+        'implementation_attempts is a GLOBAL dispatch cap including initial implementation and repairs, '
+        'not a per-task limit and not the number of workflow phases. Used dispatches: ' + str(implementation_used) + '. '
+        'Read/understand code and implement its documentation within relevant implementation assignments. '
+        'Put independent build/test/HIL steps in verification.test_instructions and the supported test_command; '
+        'Doxygen generation uses verification.doxygen; independent code/standards review uses review_instructions '
+        'and existing compliance gates. Do not create extra L3 tasks just to label these verification stages. '
+        'Preserve all required work and evidence; do not remove AC, hide work, raise caps or claim unavailable '
+        'hardware checks ran. If genuinely independent L3 units exceed remaining dispatches, explain infeasibility. '
         'Use exact known commands/tool paths from environment context. If facts needed for planning are missing, '
         'call request_clarification with concrete gaps; do not call stop merely because facts can be clarified. '
         'Distinguish planning prerequisites from later build/test/documentation prerequisites. A serial port '
@@ -129,7 +141,10 @@ def propose_plan(client, requirements, example, context):
                                       'stage': {'type': 'string', 'enum': list(STAGES)}},
                        'required': ['name', 'reason', 'stage']}}}),
                function('stop', {'reason': {'type': 'string'}})])
-    call, arguments = one_call(response, {'propose_plan', 'stop', 'request_clarification'})
+    try:
+        call, arguments = one_call(response, {'propose_plan', 'stop', 'request_clarification'})
+    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        raise PlanRejected(str(exc), code='PLAN_RESPONSE_FORMAT', response_id=response['id']) from exc
     if call['name'] == 'request_clarification':
         gaps = arguments.get('gaps')
         if (set(arguments) != {'reason', 'gaps'} or not isinstance(arguments['reason'], str)
@@ -137,13 +152,21 @@ def propose_plan(client, requirements, example, context):
                 or any(not isinstance(g, dict) or set(g) != {'name', 'reason', 'stage'}
                        or any(not isinstance(v, str) or not v.strip() for v in g.values())
                        or g['stage'] not in STAGES for g in gaps)):
-            raise ValueError('Malformed clarification response')
+            raise PlanRejected('Malformed clarification response', code='PLAN_RESPONSE_FORMAT', response_id=response['id'])
         raise PlanningNeedsInfo(arguments['reason'], gaps, response['id'])
     if call['name'] == 'stop':
         raise ValueError('DOT planning blocked: ' + arguments.get('reason', 'missing facts'))
-    plan = json.loads(arguments['plan_json'])
-    validate_plan(plan)
-    check_plan_bounds(plan, client.delegation)
+    try:
+        if set(arguments) != {'plan_json'} or not isinstance(arguments['plan_json'], str):
+            raise ValueError('propose_plan requires exactly one plan_json string')
+        plan = json.loads(arguments['plan_json'])
+    except (ValueError, TypeError, KeyError) as exc:
+        raise PlanRejected(str(exc), code='PLAN_JSON', response_id=response['id']) from exc
+    try:
+        validate_proposal(plan, client.delegation, implementation_used)
+    except PlanRejected as exc:
+        exc.response_id = response['id']
+        raise
     return plan
 
 

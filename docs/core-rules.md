@@ -19,3 +19,5 @@
 原生插件的[开工策略](../policy/onboarding.json)要求一次集中确认：配置/环境检查及九项需求完整后，由真实用户确认准确摘要；之后继续既有L1代理审批。新引导状态不代替运行状态、预算或候选规则。
 
 规划子状态NEEDS_INFO允许在同一任务内补齐事实；UNKNOWN保留禁止重放，最终报告不自动重开。原开工记录与授权不变，l1_add_facts追加可审查版本并扣原修订预算，需求/计划新基线经独立审查和L1批准才可执行。见[澄清指南](guides/clarifications.md)。
+
+完整返回的草案纯校验拒绝使用PLAN_REJECTED/COMPLETED_REJECTED，仅清除当前已完成操作的在途标记。实现次数是全任务L3派工累计上限，初次与修复共同计数；独立验证保持独立。机器约束见[规划策略](../policy/planning.json)，恢复边界见[计划拒绝指南](guides/plan-rejections.md)。

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.2.1",
+  "policy_version": "3.2.2",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -155,6 +155,7 @@
   ],
   "communication_policy": "policy/communication.json",
   "onboarding_policy": "policy/onboarding.json",
+  "planning_policy": "policy/planning.json",
   "clarification_policy": {
     "state": "NEEDS_INFO",
     "append_tool": "l1_add_facts",

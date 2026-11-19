@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "rejected_state": "PLAN_REJECTED",
+  "completed_rejection_clears_only_current_inflight": true,
+  "unknown_replay_allowed": false,
+  "implementation_budget_unit": "global_L3_dispatches_including_initial_and_repairs",
+  "verification_phases_are_implementation_tasks": false,
+  "rejection_resets_counters": false,
+  "replanning_consumes": ["api_calls", "wall_time"],
+  "independent_review_required": true,
+  "legacy_locked_task_auto_migration": false,
+  "guide": "docs/guides/plan-rejections.md"
+}

@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.2.1",
+  "workflow_version": "3.2.2",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
   "branding_guide": "docs/guides/branding.md",
+  "planning_policy": "policy/planning.json",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -13,6 +14,7 @@
   "role_reading": {
     "L1": [
       "L1.md",
+      "docs/guides/plan-rejections.md",
       "templates/requirements.md",
       "docs/guides/l1-harness.md",
       "templates/l1-delegation.example.json",
@@ -32,6 +34,7 @@
     ],
     "L2": [
       "roles/orchestrator-l2.md",
+      "docs/guides/plan-rejections.md",
       "docs/reference/06-l2-orchestration.md",
       "docs/reference/13-state-machine.md",
       "docs/reference/14-adapters.md",
@@ -64,6 +67,7 @@
     ],
     "DOT": [
       "DOT.md",
+      "docs/guides/plan-rejections.md",
       "policy/simple-flow.json",
       "templates/execution-plan.md",
       "templates/final-report.md",
@@ -72,6 +76,10 @@
     ]
   },
   "event_reading": {
+    "plan_rejected": [
+      "policy/planning.json",
+      "docs/guides/plan-rejections.md"
+    ],
     "l4_failure": [
       "policy/l4-failures.json",
       "docs/guides/handle-issue.md"
@@ -329,7 +337,7 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.2.1-validation.md",
+    "validation_record": "docs/reports/3.2.2-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false,

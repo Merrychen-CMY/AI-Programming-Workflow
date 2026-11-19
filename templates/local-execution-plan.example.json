@@ -14,7 +14,8 @@
   "tasks": [
     {
       "id": "implement",
-      "instruction": "按已批准需求实现最小可验收改动。填写实际任务、范围和交付物后提交审核。",
+      "role": "implementation",
+      "instruction": "L3派工：读取相关代码，按已批准需求实现改动及Doxygen注释，保留全部范围和交付物。tasks只列实现任务；独立构建、测试、Doxygen生成及审核使用verification，不作为额外L3派工。",
       "depends_on": []
     }
   ],

@@ -19,6 +19,7 @@ from .snapshot import snapshot_project, verify_snapshot
 from .checks import run_check
 from .documentation import CHECKER as DOXYGEN_CHECKER, REFERENCE as DOXYGEN_REFERENCE
 from .documentation import validate_settings as validate_doxygen_settings, validate_report as validate_doxygen_report
+from .planning import PlanRejected
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / 'standards/embedded-c/v1.3/huawei/coverage.json'
@@ -93,6 +94,9 @@ def ordered_tasks(plan):
             raise ValueError('Invalid task ID')
         if task['id'] in by_id or not str(task.get('instruction', '')).strip():
             raise ValueError('Duplicate task or missing instruction')
+        if task.get('role', 'implementation') != 'implementation':
+            raise PlanRejected('tasks contains only L3 implementation dispatches; put independent checks in verification',
+                               code='TASK_ROLE', details={'task_id': task['id']})
         deps = task.get('depends_on')
         if not isinstance(deps, list) or any(not isinstance(d, str) for d in deps):
             raise ValueError('Each task needs a depends_on list')
@@ -107,6 +111,8 @@ def ordered_tasks(plan):
 
 
 def validate_plan(plan):
+    if not isinstance(plan, dict):
+        raise ValueError('Execution plan must be an object')
     tasks = ordered_tasks(plan)
     if plan.get('schema_version') != 1:
         raise ValueError('Unsupported execution plan version')
@@ -143,7 +149,11 @@ def validate_plan(plan):
         if type(budgets.get(field)) is not int or budgets[field] < minimum:
             raise ValueError('Invalid budget ' + field)
     if budgets['implementation_attempts'] < len(tasks):
-        raise ValueError('Implementation budget must cover all initial task dispatches')
+        raise PlanRejected('Implementation budget must cover all initial task dispatches; '
+                           'tasks are L3 dispatches, not a checklist of implementation/test/review phases',
+                           code='IMPLEMENTATION_DISPATCH_BUDGET', details={
+                               'implementation_used': 0, 'initial_task_dispatches': len(tasks),
+                               'implementation_limit': budgets['implementation_attempts']})
     return tasks
 
 
@@ -362,9 +372,10 @@ class Controller:
                     raise ValueError('Revision input file does not exist')
             validate_plan(read_json(plan))
             if self.state.get('delegation'):
-                from .delegation import check_binding, check_plan_bounds
+                from .delegation import check_binding
                 delegation = check_binding(self.state)
-                check_plan_bounds(read_json(plan), delegation)
+                from .planning import validate_proposal
+                validate_proposal(read_json(plan), delegation, self.state['implementation_attempts'])
                 if self.state.get('report') and self.state['state'] == 'BLOCKED':
                     raise ValueError('Closed/rejected final report cannot auto-resume; start a newly assigned task')
                 prepaid = self.state.get('pending_clarification_revision', False)
@@ -615,8 +626,10 @@ class Controller:
                   'delegation': self.state.get('delegation'), 'l1_reviews': self.state.get('l1_reviews', [])}
         if self.state.get('clarification_root'):
             from .clarifications import records
+            from .planning import history
             record['fact_supplements'] = records(self.state['clarification_root'])
             record['revision_count'] = self.state.get('revision_count', 0)
+            record['planning_rejections'] = history(self.state['clarification_root'])
         archive = self.run_dir / 'reports'
         archive.mkdir(exist_ok=True)
         path = archive / (now().replace(':', '-') + '.json')

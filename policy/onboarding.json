@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.2.1",
+  "workflow_version": "3.2.2",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -37,7 +37,8 @@
     "DISCOVERY",
     "PREPARED",
     "START_CONFIRMED",
-    "NEEDS_INFO"
+    "NEEDS_INFO",
+    "PLAN_REJECTED"
   ],
   "invalidation": [
     "draft_change",
@@ -57,6 +58,7 @@
     "user_final_report_review"
   ],
   "setup_diagnostics": "allowlisted_code_stage_http_status_no_raw_errors",
+  "planning_policy": "policy/planning.json",
   "clarification_policy": {
     "state": "NEEDS_INFO",
     "append_tool": "l1_add_facts",

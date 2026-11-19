@@ -124,6 +124,22 @@ class OnboardingTests(unittest.TestCase):
         self.draft['environment_checks']=[{'name':'device','kind':'manual','path':'','required':True,'evidence':'User says device is connected'}]
         self.assertEqual(self.prepare()['inspection']['checks'][-1]['status'],'USER_ATTESTED')
 
+    def test_rejected_plan_then_initialize_returns_known_refusal_without_missing_state_error(self):
+        from dot_runtime.bridge import Bridge
+        from dot_runtime.gpt_dot import ResponsesClient
+        from test_plan_rejections import proposed, phase_tasks
+        from test_runtime_controller import FakeAdapter
+        self.confirm()
+        def factory(settings):
+            return Bridge(settings, workers=FakeAdapter(), client_factory=lambda m, p, d:
+                          ResponsesClient(m, p, d, send=lambda *_: proposed(phase_tasks())))
+        with patch.object(o, 'Bridge', side_effect=factory):
+            result = self.request('bridge', name='dot_plan', arguments={'requirements': 'all work required'})
+            self.assertEqual(result['operation_status'], 'COMPLETED_REJECTED')
+            result = self.request('bridge', name='dot_initialize', arguments={})
+            self.assertFalse(result['accepted'])
+            self.assertFalse((self.task/'control/run/state.json').exists())
+
     def test_tool_failure_blocks(self):
         with patch.object(o,'tool_check',return_value={'status':'FAIL'}):
             self.assertFalse(self.request('environment',settings=self.settings)['ready'])

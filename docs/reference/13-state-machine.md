@@ -33,3 +33,7 @@
 [返回阅读导航](../../START_HERE.md) · [核心规则](../core-rules.md)
 
 默认原生插件补充：规划缺资料使用NEEDS_INFO子状态，不直接终结任务。未初始化显示NEEDS_INFO；初始化后附在PLAN_PENDING/DECISION_PENDING。完整request_clarification回执允许L1追加事实后重新规划，预算和授权不重置；UNKNOWN、明确终止和最终报告保持原限制。状态及恢复入口见[同任务澄清指南](../guides/clarifications.md)。
+
+3.2.2补充：完整响应或本地修订写入前的纯校验拒绝进入PLAN_REJECTED，工具返回COMPLETED_REJECTED，仅清除本次调用的进行中标记。未初始化可dot_plan修正后初始化；已初始化可在允许状态l1_revise，通过后旧批准失效并重新独立审核。PLAN_REJECTED及待应用新草案阻止旧批准继续执行；不覆写实际执行阶段。API传输未完成、落盘失败、进程异常或旧UNKNOWN不属于可恢复拒绝。详见[计划拒绝指南](../guides/plan-rejections.md)。
+
+实现预算计量单位是整个任务的L3派工次数，初次任务与修复累计；修订时校验已用次数加新计划初始任务数。tasks不包含独立验证阶段，所有必需检查仍由L4/审核会话执行。草案拒绝不消耗实现次数，但已发API与原墙钟时间继续累计。
