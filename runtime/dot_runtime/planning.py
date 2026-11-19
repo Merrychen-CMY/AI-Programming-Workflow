@@ -19,6 +19,8 @@ def handoff(root, original, approval=None, state=None):
                 'request_sha256': request['sha256'], 'authority': payload['authority'],
                 'session': payload['session'], 'changes': request['proposal']['changes']})
     material = {'requirements_approval': approval,
+        'resource_authority': 'delegated_l1' if resources.l1_managed(original, root) else 'legacy_user_ceiling',
+        'l1_resource_adjustments': [entry for entry in journal['events'] if entry['record']['kind'] == 'l1_allocation'],
         'original_authorization_sha256': digest(original),
         'current_user_authority': resources.authority(original, root),
         'current_operating_limits': journal['current'],
@@ -30,6 +32,8 @@ def handoff(root, original, approval=None, state=None):
             'Controller-validated receipts. The current requirements approval binds the current facts; '
             'historical pending-review labels are not the current approval status. '
             'Approved native amendments supersede original values only for their explicit fields; '
+            'When resource_authority is delegated_l1, L1 resource adjustments also supersede historical numeric limits, '
+            'without requiring user approval. They cannot alter goals, AC, scope or explicit deadlines. '
             'old numeric limits in original prose remain history for those amended limits. '
             'Unamended goals, AC and permissions remain binding. Proposed or declined changes grant nothing. '
             'Do not request transcription of these existing receipts as new facts or a new review. '

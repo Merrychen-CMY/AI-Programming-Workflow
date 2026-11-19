@@ -25,6 +25,16 @@ def enabled(original, root):
     return isinstance(original, dict) and original.get('adaptive_limits') is True and root is not None
 
 
+def l1_managed(original, root):
+    """New-task delegation or an explicitly reviewed runtime migration, never a model assertion."""
+    if not enabled(original, root):
+        return False
+    if original.get('resource_authority') == 'delegated_l1':
+        return True
+    from .upgrades import records_for_control
+    return any(item.get('resource_authority') == 'delegated_l1' for item in records_for_control(root))
+
+
 def read(root, original):
     from .controller import digest, read_json
     path = Path(root) / 'resources.json'
@@ -81,7 +91,7 @@ def effective(original, root, *, require_allocation=True, enforce_time=True):
                            'Authorization deadline reached; request explicit user extension')
     if journal['current'] is None:
         if require_allocation:
-            raise BudgetReview('allocation', 0, 1, 0, ceiling, 'L1 must allocate operating limits within user ceilings')
+            raise BudgetReview('allocation', 0, 1, 0, ceiling, 'L1 must allocate finite operating limits under the recorded resource authority')
     else:
         value['limits'] = journal['current']
     return value
@@ -164,14 +174,16 @@ def adjust(root, original, proposal, actor, state=None):
     _text(proposal, ('reason', 'evidence', 'remaining_work', 'expected_benefit', 'strategy'))
     _numbers(proposal['limits'])
     journal = read(root, original)
-    if journal['pending']:
+    previous_request = journal['pending']
+    if previous_request and not (l1_managed(original, root)
+                                 and set(previous_request['proposal']['changes']) == {'limits'}):
         raise ValueError('Resolve the pending human authorization before allocating resources')
     maximum = authority(original, root)
     if datetime.fromisoformat(maximum['expires_at']).timestamp() <= time.time():
         raise ValueError('User deadline extension is required before allocating resources')
     observed = usage(root, state)
     for key, amount in proposal['limits'].items():
-        if amount > maximum['limits'][key]:
+        if amount > maximum['limits'][key] and not l1_managed(original, root):
             raise ValueError('Allocation exceeds user ceiling: ' + key)
         if amount < observed.get(key, 0):
             raise ValueError('Allocation is below actual cumulative usage: ' + key)
@@ -179,8 +191,15 @@ def adjust(root, original, proposal, actor, state=None):
     if paused and paused['key'] in LIMITS and proposal['limits'][paused['key']] < paused['used'] + paused['requested']:
         raise ValueError('Proposed allocation does not resolve the recorded budget checkpoint')
     before = journal['current']
-    journal['current'], journal['pause'] = copy.deepcopy(proposal['limits']), None
-    save(root, journal, 'l1_allocation', {'actor': actor, 'before': before, 'after': proposal,
+    if l1_managed(original, root):
+        # Limits remain finite, but L1 owns their approval. Original inputs and actual usage are immutable.
+        journal['amendments']['limits'] = {key: max(maximum['limits'][key], amount)
+                                          for key, amount in proposal['limits'].items()}
+    journal['current'], journal['pause'], journal['pending'] = copy.deepcopy(proposal['limits']), None, None
+    save(root, journal, 'l1_allocation', {'actor': actor, 'authority': 'delegated_l1',
+                                       'before': before, 'before_ceiling': maximum['limits'],
+                                       'after_ceiling': journal['amendments'].get('limits', original['limits']), 'after': proposal,
+                                       'superseded_resource_request': previous_request,
                                        'observed_usage': observed})
     return {'accepted': True, 'limits': journal['current'], 'usage': observed}
 
@@ -196,6 +215,12 @@ def propose_authorization(root, original, proposal, actor, state=None):
     changes = proposal['changes']
     if not isinstance(changes, dict) or not changes or not set(changes) <= AMENDABLE:
         raise ValueError('Cannot rewrite history, clear UNKNOWN, change credentials or invent unsupported execution permissions')
+    if l1_managed(original, root) and 'limits' in changes:
+        if set(changes) != {'limits'}:
+            raise ValueError('Separate resource adjustment from scope/deadline authorization; use l1_adjust_limits for resources')
+        return adjust(root, original, {'limits': changes['limits'], 'reason': proposal['reason'],
+            'evidence': proposal['evidence'], 'remaining_work': proposal['remaining_work'],
+            'expected_benefit': proposal['expected_benefit'], 'strategy': proposal['resume_plan']}, actor, state)
     current = authority(original, root)
     new = copy.deepcopy(current)
     new.update(changes)
@@ -280,7 +305,8 @@ def report(root, original, state=None):
                 token_usage[key] += supplied[key]
         else:
             token_usage['unreported_requests'] += 1
-    return {'user_authority': authority(original, root), 'operating_limits': journal['current'],
+    return {'resource_authority': 'delegated_l1' if l1_managed(original, root) else 'legacy_user_ceiling',
+            'user_authority': authority(original, root), 'operating_limits': journal['current'],
             'actual_usage': usage(root, state), 'history': journal['events'],
             'dot_api_reported_usage': token_usage,
             'pending_authorization': journal['pending'], 'budget_review': journal['pause'],

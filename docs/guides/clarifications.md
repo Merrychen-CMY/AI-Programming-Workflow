@@ -6,7 +6,7 @@
 
 | 情况 | 处理 | 可否继续原任务 |
 | --- | --- | --- |
-| DOT完整返回缺失资料清单 | NEEDS_INFO，L1核实并补充 | 可以；保留全部次数、时间和原确认 |
+| DOT调查后提出需求补充建议或剩余决策 | NEEDS_INFO，L1依据调查证据完善并审核需求 | 可以；保留全部次数、时间和原确认 |
 | 完整草案的纯格式/计划校验拒绝（3.2.2起） | PLAN_REJECTED，L1/DOT读取诊断并修正 | 可以；只在原授权与剩余预算内重审，不改AC或扩大权限 |
 | 传输中断、进程或执行结果未知 | UNKNOWN，核实旧操作，不自动重放 | 本接口不能解除UNKNOWN |
 | 当前额度耗尽、授权需要调整（动态任务） | 按动态资源规则进入L1评估或原生用户授权 | 不能靠事实文本扩权；独立资源入口可受控调整 |
@@ -20,7 +20,7 @@ NEEDS_INFO是规划子状态：初始化前由status直接返回；初始化后�
 flowchart TD
  A[一次开工确认：固定原始授权] --> B[DOT规划]
  B -->|完整返回request_clarification| C[NEEDS_INFO：列明缺口和影响阶段]
- C --> D[L1查证或询问事实]
+ C --> D[DOT先调查并提交事实、修订建议与影响，L1审核]
  D --> E[l1_add_facts：追加来源与版本，扣原修订预算]
  E --> B
  B -->|有效计划| F[初始化或l1_revise]
@@ -35,7 +35,7 @@ flowchart TD
 ## L1的实际操作
 
 1. `dot_plan`返回NEEDS_INFO时，读取`planning.reason`、`planning.gaps`，保持原任务和目录；相同输入再次规划不会发送API请求。
-2. 查已有资料和工具证据；确需用户提供的事实可以询问，不把资料澄清变成新的开工审批。用户已提供的事实无需重复问。
+2. DOT先用request_investigation主动调查，提交已核实事实、证据引用、建议补充或修改的需求文字、理由、验收影响和剩余决策；不能只抛回问题。L1也可用dot_research继续委托调查。普通技术证据直接供规划使用；需要改变需求基线时，由L1整理修订并审核。只有无法自行获取且确需用户决定的事项才询问，用户已提供的事实无需重复问。
 3. 按[事实补充模板](../../templates/fact-supplement.example.json)准备`facts_json`，调用`l1_add_facts`。每项包含名称、实际值、具体来源和影响阶段。支持planning、build、test、documentation、delivery。模板由L1填写，用户无需操作JSON。
 4. 检查`accepted`；拒绝时修正输入或说明边界，不谎称已经记录。原始信息、delegation、开工回执及bridge设置不修改；新记录位于控制目录facts/，以摘要链和索引保留每一版。
 5. 新原生且尚未初始化的任务，先`l1_prepare_requirements`暂存更新需求，`l1_approve(requirements)`重新独立审查，再调用`dot_plan`，传入完整已批准需求。已初始化任务按修订流程处理。DOT同时收到原环境和全部事实补充，补充内容不得扩大授权或改换明确用户参数。
@@ -63,6 +63,6 @@ ESP-IDF版本若决定接口和构建方案，应在规划前核实；串口若�
 
 自动化覆盖同任务缺口→补充→规划→独立审查、原确认与累计时间不变、相同缺口不盲重试、过期/修订预算、篡改历史、伪造身份、旧计划失效、未结束进程、终态拒绝及UNKNOWN不重放。模型使用模拟响应，真实API及产品/HIL结果仍须另行验证。
 
-3.3.0将资源变更与事实补充分开：[动态资源管理](adaptive-resources.md)允许L1在用户上限内调整，并通过独立原生界面申请扩大总上限或延期。clarification_policy中的expiry_extension_allowed:false专指事实补充工具无权改期限，不禁止经过用户批准的独立授权版本。累计时间和事实历史都不重置。
+3.3.0将资源变更与事实补充分开：[动态资源管理](adaptive-resources.md)允许L1制定和调整资源，并由L1自行批准资源追加；改变用户明确截止时间仍走原生授权。clarification_policy中的expiry_extension_allowed:false专指事实补充工具无权改期限，不禁止经过用户批准的独立授权版本。累计时间和事实历史都不重置。
 
 3.6.0的[初始化恢复](initialization-recovery.md)是单独原生审核流程，仅接受无state.json的dot_initialize本地中断；l1_add_facts仍不能解除UNKNOWN。

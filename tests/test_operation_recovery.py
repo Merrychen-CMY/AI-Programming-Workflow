@@ -67,6 +67,21 @@ class OperationRecoveryTests(unittest.TestCase):
         preview = preview or self.request('operation_preview')
         return self.request('operation_commit', sha256=preview['sha256'])
 
+    def test_research_uncertainty_has_native_recovery_without_deleting_its_record(self):
+        from dot_runtime.research import active
+        folder = self.root / 'research' / 'fixture'
+        folder.mkdir(parents=True)
+        record = {'question':'Read the installed compiler version', 'result':{'status':'UNKNOWN'}, 'evidence_files':[]}
+        atomic_json(folder / 'record.json', {'record':record, 'sha256':digest(record)})
+        original = (folder / 'record.json').read_bytes()
+        self.assertEqual(len(active(self.root)),1)
+        self.prepare()
+        preview = self.request('operation_preview')
+        self.assertEqual(len(preview['binding']['research_active']),1)
+        self.commit(preview)
+        self.assertEqual(active(self.root),[])
+        self.assertEqual((folder / 'record.json').read_bytes(),original)
+
     def test_prepare_and_preview_never_clear_guard_or_replay(self):
         before = read_json(self.run / 'state.json')
         marker = (self.task / 'interrupted.json').read_bytes()

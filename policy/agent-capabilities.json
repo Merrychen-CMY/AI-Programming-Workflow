@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "guide": "docs/guides/agent-capabilities.md",
+  "layers": [
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5"
+  ],
+  "shared_capabilities": [
+    "web_search",
+    "web_fetch",
+    "file_read",
+    "file_edit",
+    "shell",
+    "environment_probe",
+    "evidence"
+  ],
+  "restrictions_by": "assignment_and_authorized_scope_not_role_tool_removal",
+  "codex_sandbox": "workspace-write",
+  "network_capability": true,
+  "planning_research_tool": "dot_research",
+  "dot_research_function": "request_investigation",
+  "research_counts_as_implementation": false,
+  "research_counts_as_requirement_revision": false,
+  "resource_increase_approver": "L1",
+  "resource_increase_requires_user_approval": false,
+  "unchanged_user_boundaries": [
+    "goals",
+    "hard_constraints",
+    "acceptance",
+    "operation_scope",
+    "explicit_final_deadline"
+  ],
+  "incomplete_requirements": {
+    "investigation_owner": "L2",
+    "handoff": [
+      "sourced_observations",
+      "proposed_requirement_wording",
+      "rationale",
+      "acceptance_and_verification_impact",
+      "remaining_decisions"
+    ],
+    "revision_and_approval_owner": "L1",
+    "questions_only_return_allowed": false
+  }
+}

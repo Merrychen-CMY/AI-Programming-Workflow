@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "authority": "delegated_l1",
+  "resource_authority": "delegated_l1",
   "source_message": "REPLACE_WITH_原始用户委托消息引用或原文",
   "raw_input_sha256": "REPLACE_WITH_SHA256",
   "expires_at": "REPLACE_WITH_ISO8601_TIMEZONE",

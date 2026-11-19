@@ -93,6 +93,16 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(self.run_adapter("implementation")["status"], "PASS")
         self.assertEqual(self.sessions[0]['sandbox'], 'workspace-write')
 
+    def test_roles_share_tools_and_network_but_research_keeps_assignment_duties(self):
+        for role in ('implementation', 'test', 'review', 'research'):
+            self.output = self.root / 'runs' / role
+            self.run_adapter(role)
+            command = self.invocations[-1][0]
+            self.assertIn('sandbox_workspace_write.network_access=true', command)
+            self.assertIn('web_search="live"', command)
+            self.assertEqual(self.sessions[-1]['sandbox'], 'workspace-write')
+        self.assertIn('Do not modify the product', self.inputs[-1])
+
     def test_independent_test_writes_only_artifacts_and_review_remains_read_only(self):
         self.workspace = self.root / 'verification' / 'artifacts'
         self.workspace.mkdir(parents=True)
@@ -102,7 +112,7 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(self.sessions[-1]['writable_roots'], [str(self.workspace)])
         self.output = self.root / 'runs' / 'review'
         self.run_adapter('review')
-        self.assertEqual(self.sessions[-1]['sandbox'], 'read-only')
+        self.assertEqual(self.sessions[-1]['sandbox'], 'workspace-write')
         self.assertEqual(self.sessions[-1]['writable_roots'], [])
 
     def test_zero_exit_without_session_is_not_pass(self):

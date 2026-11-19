@@ -72,7 +72,7 @@ class CompletedReviewTests(unittest.TestCase):
                                'requirements_approval': shared})
         self.assertEqual(alias_reply['requirements_approval']['review_count'], 1)
 
-    def test_current_approval_and_native_amendment_reach_dot_without_new_facts(self):
+    def test_current_approval_and_l1_resource_increase_reach_dot_without_new_facts(self):
         self.draft['limits']['revisions'] = 5
         self.draft['hard_constraints'].append('Original revision ceiling is 5')
         self.approved()
@@ -80,8 +80,7 @@ class CompletedReviewTests(unittest.TestCase):
         revisions = rr.revision_count(self.root)
         updated = {**self.draft['limits'], 'revisions': 8}
         self.tool('l1_request_authorization', proposal_json=json.dumps(amendment({'limits': updated})))
-        pending = self.request('authorization_preview')
-        self.request('authorization_decide', sha256=pending['sha256'], approved=True)
+        self.assertIsNone(resources.read(self.root, read_json(self.task / 'delegation.json'))['pending'])
         self.tool('l1_adjust_limits', proposal_json=json.dumps({**self.allocation, 'limits': updated}))
         # Previously returned NEEDS_INFO without the controller receipts. No
         # fabricated supplement is necessary to send the corrected packet once.
@@ -98,7 +97,8 @@ class CompletedReviewTests(unittest.TestCase):
             self.assertEqual(packet['requirements_approval']['review_number'], 1)
             self.assertEqual(packet['current_operating_limits']['revisions'], 8)
             self.assertEqual(packet['current_user_authority']['limits']['revisions'], 8)
-            self.assertEqual(packet['approved_authorization_amendments'][0]['request_sha256'], pending['sha256'])
+            self.assertEqual(packet['resource_authority'], 'delegated_l1')
+            self.assertEqual(packet['l1_resource_adjustments'][-1]['record']['payload']['after_ceiling']['revisions'], 8)
             self.assertIn('Original revision ceiling is 5', text)
             return call_response('request_clarification', {'reason': 'A genuine test-environment gap remains',
                 'gaps': [{'name': 'test device', 'reason': 'Need source evidence', 'stage': 'planning'}]})

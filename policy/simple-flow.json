@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.13.3",
+  "workflow_version": "3.14.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -30,7 +30,7 @@
   "direct_verifier_to_developer_dispatch": false,
   "product_or_ac_change_requires_user_decision": true,
   "plan_maintenance": {
-    "within_explicit_delegation": "L1_adjusts_operating_limits_within_user_ceilings_preserving_cumulative_usage",
+    "within_explicit_delegation": "L1_approves_resource_allocations_and_increases_preserving_cumulative_usage",
     "semantic_change": "L1_reapproves_within_current_user_authority_and_reruns_required_checks",
     "may_lower_acceptance_standard": false,
     "outside_delegation": "L1_requests_explicit_native_user_amendment_or_submits_final_report"
@@ -254,5 +254,6 @@
     "required_test_skip_passes": false,
     "independent_test_artifacts": "isolated_writable_copy_with_immutable_inputs",
     "facility_actions": "L2_selects_baseline_approved_actions_or_requests_L1_review"
-  }
+  },
+  "agent_capability_policy": "policy/agent-capabilities.json"
 }

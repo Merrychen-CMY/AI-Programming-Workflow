@@ -15,7 +15,7 @@ def read_record(root, name, offset):
                                 'run/triage-inputs/', 'run/decision-requests/', 'input-rejections/',
                                 'requirements-review/', 'run/preflight-requirements/', 'preflight-reports/',
                                 'operation-recovery-proposals/', 'user-stop-decisions/',
-                                'run/facility-evidence/'))
+                                'run/facility-evidence/', 'research/'))
     if (not allowed or '\\' in name or ':' in name or relative.is_absolute() or '..' in relative.parts
             or relative.suffix not in ('.json', '.md', '.txt', '.jsonl', '.log')
             or not offset.isascii() or not offset.isdecimal()):

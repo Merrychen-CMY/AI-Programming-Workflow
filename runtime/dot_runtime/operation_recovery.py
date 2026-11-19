@@ -376,7 +376,7 @@ def independent_process_check(task, settings):
                 'next': 'Obtain a complete OS process inventory and real process-tree/side-effect evidence; keep task paused'}
 
 
-def process_status(task, settings, state, marker, *, preflight_active=None):
+def process_status(task, settings, state, marker, *, preflight_active=None, research_active=None):
     """Require durable runtime process identity and complete tree reconciliation.
 
     A missing parent PID is insufficient: a detached child may still be alive.
@@ -384,7 +384,9 @@ def process_status(task, settings, state, marker, *, preflight_active=None):
     For the same boot, runtime-recorded tree termination and a dead PID are
     both required. Model-supplied PIDs/booleans are deliberately ignored.
     """
-    completed = completed_review_processes(task, settings, state, marker)
+    from .research import active as research_pending
+    investigations = research_active if research_active is not None else research_pending(task / 'control')
+    completed = completed_review_processes(task, settings, state, marker) if not investigations else None
     if completed is not None:
         return completed
     current_boot = boot_identity()
@@ -394,6 +396,7 @@ def process_status(task, settings, state, marker, *, preflight_active=None):
     preflight = preflight_active or _preflight_active(task)
     if preflight:
         activities.append(('preflight_requirements_review', preflight))
+    activities += [('research', item) for item in investigations]
     for name, activity in activities:
         record = activity.get('process')
         if not record and name == 'host' and (task / 'host-process.json').exists():
@@ -451,7 +454,8 @@ def _guard(task, receipt, session, *, finishing=False):
     # independent guard avoids deadlocking host recovery with API review.
     api_recovery.load(task / 'control')
     marker = read_json(task / 'interrupted.json') if (task / 'interrupted.json').exists() else None
-    if not finishing and not marker and not (state and (state.get('active_run') or state.get('analysis_activity'))) and not _preflight_active(task):
+    from .research import active as research_pending
+    if not finishing and not marker and not (state and (state.get('active_run') or state.get('analysis_activity'))) and not _preflight_active(task) and not research_pending(task / 'control'):
         raise ValueError('No interrupted operation to reconcile')
     if marker and marker.get('status') != 'UNKNOWN':
         raise ValueError('Unsupported host interruption record')
@@ -463,10 +467,12 @@ def _guard(task, receipt, session, *, finishing=False):
 
 def _binding(task, settings, state, marker):
     from .onboarding import fingerprint
+    from .research import active as research_pending
     return {'state_sha256': file_hash(task / 'control/run/state.json') if state is not None else None,
             'host_interruption': marker, 'active_run': state.get('active_run') if state else None,
             'analysis_activity': state.get('analysis_activity') if state else None,
             'preflight_requirements_review': _preflight_active(task),
+            'research_active': research_pending(task / 'control'),
             'project': fingerprint(settings['project']),
             'confirmation_sha256': file_hash(task / 'confirmation.json')}
 
@@ -629,7 +635,8 @@ def _finish(task, receipt, session):
         if host_check and host_check.get('record'):
             original_marker['process'] = host_check['record']
     observed = process_status(task, settings, original_state, original_marker,
-                              preflight_active=entry['binding'].get('preflight_requirements_review'))
+                              preflight_active=entry['binding'].get('preflight_requirements_review'),
+                              research_active=entry['binding'].get('research_active'))
     if observed['status'] not in ('STOPPED', 'REQUIRES_NATIVE_ATTESTATION'):
         raise ValueError('Old process state is active or unknown; keep recovery paused')
     actual, expected = _files(task), dict(intent['before_files'])

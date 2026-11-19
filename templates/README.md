@@ -14,4 +14,4 @@
 
 其他内部任务、交付及条款记录按需使用。所有模板保持DRAFT，占位文件不是执行或发布授权；不得让用户重复填写内部JSON和逐条清单。
 
-动态任务由L1填写[额度分配](resource-allocation.example.json)与必要时的[追加授权申请](authorization-request.example.json)。用户只确认目标、权限、资源总上限和截止时间，无需填写JSON；见[动态资源规则](../docs/guides/adaptive-resources.md)。模板值是待确认示例，不自动授权。
+动态任务由L1填写[额度分配](resource-allocation.example.json)与必要时的[追加授权申请](authorization-request.example.json)。用户确认目标、权限和明确截止时间；资源由L1管理，无需填写JSON；见[动态资源规则](../docs/guides/adaptive-resources.md)。模板值是待确认示例，不自动授权。

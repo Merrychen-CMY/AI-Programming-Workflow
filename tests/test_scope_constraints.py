@@ -1,5 +1,6 @@
 """Scope rules reach actual CLI/API inputs; model behavior itself is not certified."""
 import json
+import copy
 from pathlib import Path
 import sys
 import unittest
@@ -24,8 +25,10 @@ class WorkerScopeTests(unittest.TestCase):
     run_adapter = adapter_fixtures.AdapterTests.run_adapter
 
     def test_all_worker_roles_receive_scope_and_original_minimum_change_text(self):
+        original_report = copy.deepcopy(self.report)
         for role in adapter.ROLES:
             with self.subTest(role=role):
+                self.report = copy.deepcopy(original_report)
                 self.output = self.root / 'runs' / role
                 if role == 'review':
                     self.report['evidence'] = [{'kind': 'review', 'description': 'Read value.py',
@@ -52,7 +55,7 @@ class WorkerScopeTests(unittest.TestCase):
         self.assertIn('do not edit code, run builds or run tests', self.inputs[0])
         self.assertIn('Do not run tests merely because the reviewed plan lists them', self.inputs[0])
         self.assertNotIn('Run only the tests and commands authorized', self.inputs[0])
-        self.assertEqual(self.sessions[0]['sandbox'], 'read-only')
+        self.assertEqual(self.sessions[0]['sandbox'], 'workspace-write')
 
     def test_test_assignment_keeps_authorized_verification_without_extra_work(self):
         self.run_adapter('test')

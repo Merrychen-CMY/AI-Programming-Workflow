@@ -24,7 +24,7 @@ ROOT_CAUSES = (
     "delivery_target_or_authorization", "security", "needs_analysis", "mixed",
 )
 ROLES = {"implementation": "workspace-write", "test": "workspace-write",
-         "review": "read-only", "triage": "read-only"}
+         "review": "workspace-write", "triage": "workspace-write", "research": "workspace-write"}
 EVIDENCE_PROPERTIES = {
     "kind": {"type": "string", "enum": ["command", "review"]},
     "description": {"type": "string"}, "command": {"type": "string"},
@@ -252,7 +252,8 @@ class CodexAdapter:
             self.executable, "app-server", "--listen", "stdio://",
             "--config", 'approval_policy="never"',
             "--config", "sandbox_workspace_write.writable_roots=[]",
-            "--config", "sandbox_workspace_write.network_access=false",
+            "--config", "sandbox_workspace_write.network_access=true",
+            "--config", 'web_search="live"',
         ]
         metadata = {"stdout_path": str(stdout_path), "stderr_path": str(stderr_path),
                     "result_path": str(result_path), "command_events": [],

@@ -96,6 +96,11 @@ def evidence_records(value, root):
 
 L2_GUIDANCE = (
     'First reason about feasible solutions within existing authority from the available evidence. '
+    'Incomplete L1 requirements are shared problem-solving work, not a reason to send back only questions. '
+    'Proactively inspect sources, environment and relevant code, or delegate investigation. Return sourced '
+    'observations and concrete proposed requirement wording, rationale, acceptance/verification impact, '
+    'and only the decisions or permission gaps that remain for L1. Distinguish confirmed observations from '
+    'recommendations. L1 owns requirement revision and independent approval; do not silently change goals or AC. '
     'State observed facts, plausible causes, options considered, expected benefit, verification steps, '
     'required resources and exact permission gaps in structured solutions, investigation_steps, '
     'missing_information, permission_gaps and recommended_action fields. Implementations remain assigned to L3, '

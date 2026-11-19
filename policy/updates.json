@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "Merrychen-CMY/ReqPilot",
   "channel": "github_stable_releases",
-  "bootstrap_abi": 8,
+  "bootstrap_abi": 9,
   "default_enabled": true,
   "check_interval_seconds": 21600,
   "checks_on_tool_activity_only": true,

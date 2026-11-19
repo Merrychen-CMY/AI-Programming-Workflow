@@ -13,6 +13,7 @@ const exists = async path => { try { await readFile(path); return true; } catch(
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const save = (path, value) => writeFile(path, JSON.stringify(value, null, 2), { mode: 0o600 });
 const modelTools = {
+  dot_research: ['question'],
   l1_prepare_requirements: ['requirements'],
   dot_investigate: ['investigation_json'], l1_resume_decision: ['decision_json'],
   l1_prepare_recovery: ['proposal_json'],
@@ -29,12 +30,12 @@ const labels = { requirements: '需求目标', baseline: '现有基线', scope: 
 export function startupSummary(draft, settings, inspection, digest) {
   return `开工前集中确认\n项目：${draft.project}\nGPT/DOT 模型：${settings.model}\nPython：${settings.python}\nCodex：${settings.codex}\n工作流版本摘要：${settings.workflow_sha256}\n项目指纹：${inspection.baseline.id}\n摘要编号：${digest}\n\n`
     + Object.entries(labels).map(([key,label])=>`${label}：${draft.topics[key]}`).join('\n\n')
-    + `\n\n资源管理方式：${draft.adaptive_limits === true ? 'L1在用户总上限内自动分配和调整；越界须追加授权' : '旧版固定额度；本任务未启用动态管理'}\n`
+    + `\n\n资源管理方式：${draft.adaptive_limits === true ? '资源额度由L1制定、评估和批准追加，无需用户逐项审批' : '旧版固定额度；本任务未启用动态管理'}\n`
     + `\n\n原始信息与澄清记录：\n${draft.raw_input}\n\n不可降低的约束：\n${draft.hard_constraints.join('\n')}\n允许修改路径：${JSON.stringify(draft.allowed_paths)}\n`
     + `到期时间：${draft.expires_at}\n执行预算（次数、秒数和输出 token 上限）：\n${JSON.stringify(draft.limits,null,2)}\n环境检查：\n${JSON.stringify(inspection.checks,null,2)}\n${inspection.limits}\n\n`
-    + '上述资源值是本任务授权上限。启用动态管理时，细粒度执行额度由 L1 在这些上限内制定和调整，无需逐项向你审批；达到当前额度先由 L1 评估，超过上限或需要改变目标/权限/截止时间时再次向你申请。每次调整与累计消耗均进入最终报告，不清零历史。\n\n'
+    + '上述资源值是L1制定的初始额度。达到额度后由L1评估并自行批准增加次数、API输出、单次等待和总执行时长，无需用户审批资源追加。目标、验收标准、操作范围及用户明确的最终截止时间仍按原授权执行，变更这些事项须用户确认。每次调整与累计消耗均进入最终报告，不清零历史。\n\n'
     + 'implementation_attempts 是全任务初次实现和修复的累计 L3 派工次数；独立构建、Doxygen、测试和审核仍须完整安排。timeout_seconds同时约束单次API等待和工作会话；L1可在当前额度内调整API等待，仍受总时间及截止时间限制。API调用和时间另计，当前没有统一货币硬限额。\n\n'
-    + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。当前额度不足先由L1评估，超出授权须你明确批准；无可行方案或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
+    + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。当前资源额度不足由L1评估并批准追加；目标、验收和操作权限变更须你明确批准；无可行方案或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
 }
 
 export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(), '.ai-programming-workflow'),
@@ -256,6 +257,7 @@ export const toolFields = {
   ...Object.fromEntries(Object.entries(modelTools).map(([name,fields])=>[name,Object.fromEntries(fields.map(f=>[f,f]))])),
 };
 export const descriptions = {
+  dot_research: 'Collect sourced facts with Codex file, shell and web tools before planning or while paused. Do not modify products, build, test or flash. Technical observations do not consume requirements revisions.',
   workflow_confirm_stop: 'Pause new dispatch immediately and ask the real user whether to stop this task. Records bound native intent only; L1 must assess final closure. Preserves active operations and usage.',
   l1_prepare_requirements: 'Stage L1 requirements for independent review before DOT planning. No product dispatch.',
   dot_investigate: 'L2 continues bounded read-only investigation in DECISION_PENDING; supply question and evidence paths. Never clears interrupted operations.',
@@ -265,7 +267,7 @@ export const descriptions = {
   dot_read_record: 'Read a task record by control-relative path and decimal character offset (start with 0). Follow next_offset for full reviews/reports. No replay or API call.',
   l1_review_api: 'Assess API-only failures or set a bounded wait. Read templates/api-review.example.json. Never clears UNKNOWN or reopens final reports.',
   workflow_review_api_retry: 'Show exact API uncertainty, possible duplicate charges and L1 assessment; obtain a native user decision before a replacement request. No model-supplied approval.',
-  l1_adjust_limits: 'L1 allocates bounded resources with evidence, remaining work, benefit and strategy; no user impersonation or counter reset.',
+  l1_adjust_limits: 'L1 approves finite resource increases, including prior ceilings, with evidence, remaining work, benefit and strategy. No user approval is needed for resource-only changes; no counter reset.',
   l1_request_authorization: 'Stage exact requested changes for the user; this does not approve or execute them.',
   workflow_review_authorization: 'Show the exact pending amendment and obtain a real user decision. No model-supplied approval.',
   workflow_setup: 'Open local model/secret configuration UI. Never ask for a key in chat. No API call on opening.',

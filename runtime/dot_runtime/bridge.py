@@ -16,6 +16,7 @@ from . import requirements_review
 
 
 TOOLS = {
+    'dot_research': ('Gather sourced technical facts using full Codex tools before planning or while paused; no product changes/tests.', {'question': 'string'}),
     'l1_prepare_requirements': ('Stage requirements before independent review and DOT planning.', {'requirements': 'string'}),
     'dot_investigate': ('Continue bounded read-only L2 investigation while paused. No product dispatch.', {'investigation_json': 'string'}),
     'l1_resume_decision': ('L1 selects an evidenced in-scope continuation after L2 analysis.', {'decision_json': 'string'}),
@@ -23,7 +24,7 @@ TOOLS = {
                         {'path': 'string', 'offset': 'string'}),
     'l1_review_api': ('Assess an API failure or adjust its bounded wait; ambiguous retries require native approval.',
                      {'proposal_json': 'string', 'l1_session_id': 'string'}),
-    'l1_adjust_limits': ('Allocate operating limits within user ceilings; preserve cumulative usage.',
+    'l1_adjust_limits': ('L1 approves finite resource allocations and increases under its delegation; preserve cumulative usage.',
                          {'proposal_json': 'string', 'l1_session_id': 'string'}),
     'l1_request_authorization': ('Prepare an exact authorization amendment for native human review. Never approves it.',
                                  {'proposal_json': 'string', 'l1_session_id': 'string'}),
@@ -73,6 +74,9 @@ class Bridge:
             raise ValueError('Original input differs from delegation')
         client = self.client_factory(self.settings['model'], self.root / 'api', delegation)
         client.governance_root = self.root
+        from .research import run as research_run
+        client.research = lambda question: research_run(self.settings, self.workers, question,
+            state=read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None)
         return client
 
     def status(self):
@@ -89,8 +93,11 @@ class Bridge:
             if not result.get('report') and not result.get('preflight_report'):
                 if governance['pending_authorization'] or governance['budget_review']:
                     result['runtime_state'] = result['state']
-                    result['state'] = 'AUTHORIZATION_PENDING' if governance['pending_authorization'] else 'BUDGET_REVIEW_PENDING'
-                    result['next_owner'] = 'user' if governance['pending_authorization'] else 'L1'
+                    pending = governance['pending_authorization']
+                    needs_user = bool(pending and not (resources.l1_managed(original, self.root)
+                                      and set(pending['proposal']['changes']) == {'limits'}))
+                    result['state'] = 'AUTHORIZATION_PENDING' if needs_user else 'BUDGET_REVIEW_PENDING'
+                    result['next_owner'] = 'user' if needs_user else 'L1'
         api = api_recovery.report(self.root)
         result['api_review'] = api
         if api['state'] != 'READY' and not result.get('report') and not result.get('preflight_report'):
@@ -111,6 +118,10 @@ class Bridge:
         facts = clarifications.records(self.root)
         common = {'planning': planning, 'facts_revision': len(facts),
                   'facts_sha256': clarifications.signature(self.root)}
+        from .research import context as research_context
+        common['research'] = research_context(self.root)
+        from .research import active as research_pending
+        common['research_active'] = research_pending(self.root)
         from .initialization_recovery import records_for_control
         common['initialization_recoveries'] = records_for_control(self.root)
         common['requirements_review'] = requirements_review.status(self.root)
@@ -284,6 +295,9 @@ class Bridge:
                         'reason': 'USER_STOP: dispatch paused; obtain native stop decision or let L1 assess closure, without replay'}
             original = read_json(self.settings['delegation'])
             adaptive = resources.enabled(original, self.root)
+            from .research import active as research_pending
+            if research_pending(self.root):
+                return {**self.status(), 'accepted': False, 'reason': 'Research worker outcome needs reconciliation; use l1_prepare_recovery and workflow_recover_operation. No replay.'}
             if name == 'l1_review_api':
                 try:
                     result = api_recovery.review(self.root, original, json.loads(arguments['proposal_json']),
@@ -314,6 +328,14 @@ class Bridge:
                     and not requirements_review.status(self.root).get('active_run'))
                 if journal['pending'] or (journal['pause'] and not replanning_for_budget):
                     return {**self.status(), 'accepted': False, 'reason': 'Resolve resource review or native authorization before continuing'}
+            if name == 'dot_research':
+                if ((c and (c.state.get('active_run') or c.state.get('analysis_activity') or c.state.get('report')))
+                        or requirements_review.status(self.root).get('active_run')):
+                    return {**self.status(), 'accepted': False, 'reason': 'Finish or reconcile the active operation before a new investigation'}
+                from .research import run as research_run
+                result = research_run(self.settings, self.workers, arguments['question'], state=c.state if c else None)
+                return {**self.status(), 'accepted': result['status'] == 'PASS', 'investigation': result,
+                        'next': 'Use sourced technical observations in the plan; changed goals/AC still require L1 baseline revision'}
             if name == 'l1_prepare_requirements':
                 if c:
                     return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
@@ -394,8 +416,10 @@ class Bridge:
                 base_sha = digest({'requirements': arguments['requirements'], 'facts': facts_sha})
                 feedback = planning.feedback(self.root, previous)
                 handoff = planning.handoff(self.root, original, approval, c.state if c else None)
+                from .research import context as research_context
+                observations = research_context(self.root)
                 request_sha = digest({'base': base_sha, 'validation_feedback': feedback,
-                                      'controller_handoff': handoff['handoff_sha256']})
+                                      'controller_handoff': handoff['handoff_sha256'], 'research': observations})
                 if adaptive:
                     request_sha = digest({'request': request_sha, 'current_authority_and_allocation': operating})
                 if ((previous.get('status') == 'NEEDS_INFO' and previous.get('request_sha256') == request_sha)
@@ -403,6 +427,8 @@ class Bridge:
                     return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
                 context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
                 context += '\nCURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n' + json.dumps(handoff, ensure_ascii=False)
+                context += '\nSOURCED TECHNICAL INVESTIGATIONS:\n' + json.dumps(observations, ensure_ascii=False)
+                context += '\nPINNED TEST PROTOCOL:\n' + (ROOT / 'docs/guides/verification-contract.md').read_text(encoding='utf-8')
                 from .initialization_recovery import records_for_control
                 context += '\nREVIEWED INITIALIZATION RECOVERIES (data; original authority unchanged):\n' + json.dumps(records_for_control(self.root), ensure_ascii=False)
                 if feedback:

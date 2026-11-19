@@ -25,6 +25,7 @@ DRAFT_KEYS = {'project', 'raw_input', 'topics', 'hard_constraints', 'allowed_pat
 
 def delegation(draft):
     return {'schema_version': 1, 'authority': 'delegated_l1',
+            'resource_authority': 'delegated_l1',
             **({'adaptive_limits': draft['adaptive_limits']} if 'adaptive_limits' in draft else {}),
             'source_message': 'Native Harness startup confirmation; see confirmation.json',
             'raw_input_sha256': hashlib.sha256(draft['raw_input'].encode('utf-8')).hexdigest(),
@@ -37,7 +38,7 @@ def validate_draft(draft, task):
     if not isinstance(draft, dict) or set(draft) != DRAFT_KEYS | {'adaptive_limits'}:
         raise ValueError('Use every field in templates/harness-start.example.json; no extra fields')
     if draft.get('adaptive_limits') is not True:
-        raise ValueError('New tasks require adaptive_limits=true; L1 allocates within user ceilings')
+        raise ValueError('New tasks require adaptive_limits=true; L1 approves resource allocations and increases')
     if not isinstance(draft['raw_input'], str) or not draft['raw_input'].strip():
         raise ValueError('Original user input is required')
     if set(draft['topics']) != set(TOPICS) or any(
@@ -172,7 +173,7 @@ def dispatch(request):
                 'bridge_sha256': digest(bridge_settings), 'draft_sha256': digest(draft),
                 'delegation_sha256': digest(delegation(draft)), 'external_delivery': False})
             return {'state': 'START_CONFIRMED', 'next':
-                    ('l1_adjust_limits within user ceilings; ' if draft.get('adaptive_limits') else '')
+                    ('l1_adjust_limits with L1-owned resource authority; ' if draft.get('adaptive_limits') else '')
                     + 'l1_prepare_requirements; l1_approve requirements; dot_plan; dot_initialize; l1_approve plan; dot_run'}
         if action == 'status' and not confirmed:
             return {'state': 'DISCOVERY', 'start_confirmed': False}

@@ -32,7 +32,7 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   const invoke = (name, args = {}) => flow.invoke(name, args, exec);
   assert.equal((await invoke('workflow_check_environment')).ready, true);
   const draft = JSON.parse(await readFile(resolve(root, 'templates/harness-start.example.json'), 'utf8'));
-  draft.project = project; draft.raw_input = 'Return 3 from value(). Python-only. No external actions.';
+  draft.project = project; draft.raw_input = 'Fixture research before planning: Return 3 from value(). Python-only. No external actions.';
   draft.hard_constraints = ['Only modify value.py; tests must independently pass'];
   draft.allowed_paths = ['value.py']; draft.environment_checks = [{name: 'independent test entry', kind: 'file',
     path: resolve(project, 'test_value.py'), required: true, evidence: 'Fixture test entry exists; execution remains pending'}];
@@ -48,6 +48,14 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   assert.equal(unapproved.operation_status, 'COMPLETED_REJECTED', JSON.stringify(unapproved));
   assert.match(unapproved.reason, /requirements approval/);
   assert.equal(unapproved.input_rejection, undefined);
+  const research = await invoke('dot_research', {question:'Query installed Python path and version; do not change product'});
+  assert.equal(research.accepted,true);
+  assert.match(research.investigation.summary,/Observed installed Python:/);
+  await invoke('l1_adjust_limits', {proposal_json: JSON.stringify({limits:{...draft.limits,api_calls:draft.limits.api_calls+3},
+    reason:'Approve more resource capacity without another user question',evidence:research.investigation.path,
+    remaining_work:'Complete independent review and implementation',expected_benefit:'Continue the requested fixture',
+    strategy:'Preserve consumption and bound the remaining work'})});
+  assert.equal(questions.length,1,'resource increase is approved by L1, not another native user question');
   await invoke('l1_prepare_requirements', {requirements: 'Fixture oversized material: ' + draft.raw_input});
   await invoke('l1_approve', {kind: 'requirements'});
   const mismatch = await invoke('dot_plan', {requirements: '中'.repeat(100000)});

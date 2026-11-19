@@ -118,11 +118,13 @@ def preview(task, receipt, session, source):
             or tuple(map(int, target['version'].split('.'))) <= tuple(map(int, source['version'].split('.')))):
         raise ValueError('No reviewed forward migration exists for this source and target')
     value = {'source': source, 'target': target, 'task_snapshot_sha256': _snapshot(task),
+             'resource_authority': 'delegated_l1',
              'state_sha256': digest(state), 'journal_sha256': digest(log),
              'original_confirmation_sha256': file_hash(task / 'confirmation.json'),
              'state': state['state'] if state else 'START_CONFIRMED',
              'baseline_revision': _baseline_revision(state),
-             'effect': 'Invalidate approvals/candidate; preserve completed tasks, all usage and evidence. '
+             'effect': 'L1 now approves resource increases without further user approval; original deadlines and scope remain binding. '
+                       'Invalidate approvals/candidate; preserve completed tasks, all usage and evidence. '
                        'L1 independent reapproval and full candidate reverification required. No product dispatch.'}
     return {**value, 'sha256': digest(value)}
 
@@ -172,7 +174,7 @@ def dispatch(task, receipt, request):
         before = read_json(task / STATE) if (task / STATE).exists() else None
         after = deepcopy(before)
         log, _ = journal(task, receipt)
-        entry = {k: plan[k] for k in ('source', 'target', 'task_snapshot_sha256', 'original_confirmation_sha256', 'effect', 'baseline_revision')}
+        entry = {k: plan[k] for k in ('source', 'target', 'task_snapshot_sha256', 'original_confirmation_sha256', 'effect', 'baseline_revision', 'resource_authority')}
         entry.update(sequence=len(log['records']) + 1, at=now(), authority='local_harness_user', session=request['session'],
                      previous_sha256=log['records'][-1]['sha256'] if log['records'] else None)
         entry['sha256'] = digest(entry)

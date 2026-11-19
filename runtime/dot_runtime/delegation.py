@@ -228,7 +228,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
                   'retain the original input as history. '
                   'If initialization-recoveries.json exists, check the explicitly adopted project baseline and '
                   'required replanning. Recovery does not expand goals, acceptance, permissions or resource ceilings. '
-                  'If current-resource-allocation.json exists, it is the enforced operating allocation within user ceilings; '
+                  'If current-resource-allocation.json exists, it is the enforced operating allocation, with resource increases governed by the recorded L1 delegation; '
                   'plan budget fields are a historical planning snapshot and do not override the current allocation. '
                   'Reject missing critical facts, unauthorized changed user hard constraints or weakened AC, '
                   'circular expected results, unsafe/external commands, unauthorized scope/budget expansion or '

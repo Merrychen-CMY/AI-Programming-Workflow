@@ -9,6 +9,13 @@ MINIMUM_CHANGE = (
 )
 
 COMMON = (
+    "All layers share file reading/editing, shell execution, web research and evidence capabilities. "
+    "Available tools are not task authorization: responsibilities, current assignment, approved scope "
+    "and independent acceptance govern actions, not artificial role-specific tool removal. "
+    "Use authorized web/file/environment investigation proactively before asking L1 or the user for facts. "
+    "Read-only diagnostics may query tool locations and versions; this is not a product build or test. "
+    "Record sources and actual results. Network capability does not expand authorized destinations.\n"
+    +
     MINIMUM_CHANGE + "\n"
     "Before acting, identify the requested outcome, allowed objects/paths, constraints that must "
     "remain true, and acceptance conditions from the request and approved baseline. If a path is "
@@ -25,6 +32,11 @@ COMMON = (
 )
 
 ROLE_RULES = {
+    "research": (
+        "Collect sourced facts and environment observations. This assignment is investigation, not "
+        "implementation or product verification. Do not modify the product, run builds/tests, install "
+        "dependencies or operate devices; use the research workspace for downloaded references."
+    ),
     "implementation": (
         "Implement only the assigned change within approved paths. Execute only verification "
         "explicitly authorized by the assignment or approved plan; do not add unrelated tests "

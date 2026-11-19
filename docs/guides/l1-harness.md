@@ -45,7 +45,7 @@ Harness加载的文档至少包含AGENTS.md、L1.md及本文；按需读取DOT.m
 
 | 工具 | L1应做什么 | 结果 |
 | --- | --- | --- |
-| `l1_adjust_limits` | 新动态任务先分配当前额度，之后可在用户上限内调整并记录理由 | 无API调用、无派工 |
+| `l1_adjust_limits` | 新动态任务先分配当前额度，之后可自行批准资源追加并记录理由 | 无API调用、无派工 |
 | `l1_request_authorization` | 提交具体授权变更，由原生workflow_review_authorization取得人类决定；MCP没有模型代签入口 | AUTHORIZATION_PENDING |
 | `l1_prepare_requirements` | 新原生任务暂存需求，再l1_approve(requirements)独立审查 | 通过后才允许首次DOT规划 |
 | `dot_plan` | 传已批准需求全文，GPT结合固定环境生成执行草案 | 缺口交L1；不批准、不执行 |

@@ -182,7 +182,7 @@ class Session:
             self.bind_thread((result.get('thread') or {}).get('id'))
             policy = {'type': 'readOnly', 'networkAccess': False}
             if self.sandbox == 'workspace-write':
-                policy = {'type': 'workspaceWrite', 'writableRoots': self.writable_roots, 'networkAccess': False}
+                policy = {'type': 'workspaceWrite', 'writableRoots': self.writable_roots, 'networkAccess': True}
             # Mark before writing: a broken pipe cannot prove that the turn was not sent.
             self.dispatched = True
             self.request('turn/start', {'threadId': self.thread_id,

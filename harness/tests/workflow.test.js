@@ -52,6 +52,16 @@ test('tool schema offers no human receipt, key or forged L1 session parameter',(
   for(const fields of Object.values(toolFields))for(const k of Object.keys(fields))assert.ok(!['key','confirmed','receipt','l1_session_id'].includes(k));
 });
 
+test('preplanning research dispatch uses the native task without asking the user or sending the API key',async t=>{
+  const f=await fixture(t);
+  await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await f.flow.invoke('dot_research',{question:'Find CMake path and read the authorized LED datasheet'},f.exec);
+  assert.equal(f.questions.length,0);
+  assert.equal(f.calls.at(-1).request.name,'dot_research');
+  assert.equal(f.calls.at(-1).options.key,undefined);
+  await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+});
+
 test('native final confirmation shows the exact verified Markdown link and digest',async t=>{
   const f=await fixture(t);
   await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));

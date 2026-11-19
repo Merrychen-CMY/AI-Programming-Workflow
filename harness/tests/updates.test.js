@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { createUpdates, decodeRuntime, download, verifyRuntime, CHECK_INTERVAL } from '../updates.js';
+import { createUpdates, decodeRuntime, download, verifyRuntime, CHECK_INTERVAL, BOOTSTRAP_ABI } from '../updates.js';
 import { createBootstrap, updateFields } from '../bootstrap.js';
 import { toolFields as actualFields } from '../workflow.js';
 import { saveConfig, keyDigest } from '../setup.js';
@@ -16,7 +16,7 @@ import { PassThrough } from 'node:stream';
 
 const sha = data => createHash('sha256').update(data).digest('hex');
 const fields = { workflow_status: {}, workflow_confirm_start: {}, dot_run: {} };
-function release(v = '3.4.1', modify = files => files, abi = 8) {
+function release(v = '3.4.1', modify = files => files, abi = BOOTSTRAP_ABI) {
   let files = {
     'package.json': JSON.stringify({ name: 'ai-programming-workflow', version: v, type: 'module', reqpilot: { bootstrap_abi: abi } }),
     'harness/workflow.js': `import {writeFile,mkdir,readFile} from 'node:fs/promises';
@@ -97,7 +97,7 @@ test('unknown legacy task cannot silently use installed or newest code', async t
   await assert.rejects(f.updates.forTask(f.task),/TASK_RUNTIME_MISSING/); assert.equal(f.calls.length,0);
 });
 
-for (const abi of [1, 2, 3, 4, 5, 6, 7]) test(`ABI8 bootstrap retains an already-confirmed ABI${abi} cache without migration`,async t=>{
+for (const abi of [1, 2, 3, 4, 5, 6, 7, 8]) test(`ABI9 bootstrap retains an already-confirmed ABI${abi} cache without migration`,async t=>{
   const f=await fixture(t);await f.updates.setEnabled(false);
   const old=release(abi === 7 ? '3.11.0' : '3.4.0',files=>files,abi), hash=old.metadata.manifest_sha256;
   await put(resolve(f.directory,'updates/runtimes',hash),old.files);
@@ -130,7 +130,7 @@ test('offline checks preserve selected code and redact raw diagnostics', async t
 });
 
 for (const [label, target] of [
-  ['major',release('4.0.0')], ['ABI',release('3.4.1', x=>x,9)],
+  ['major',release('4.0.0')], ['ABI',release('3.4.1', x=>x,BOOTSTRAP_ABI+1)],
   ['tool contract',release('3.4.1',x=>({...x,'harness/workflow.js':x['harness/workflow.js'].replace('workflow_status','new_tool')}))],
   ['import error',release('3.4.1',x=>({...x,'harness/workflow.js':'throw new Error("bad import");'}))],
 ]) test(`${label} update never becomes selected`,async t=>{
@@ -220,7 +220,7 @@ test('snapshot loader executes the actual Python status pipe without network or 
   await updates.setEnabled(false);
   const bootstrap=createBootstrap({root,directory,fields:actualFields,ctx:{},updates});t.after(()=>bootstrap.dispose());
   const result=await bootstrap.invoke('workflow_status',{}, {agent:{id:'真实管道只读会话'}});
-  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.13.3');
+  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.14.0');
   assert.equal(result.workflow_runtime.task_pinned,false);assert.equal(result.workflow_runtime.updates.enabled,false);
 });
 

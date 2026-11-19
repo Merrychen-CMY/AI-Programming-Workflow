@@ -6,7 +6,6 @@
   "user_confirms": [
     "goals_constraints_acceptance",
     "permissions",
-    "resource_ceilings",
     "final_deadline"
   ],
   "allocation_owner": "L1",
@@ -43,5 +42,8 @@
   "unified_monetary_hard_cap": false,
   "guide": "docs/guides/adaptive-resources.md",
   "new_native_task_required": true,
-  "legacy_mode": "preserve_existing_confirmations_and_receipts_only"
+  "legacy_mode": "preserve_existing_confirmations_and_receipts_only",
+  "resource_ceiling_owner": "L1",
+  "resource_increase_requires_user_approval": false,
+  "capability_policy": "policy/agent-capabilities.json"
 }

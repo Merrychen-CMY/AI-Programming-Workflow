@@ -32,6 +32,9 @@ def prepare(controller, workspace, original, root, number):
             if source.exists():
                 add(relative, read_json(source), str(source))
         add('api-status.json', api_recovery.report(root), 'controller reconciliation of API ledger and retry grants')
+        from .research import records as research_records
+        for item in research_records(root):
+            add(item['path'], item, str(root / item['path']))
         task = root.parent
         receipt_path, settings_path = task / 'confirmation.json', task / 'bridge.json'
         if receipt_path.exists() and settings_path.exists():

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.13.3",
+  "workflow_version": "3.14.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -35,7 +35,8 @@
       "docs/guides/flow-recovery.md",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/verification-contract.md"
+      "docs/guides/verification-contract.md",
+      "docs/guides/agent-capabilities.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -45,7 +46,8 @@
       "docs/reference/20-reflow.md",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/verification-contract.md"
+      "docs/guides/verification-contract.md",
+      "docs/guides/agent-capabilities.md"
     ],
     "L2": [
       "roles/orchestrator-l2.md",
@@ -61,7 +63,8 @@
       "docs/guides/flow-recovery.md",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/verification-contract.md"
+      "docs/guides/verification-contract.md",
+      "docs/guides/agent-capabilities.md"
     ],
     "L3": [
       "roles/implementer-l3.md",
@@ -70,7 +73,8 @@
       "docs/reference/08-software-evidence.md",
       "docs/reference/20-reflow.md",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/agent-capabilities.md"
     ],
     "L4": [
       "roles/verifier-l4.md",
@@ -81,7 +85,8 @@
       "docs/reference/20-reflow.md",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/verification-contract.md"
+      "docs/guides/verification-contract.md",
+      "docs/guides/agent-capabilities.md"
     ],
     "L5": [
       "roles/delivery-l5.md",
@@ -91,7 +96,8 @@
       "docs/guides/l1-dot-communication.md",
       "policy/communication.json",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/agent-capabilities.md"
     ],
     "DOT": [
       "DOT.md",
@@ -103,7 +109,8 @@
       "docs/guides/l1-dot-communication.md",
       "policy/communication.json",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/agent-capabilities.md"
     ]
   },
   "event_reading": {
@@ -410,5 +417,6 @@
   "input_material_policy": "policy/input-material.json",
   "closure_policy": "policy/closure.json",
   "flow_recovery_policy": "policy/flow-recovery.json",
-  "execution_scope_policy": "policy/execution-scope.json"
+  "execution_scope_policy": "policy/execution-scope.json",
+  "agent_capability_policy": "policy/agent-capabilities.json"
 }

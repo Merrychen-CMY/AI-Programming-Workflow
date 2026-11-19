@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sys
 import uuid
+import subprocess
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,11 @@ class Workers(fixtures.FakeAdapter):
         report = super().run(role, prompt, workspace, output_dir, timeout_seconds)
         if role == 'implementation':
             (workspace / 'value.py').write_text('def value():\n    return 3\n')
+        if role == 'research':
+            probe = subprocess.run([sys.executable, '--version'], capture_output=True, text=True, check=True)
+            report['summary'] = 'Observed installed Python: ' + sys.executable + '; ' + probe.stdout.strip()
+            report['evidence'] = [{'kind': 'command', 'description': 'Actual isolated environment query',
+                'command': sys.executable + ' --version', 'output': probe.stdout, 'exit_code': probe.returncode, 'test_count': 0}]
         report['session_id'] = uuid.uuid4().hex
         if 'source-index.json' in prompt:
             report['summary'] = 'Checked controller originals and approved fixture requirements'
@@ -49,6 +55,11 @@ def bridge(settings):
                 handoff = json.JSONDecoder().raw_decode(text.split(marker, 1)[1])[0]
                 if not handoff['requirements_approval'] or handoff['requirements_approval']['authority'] != 'delegated_l1':
                     raise ValueError('Fixture DOT did not receive a current requirements approval')
+                if 'Fixture research before planning' in text:
+                    if 'INVESTIGATION RESULT (source data' not in text:
+                        return delegated.call_response('request_investigation', {'question': 'Read actual Python path and version'})
+                    if 'Observed installed Python:' not in text:
+                        raise ValueError('Fixture DOT did not receive the actual investigation observation')
                 return delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})
             return delegated.call_response('run_approved_workflow')
         class FixtureClient(ResponsesClient):
