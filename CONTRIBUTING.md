@@ -68,3 +68,7 @@ CI单独下载固定官方Doxygen版本并核对SHA-256，执行示例和拒绝�
 ## L1原生插件维护
 
 插件位于harness/，使用根package.json及专用preset。变更同步policy/onboarding.json、九项开工模板、使用指南及L1/DOT入口；运行Node插件测试和Python管道/运行器回归。原生确认只能来自ctx.userQuestions，不提供模型可填的人类回执；凭据仅走宿主credentials服务。配置页/API探测、模拟宿主、真实Python管道、真实Harness会话和产品/HIL结果分别记录。使用scripts/package_harness.py按已校验清单打包，输出放仓库外，检查无密钥、运行记录和缓存后交付。
+
+## 动态资源规则维护
+
+policy/resources.json、runtime/dot_runtime/resources.py、原生授权界面与docs/guides/adaptive-resources.md保持一致。开工原授权、后续变更、L1当前额度与实际消耗分开；增加额度不能清零或绕过UNKNOWN/终态。修改时覆盖额度暂停/恢复、原生批准与陈旧回执、范围重审、报告账本及旧任务不迁移。静态策略校验不代替真实授权和运行验证。

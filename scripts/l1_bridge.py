@@ -25,8 +25,8 @@ def dispatch(message, bridge):
     try:
         if method == 'initialize':
             result = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}},
-                      'serverInfo': {'name': 'l1-dot-bridge', 'version': '3.2.2'},
-                      'instructions': 'Read L1.md. L1 approves intermediate baselines; user reviews only the final report. '
+                      'serverInfo': {'name': 'l1-dot-bridge', 'version': '3.3.0'},
+                      'instructions': 'Read L1.md. L1 approves intermediate baselines; user confirms overall boundaries and reviews the final report. Read docs/guides/adaptive-resources.md: L1 allocates limits, exhaustion pauses for evaluation, only native human approval can expand authority. '
                                       'Never fake human approval.\n' + communication_prompt()}
         elif method == 'ping':
             result = {}

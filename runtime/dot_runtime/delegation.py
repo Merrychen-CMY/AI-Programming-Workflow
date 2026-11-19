@@ -6,6 +6,8 @@ from .communication import l1_prompt as communication_prompt
 
 
 def validate_delegation(value, enforce_time=True):
+    if 'adaptive_limits' in value and type(value['adaptive_limits']) is not bool:
+        raise ValueError('adaptive_limits must be a boolean')
     if value.get('schema_version') != 1 or value.get('authority') != 'delegated_l1':
         raise ValueError('Explicit delegated_l1 policy required; never impersonate a human approval')
     for key in ('source_message', 'raw_input_sha256', 'expires_at'):
@@ -51,14 +53,27 @@ def check_binding(state, enforce_time=True):
     from .controller import digest, file_hash, read_json
     binding = state['delegation']
     value = read_json(binding['path'])
-    validate_delegation(value, enforce_time=enforce_time)
+    from . import resources
+    root = state.get('clarification_root')
+    adaptive = resources.enabled(value, root)
+    validate_delegation(value, enforce_time=enforce_time and not adaptive)
     if digest(value) != binding['sha256'] or file_hash(binding['raw_input']) != value['raw_input_sha256']:
         raise ValueError('Original input or delegation changed; cannot silently expand authority')
+    if adaptive:
+        original = value
+        value = resources.effective(original, root, enforce_time=enforce_time)
     started = state.get('delegated_started_at', datetime.fromisoformat(state['created_at']).timestamp())
     if enforce_time and datetime.now(timezone.utc).timestamp() - started >= value['limits']['wall_time_seconds']:
+        if adaptive:
+            resources.require(original, root, 'wall_time_seconds', datetime.now(timezone.utc).timestamp() - started, 1)
         raise ValueError('Delegated execution wall-time budget exhausted')
-    if state.get('approved_plan'):
-        check_plan_bounds(state['approved_plan'], value, enforce_time=enforce_time)
+    if state.get('approved_plan') and not state.get('pending_authorization_revision'):
+        plan = state['approved_plan']
+        # Adaptive allocation is authoritative for operation counts. Historical plan
+        # budgets are a planning snapshot, not permission to exceed current limits.
+        if adaptive:
+            plan = dict(plan, budgets={})
+        check_plan_bounds(plan, resources.authority(original, root) if adaptive else value, enforce_time=enforce_time)
     return value
 
 
@@ -69,6 +84,13 @@ def bounded_timeout(state, requested):
     remaining = min(start + value['limits']['wall_time_seconds'],
                     datetime.fromisoformat(value['expires_at']).timestamp()) - current
     if remaining < 1:
+        from . import resources
+        original, root = resources.controller_context(state)
+        if resources.enabled(original, root):
+            if datetime.fromisoformat(value['expires_at']).timestamp() - current < 1:
+                raise resources.BudgetReview('expires_at', value['expires_at'], 'extend', value['expires_at'], value['expires_at'],
+                                            'Less than one second before user deadline; explicit extension required')
+            resources.require(original, root, 'wall_time_seconds', current - start, 1)
         raise ValueError('No delegated execution time remains')
     return min(requested, int(remaining))
 
@@ -85,10 +107,12 @@ def attach_delegation(controller, path, raw_input):
             if item == Path(state['project']) or Path(state['project']) in item.parents:
                 raise ValueError('Delegation inputs must be outside worker project')
         value = read_json(path)
-        validate_delegation(value)
+        from . import resources
+        validate_delegation(value, enforce_time=not resources.enabled(value, state.get('clarification_root')))
         if file_hash(raw_input) != value['raw_input_sha256']:
             raise ValueError('Original user input hash mismatch')
-        check_plan_bounds(read_json(state['plan']), value)
+        effective = resources.effective(value, state.get('clarification_root'))
+        check_plan_bounds(read_json(state['plan']), effective)
         state['delegation'] = {'path': str(path), 'raw_input': str(raw_input), 'sha256': digest(value)}
         state['l1_reviews'] = []
         state['revision_count'] = 0
@@ -111,6 +135,8 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
         if state.get('pending_clarification_revision'):
             raise ValueError('Revise requirements and plan to incorporate new facts before approval')
         if len(state['l1_reviews']) >= value['limits']['l1_reviews']:
+            from .resources import check_controller
+            check_controller(state, 'l1_reviews', len(state['l1_reviews']))
             controller.report('FAILED', 'L1 review budget exhausted')
             return controller.state
         from .controller import validate_plan
@@ -121,6 +147,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
         if kind == 'plan' and state['approvals'].get('requirements', {}).get('sha256') != baseline['requirements']:
             raise ValueError('Requirements changed before plan approval')
         number = len(state['l1_reviews']) + 1
+        timeout = bounded_timeout(state, value['limits']['timeout_seconds'])
         workspace = controller.run_dir / 'l1-review-inputs' / str(number)
         workspace.mkdir(parents=True)
         for name, source in [('requirements.md', state['requirements']), ('plan.json', state['plan']),
@@ -130,13 +157,19 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             from .clarifications import context
             (workspace / 'fact-supplements.json').write_text(context(state['clarification_root']), encoding='utf-8')
         output = controller.run_dir / 'l1-reviews' / str(number)
+        from . import resources
+        original, resource_root = resources.controller_context(state)
+        if resources.enabled(original, resource_root):
+            atomic_json(workspace / 'user-authorized-changes.json', resources.authority(original, resource_root))
         record = {'kind': kind, 'baseline': baseline, 'l1_session_id': l1_session_id, 'at': now(), 'status': 'UNKNOWN'}
         state['l1_reviews'].append(record)  # Reserve the attempt BEFORE any external dispatch.
         state['active_run'] = {'role': 'l1_independent_review', 'output': str(output), 'at': now()}
         controller.save()
         prompt = ('Independently review the ' + kind + ' baseline against raw-input.md and delegation.json. '
                   'The L1 author requests approval. You are a separate reviewer, not its author. '
-                  'Inspect requirements.md and plan.json. Reject missing critical facts, changed user hard constraints, '
+                  'Inspect requirements.md and plan.json. If user-authorized-changes.json exists, its approved '
+                  'authorized_context and hard_constraints supersede earlier scope only as explicitly recorded; '
+                  'retain the original input as history. Reject missing critical facts, unauthorized changed user hard constraints, '
                   'weakened AC, circular expected results, unsafe/external commands, scope/budget expansion or '
                   'missing independent verification. Huawei C and Doxygen remain mandatory for C. '
                   'If fact-supplements.json exists, review every supplement and its stated source against the '
@@ -147,7 +180,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
                   'Do not execute project commands, edit files, approve anything or invent user decisions.'
                   + '\n' + communication_prompt() + constraints_prompt())
         try:
-            result = reviewer.run('review', prompt, workspace, output, bounded_timeout(state, value['limits']['timeout_seconds']))
+            result = reviewer.run('review', prompt, workspace, output, timeout)
         except Exception as exc:
             result = {'status': 'UNKNOWN', 'summary': type(exc).__name__, 'session_id': ''}
         record['result'] = result

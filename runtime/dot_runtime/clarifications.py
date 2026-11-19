@@ -77,6 +77,10 @@ def check_remaining_time(root, delegation):
     # A facts update must not restart the original API/wall-time ledger.
     ledger = Path(root) / 'api' / 'ledger.json'
     if ledger.exists() and time.time() - read_json(ledger)['started_at'] >= delegation['limits']['wall_time_seconds']:
+        if delegation.get('adaptive_limits'):
+            from .resources import BudgetReview
+            raise BudgetReview('wall_time_seconds', time.time() - read_json(ledger)['started_at'], 1,
+                               delegation['limits']['wall_time_seconds'], delegation['limits']['wall_time_seconds'])
         raise ValueError('Delegated execution wall-time budget exhausted')
 
 

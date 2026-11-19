@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.2.2",
+  "policy_version": "3.3.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -118,7 +118,7 @@
     "example_is_authorization": false,
     "simple_mode": "L1_approves_intermediate_baselines_user_reviews_final_report",
     "formal_gate_contract_scope": "when_formal_approval_and_gate_services_are_adopted",
-    "delegated_plan_maintenance": "L1_reapproves_within_original_delegation_no_scope_or_budget_expansion"
+    "delegated_plan_maintenance": "L1_reapproves_affected_baselines_within_current_user_authority_resource_allocation_is_separate"
   },
   "closure": {
     "implementation_or_verification": "independent_L4_reverification_and_trusted_verdict_then_L2_close",
@@ -166,5 +166,7 @@
     "requires_independent_baseline_review": true,
     "unknown_or_final_report_auto_resume": false,
     "guide": "docs/guides/clarifications.md"
-  }
+  },
+  "resource_policy": "policy/resources.json",
+  "budgets_scope": "Legacy fixed examples; adaptive task ceilings and current allocations are governed by policy/resources.json"
 }

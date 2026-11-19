@@ -213,7 +213,7 @@
     {
       "id": "REJ-027",
       "chapter": 21,
-      "fault_injection": "L1-V 修改了必需检查或预算但沿用旧批准",
+      "fault_injection": "L1-V 修改了必需检查或验证包授权预算但沿用旧批准",
       "expected_result": "L1-V 哈希/审批校验失败",
       "execution_status": "NOT_RUN",
       "evidence_ref": null

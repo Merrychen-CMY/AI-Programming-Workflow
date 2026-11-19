@@ -12,22 +12,39 @@
     "delivery": "REPLACE_WITH_产物、目标、报告形式；本版不执行外部交付",
     "safety": "REPLACE_WITH_敏感数据、允许发给模型的内容、网络/命令/设备边界及禁止操作"
   },
-  "hard_constraints": ["REPLACE_WITH_不可由AI降低的明确要求"],
-  "allowed_paths": ["REPLACE_WITH_项目内相对路径"],
+  "hard_constraints": [
+    "REPLACE_WITH_不可由AI降低的明确要求"
+  ],
+  "allowed_paths": [
+    "REPLACE_WITH_项目内相对路径"
+  ],
   "expires_at": "REPLACE_WITH_含时区的ISO8601有效期",
   "limits": {
-    "implementation_attempts": 3,
-    "same_root_cause_attempts": 2,
-    "infrastructure_retries": 2,
-    "timeout_seconds": 600,
-    "l1_reviews": 8,
-    "revisions": 2,
-    "api_calls": 12,
+    "implementation_attempts": 12,
+    "same_root_cause_attempts": 5,
+    "infrastructure_retries": 6,
+    "timeout_seconds": 2700,
+    "l1_reviews": 16,
+    "revisions": 8,
+    "api_calls": 40,
     "api_max_output_tokens": 8192,
-    "wall_time_seconds": 7200
+    "wall_time_seconds": 14400
   },
   "environment_checks": [
-    {"name": "REPLACE_WITH_编译器或测试入口", "kind": "file", "path": "REPLACE_WITH_绝对路径", "required": true, "evidence": "存在性检查，不等于实际测试通过"},
-    {"name": "REPLACE_WITH_设备或其他人工确认条件", "kind": "manual", "path": "", "required": true, "evidence": "REPLACE_WITH_用户提供的事实与证据来源；缺失写空字符串以保持UNKNOWN"}
-  ]
+    {
+      "name": "REPLACE_WITH_编译器或测试入口",
+      "kind": "file",
+      "path": "REPLACE_WITH_绝对路径",
+      "required": true,
+      "evidence": "存在性检查，不等于实际测试通过"
+    },
+    {
+      "name": "REPLACE_WITH_设备或其他人工确认条件",
+      "kind": "manual",
+      "path": "",
+      "required": true,
+      "evidence": "REPLACE_WITH_用户提供的事实与证据来源；缺失写空字符串以保持UNKNOWN"
+    }
+  ],
+  "adaptive_limits": true
 }

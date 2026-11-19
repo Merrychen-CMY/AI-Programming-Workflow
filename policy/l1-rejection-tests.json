@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "automated local unit/integration checks with mock models; not live API, Harness or product acceptance",
+  "scope": "Legacy fixed-delegation fixtures with mock models; adaptive resource cases are in tests/test_resources.py; not live API, Harness or product acceptance",
   "test_file": "tests/test_delegated_l1.py",
   "cases": [
     {

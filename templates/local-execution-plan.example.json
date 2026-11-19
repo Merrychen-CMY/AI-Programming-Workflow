@@ -43,6 +43,6 @@
     "implementation_attempts": 3,
     "same_root_cause_attempts": 2,
     "infrastructure_retries": 2,
-    "timeout_seconds": 2700
+    "timeout_seconds": 600
   }
 }

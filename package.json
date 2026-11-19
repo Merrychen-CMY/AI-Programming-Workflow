@@ -1,6 +1,6 @@
 {
   "name": "ai-programming-workflow",
-  "version": "3.2.2",
+  "version": "3.3.0",
   "private": true,
   "type": "module",
   "description": "ReqPilot: requirements-led AI development for DeepSeek Harness, with GPT/DOT orchestration, independent Codex execution and evidence-based reports.",
@@ -9,7 +9,9 @@
     "url": "git+https://github.com/Merrychen-CMY/ReqPilot.git"
   },
   "homepage": "https://github.com/Merrychen-CMY/ReqPilot#readme",
-  "bugs": { "url": "https://github.com/Merrychen-CMY/ReqPilot/issues" },
+  "bugs": {
+    "url": "https://github.com/Merrychen-CMY/ReqPilot/issues"
+  },
   "icon": "./harness/icon.svg",
   "exports": {
     ".": "./harness/index.js",

@@ -169,9 +169,11 @@ def validate_simple_flow(flow):
         'implementation_worker_can_issue_final_acceptance': False,
         'issue_intake': 'DOT_as_L2',
         'direct_verifier_to_developer_dispatch': False,
-        'product_or_ac_change_requires_user_decision': False,
+        'product_or_ac_change_requires_user_decision': True,
+        'in_scope_requirement_clarification_requires_user_decision': False,
+        'authority_change_requires_user_decision': True,
         'plan_maintenance.may_lower_acceptance_standard': False,
-        'plan_maintenance.semantic_change': 'L1_reapproves_within_original_delegation_and_reruns_required_checks',
+        'plan_maintenance.semantic_change': 'L1_reapproves_within_current_user_authority_and_reruns_required_checks',
         'delivery.execute_when_existing_authorization_covers_actual_action': True,
         'delivery.check_actual_candidate_evidence_action_target': True,
         'delivery.require_new_approval_when_scope_not_covered': True,
@@ -219,6 +221,30 @@ def validate_simple_flow(flow):
         if not isinstance(state.get('guard'), str) or not state['guard'].strip():
             errors.append(f'Missing simple flow guard: {state_id}')
     return errors
+
+
+def validate_resource_policy(value):
+    expected = {
+        'schema_version': 1, 'opt_in_field': 'adaptive_limits', 'new_task_default': True,
+        'legacy_auto_migration': False,
+        'user_confirms': ['goals_constraints_acceptance', 'permissions', 'resource_ceilings', 'final_deadline'],
+        'allocation_owner': 'L1', 'exhaustion_state': 'BUDGET_REVIEW_PENDING',
+        'human_request_state': 'AUTHORIZATION_PENDING', 'status_layer': 'bridge_overlay_preserves_runtime_state',
+        'allocation_tool': 'l1_adjust_limits', 'request_tool': 'l1_request_authorization',
+        'human_review_tool': 'workflow_review_authorization', 'human_confirmation_provider': 'native_ctx.userQuestions',
+        'model_supplied_human_approval': False, 'original_confirmation_immutable': True,
+        'usage_reset_allowed': False, 'history_deletion_allowed': False, 'unknown_auto_clear': False,
+        'final_report_auto_reopen': False, 'independent_verification_required': True,
+        'scope_change_requires_replan_and_independent_review': True,
+        'resource_only_change_invalidates_product_baseline': False,
+        'amendable_fields': ['limits', 'expires_at', 'allowed_paths', 'hard_constraints', 'authorized_context'],
+        'final_report_includes': ['user_authority', 'operating_limits', 'actual_usage', 'history', 'dot_api_reported_usage'],
+        'unified_monetary_hard_cap': False, 'guide': 'docs/guides/adaptive-resources.md',
+    }
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Resource policy fields differ from implemented scope']
+    return ['Resource boundary drift: ' + key for key, wanted in expected.items()
+            if type(value[key]) is not type(wanted) or value[key] != wanted]
 
 
 def validate_capabilities(index):
@@ -490,6 +516,13 @@ def validate_repository(root):
         if documents[key].get('planning_policy') != 'policy/planning.json':
             errors.append('Workflow must reference planning policy')
     errors.extend(validate_planning_policy(documents.get('policy/planning.json')))
+    errors.extend(validate_resource_policy(documents.get('policy/resources.json')))
+    for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
+        if documents[key].get('resource_policy') != 'policy/resources.json':
+            errors.append('Workflow must reference resource governance: ' + key)
+    for key in ('templates/harness-start.example.json', 'templates/l1-delegation.example.json'):
+        if documents[key].get('adaptive_limits') is not True:
+            errors.append('New task templates must enable adaptive resource governance: ' + key)
     if onboarding.get('states_before_runtime') != ['DISCOVERY', 'PREPARED', 'START_CONFIRMED', 'NEEDS_INFO', 'PLAN_REJECTED']:
         errors.append('Onboarding must distinguish recoverable planning results from UNKNOWN/final reports')
     if simple.get('startup_confirmation_required') is not True:

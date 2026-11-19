@@ -20,6 +20,7 @@ from .checks import run_check
 from .documentation import CHECKER as DOXYGEN_CHECKER, REFERENCE as DOXYGEN_REFERENCE
 from .documentation import validate_settings as validate_doxygen_settings, validate_report as validate_doxygen_report
 from .planning import PlanRejected
+from . import resources
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / 'standards/embedded-c/v1.3/huawei/coverage.json'
@@ -252,12 +253,17 @@ class Controller:
             # Reviewing completed evidence does not consume execution time or grant a new run.
             check_binding(self.state, enforce_time=self.state['state'] not in ('REPORT_PENDING', 'DELIVERY_READY'))
             value['delegation'] = self.state['delegation']['sha256']
+            original, root = resources.controller_context(self.state)
+            if resources.enabled(original, root):
+                value['authorization_scope'] = resources.scope_digest(original, root)
         if self.state.get('clarification_root'):
             from .clarifications import signature
             value['clarifications'] = signature(self.state['clarification_root'])
         return value
 
     def check_approvals(self):
+        if self.state.get('pending_authorization_revision'):
+            raise ValueError('User-authorized scope change requires a revised and independently reviewed baseline')
         if self.state.get('pending_clarification_revision'):
             raise ValueError('New facts require revised baselines and independent approvals')
         current = self.baseline()
@@ -380,16 +386,21 @@ class Controller:
                     raise ValueError('Closed/rejected final report cannot auto-resume; start a newly assigned task')
                 prepaid = self.state.get('pending_clarification_revision', False)
                 if not prepaid and self.state['revision_count'] >= delegation['limits']['revisions']:
+                    resources.check_controller(self.state, 'revisions', self.state['revision_count'])
                     self.report('FAILED', 'L1 revision budget exhausted')
                     return self.state
                 if not prepaid:
                     self.state['revision_count'] += 1
                 self.state['pending_clarification_revision'] = False
             self.state['requirements'], self.state['plan'] = str(Path(requirements).resolve()), str(Path(plan).resolve())
+            self.state['pending_authorization_revision'] = False
             self.state['approvals'] = {}
             self.state['completed_tasks'] = []
             self.state['candidate'] = None
             self.state['pending_repair'] = None
+            self.state['pending_triage'] = None
+            self.state['pending_facility_retry'] = False
+            self.state['pending_retry_root_key'] = None
             snapshot_path = self.run_dir / 'baselines' / uuid.uuid4().hex
             previous = self.state['initial_snapshot']
             self.state['initial_snapshot'] = snapshot_project(Path(self.state['project']), snapshot_path)
@@ -460,6 +471,7 @@ class Controller:
 
     def approved_test(self, workspace):
         """Execute the reviewed argv directly; never trust a worker's fabricated test summary."""
+        timeout = self.operation_timeout(resources.controller_limits(self.state)['timeout_seconds'])
         sequence = len(self.state.get('checks', [])) + 1
         output = self.run_dir / 'checks' / f'{sequence:04d}'
         working_copy = self.run_dir / 'test-workspaces' / f'{sequence:04d}'
@@ -468,7 +480,7 @@ class Controller:
         self.save()
         plan = self.state['approved_plan']
         try:
-            check = self.check_runner(plan['verification']['test_command'], working_copy, output, self.operation_timeout(plan['budgets']['timeout_seconds']))
+            check = self.check_runner(plan['verification']['test_command'], working_copy, output, timeout)
         except Exception as exc:
             return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
         check['candidate_id'] = self.state['candidate']['id']
@@ -492,11 +504,12 @@ class Controller:
 
     def approved_documentation(self, workspace):
         """Run the pinned checker on a disposable candidate copy, before independent review."""
+        settings = self.state['approved_plan']['verification']['doxygen']
+        timeout = self.operation_timeout(min(resources.controller_limits(self.state)['timeout_seconds'], settings['timeout_seconds'] * 2 + 10))
         sequence = len(self.state.get('documentation_checks', [])) + 1
         output = self.run_dir / 'documentation' / f'{sequence:04d}'
         working_copy = self.run_dir / 'documentation-workspaces' / f'{sequence:04d}'
         inputs = snapshot_project(workspace, working_copy)
-        settings = self.state['approved_plan']['verification']['doxygen']
         command = [sys.executable, str(DOXYGEN_CHECKER), '--source-root', str(working_copy),
                    '--output-dir', str(output / 'artifacts'), '--doxygen', settings['executable'],
                    '--expected-version', settings['expected_version'], '--timeout', str(settings['timeout_seconds'])]
@@ -504,9 +517,8 @@ class Controller:
             command.extend(['--include', name])
         self.state['active_run'] = {'role': 'doxygen_check', 'sequence': sequence, 'at': now(), 'output': str(output)}
         self.save()
-        timeout = min(self.state['approved_plan']['budgets']['timeout_seconds'], settings['timeout_seconds'] * 2 + 10)
         try:
-            process = self.check_runner(command, working_copy, output / 'process', self.operation_timeout(timeout))
+            process = self.check_runner(command, working_copy, output / 'process', timeout)
         except Exception as exc:
             return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
         report_path = output / 'artifacts/report.json'
@@ -582,13 +594,18 @@ class Controller:
     def worker(self, role, instruction, workspace):
         if self.adapter is None:
             raise ValueError('A Codex adapter is required')
+        timeout = self.operation_timeout(resources.controller_limits(self.state)['timeout_seconds'])
         sequence = len(self.state['sessions']) + 1
         output = self.run_dir / 'sessions' / f'{sequence:04d}-{role}'
         self.state['active_run'] = {'sequence': sequence, 'role': role, 'at': now(), 'output': str(output)}
         self.save()  # Crash after dispatch must never silently replay a worker.
         try:
             result = self.adapter.run(role, self.prompt(role, instruction), Path(workspace), output,
-                                      self.operation_timeout(self.state['approved_plan']['budgets']['timeout_seconds']))
+                                      timeout)
+        except resources.BudgetReview:
+            self.state['active_run'] = None
+            self.save()
+            raise
         except Exception as exc:
             result = {'status': 'UNKNOWN', 'session_id': '', 'summary': f'Adapter exception: {type(exc).__name__}: {exc}',
                       'evidence': [], 'findings': [], 'root_cause': 'unknown'}
@@ -630,6 +647,9 @@ class Controller:
             record['fact_supplements'] = records(self.state['clarification_root'])
             record['revision_count'] = self.state.get('revision_count', 0)
             record['planning_rejections'] = history(self.state['clarification_root'])
+            original, root = resources.controller_context(self.state)
+            if resources.enabled(original, root):
+                record['resource_governance'] = resources.report(root, original, self.state)
         archive = self.run_dir / 'reports'
         archive.mkdir(exist_ok=True)
         path = archive / (now().replace(':', '-') + '.json')
@@ -652,6 +672,9 @@ class Controller:
         if failure.get('status') == 'UNKNOWN':
             self.report('UNKNOWN', 'Worker/process outcome unknown; reconcile side effects before any retry')
             return 'stop'
+        # Retain a diagnosed-work checkpoint even if the API budget pauses analysis.
+        self.state['pending_triage'] = {'failure': failure, 'workspace': str(workspace)}
+        self.save()
         result = self.worker('triage', 'Act as DOT/L2. Analyze this failure with evidence. Classify root_cause; '
                              'use a stable concrete component-and-defect root_cause_key, reuse it for the same cause. '
                              'Compare previous issues and distinguish new defects. Explain root cause and proposed action. '
@@ -666,8 +689,11 @@ class Controller:
         counts = self.state['root_cause_counts']
         key = cause + ':' + cause_key
         counts[key] = counts.get(key, 0) + 1
+        self.state['pending_triage'] = None
         self.save()
-        budget = self.state['approved_plan']['budgets']
+        budget = resources.controller_limits(self.state)
+        original, root = resources.controller_context(self.state)
+        adaptive = resources.enabled(original, root)
         if cause == 'unknown' or self.state['active_run']:
             self.report('UNKNOWN', 'L2 could not establish the root cause; no blind retry')
             return 'stop'
@@ -677,10 +703,21 @@ class Controller:
                         'requirements_sha256': self.baseline()['requirements'], 'plan_sha256': self.baseline()['plan']})
             self.transition('DECISION_PENDING', 'L2 requests the responsible owner/user to revise the relevant baseline')
             return 'stop'
+        if adaptive and cause in ('implementation', 'test_infrastructure', 'evidence_collection'):
+            self.state['pending_retry_root_key'] = key
+            if cause == 'implementation':
+                self.state['pending_repair'] = result['summary'] + '\n' + canonical(failure)
+                if self.state['state'] == 'VERIFYING':
+                    self.transition('EXECUTING', 'L2 diagnosed an implementation repair; resource review may pause dispatch')
+            else:
+                self.state['pending_facility_retry'] = True
+            self.save()
+            resources.check_controller(self.state, 'same_root_cause_attempts', counts[key])
         if counts[key] >= budget['same_root_cause_attempts']:
             self.report('FAILED', 'Same root-cause limit reached; report requires user review')
             return 'stop'
         if cause == 'implementation':
+            resources.check_controller(self.state, 'implementation_attempts', self.state['implementation_attempts'])
             if self.state['implementation_attempts'] >= budget['implementation_attempts']:
                 self.report('FAILED', 'Implementation budget exhausted; no automatic reset')
                 return 'stop'
@@ -690,6 +727,8 @@ class Controller:
                 self.transition('EXECUTING', 'L2 assigned the diagnosed implementation defect to L3')
             return 'repair'
         if cause in ('test_infrastructure', 'evidence_collection'):
+            if adaptive:
+                return 'reverify'  # The execution loop reserves this retry exactly once after resource review.
             if self.state['infrastructure_retries'] >= budget['infrastructure_retries']:
                 self.report('FAILED', 'Infrastructure retry budget exhausted')
                 return 'stop'
@@ -819,11 +858,26 @@ class Controller:
             while self.state['state'] in ('EXECUTING', 'VERIFYING'):
                 try:
                     self.check_approvals()
+                    if self.state.get('pending_triage'):
+                        waiting = self.state['pending_triage']
+                        if self.triage(waiting['failure'], Path(waiting['workspace'])) == 'stop':
+                            break
+                        continue
+                    if self.state.get('pending_retry_root_key'):
+                        resources.check_controller(self.state, 'same_root_cause_attempts',
+                            self.state['root_cause_counts'][self.state['pending_retry_root_key']])
+                    if self.state.get('pending_facility_retry'):
+                        resources.check_controller(self.state, 'infrastructure_retries', self.state['infrastructure_retries'])
+                        self.state['infrastructure_retries'] += 1
+                        self.state['pending_facility_retry'] = False
+                        self.state['pending_retry_root_key'] = None
+                        self.save()
                     if self.state['state'] == 'EXECUTING':
                         pending = next((t for t in tasks if t['id'] not in self.state['completed_tasks']), None)
                         repair = self.state['pending_repair']
                         if repair or pending:
-                            if self.state['implementation_attempts'] >= plan['budgets']['implementation_attempts']:
+                            resources.check_controller(self.state, 'implementation_attempts', self.state['implementation_attempts'])
+                            if self.state['implementation_attempts'] >= resources.controller_limits(self.state)['implementation_attempts']:
                                 self.report('FAILED', 'Implementation attempt limit reached')
                                 break
                             self.state['implementation_attempts'] += 1
@@ -842,6 +896,7 @@ class Controller:
                                     break
                                 continue
                             self.state['pending_repair'] = None
+                            self.state['pending_retry_root_key'] = None
                             if pending:
                                 self.state['completed_tasks'].append(pending['id'])
                             self.save()

@@ -12,14 +12,15 @@
   ],
   "external_delivery": false,
   "limits": {
-    "implementation_attempts": 3,
-    "same_root_cause_attempts": 2,
-    "infrastructure_retries": 2,
-    "timeout_seconds": 600,
-    "l1_reviews": 8,
-    "revisions": 2,
-    "api_calls": 12,
+    "implementation_attempts": 12,
+    "same_root_cause_attempts": 5,
+    "infrastructure_retries": 6,
+    "timeout_seconds": 2700,
+    "l1_reviews": 16,
+    "revisions": 8,
+    "api_calls": 40,
     "api_max_output_tokens": 8192,
-    "wall_time_seconds": 7200
-  }
+    "wall_time_seconds": 14400
+  },
+  "adaptive_limits": true
 }

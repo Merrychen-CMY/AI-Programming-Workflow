@@ -4,7 +4,7 @@
 
 ## 安装和首次使用
 
-1. 获取本仓库 3.2.2 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
+1. 获取本仓库 3.3.0 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
 2. 在 DeepSeek Harness 的插件管理中添加本地插件包/目录。也可让 Harness 自身有插件管理能力的 Agent 使用 `plugin_manager install_bundle` 安装本地来源；实际参数以宿主工具声明为准。本仓库不直接修改你的 Harness 配置文件。
 3. 创建新会话，选择 **ReqPilot · 需求领航**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。旧会话可能仍保留旧 preset，不能用来判断新插件是否生效。
 4. 对 L1 说：**“开始一个项目，请按配置模型和密钥、检查环境、沟通需求的顺序引导我，再集中确认开工。”** L1 会提供本机配置页链接。在页面填写 GPT API 模型 ID、密钥及 Python/Codex 可执行文件路径。这里的 GPT 就是 DOT，不是另一个人工操作入口；L1 自己的模型仍由 Harness 设置。
@@ -12,7 +12,7 @@
 6. 回到 L1，先让它调用 `workflow_check_environment` 检查Python、Git、Codex及登录；此时无需提供项目目录或需求草案。失败/未知时先解决环境缺口，再继续。
 7. 基础环境通过后，沟通原始需求并提供独立产品目录与已有资料。L1 根据九项话题补齐信息，再用 `workflow_inspect` 补查项目特有的编译器、测试入口、设备条件并固定基线。已有信息保留，不必重复提供。新项目目录至少有一份真实输入文件，例如原始需求；不要拿插件目录当产品目录。
 8. 阅读原生提问中完整的开工摘要，确认模型、需求、基线、范围、AC、环境、测试、交付、安全、允许路径、预算和有效期，然后选择 **“确认开工并委托 L1 自动推进”**。不需要再手填需求/委托 JSON。
-9. L1 调用 DOT，独立审核并批准需求和计划，自动运行。最后在同一会话展示 DOT 原始证据报告及 L1 结论，并让你选择 **“已审核此报告”**。失败/UNKNOWN 的确认不会授权重试；成功确认也不执行外部交付。
+9. L1先分配当前额度，在用户总上限内自动调整；需要扩大授权时用原生追加授权界面申请明确决定。随后调用 DOT，独立审核并批准需求和计划，自动运行。最后在同一会话展示 DOT 原始证据报告及 L1 结论，并让你选择 **“已审核此报告”**。失败/UNKNOWN 的确认不会授权重试；成功确认也不执行外部交付。
 
 本版核对的宿主是本机 **DeepSeek Harness 0.2.2-rc.3**，构建提交 `6b729fedde0c8fd03af7afdf5a711aa64fe87c3b`。其他版本需要重新核对扩展接口。安装方式依据宿主随包的 dsh-agent-preset、plugin-manager、dsh-tools、dsh-user-questions、dsh-credentials 说明与源码；上游参考：[项目仓库](https://github.com/deepseek-ai/deepseek-harness)、[插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/plugin-manager/README.md)。兼容性核对和本地自检不等于已在你的真实 L1 会话中安装或跑通产品任务。
 
@@ -26,7 +26,7 @@
 
 ### 配置或API测试失败
 
-3.2.2配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
+3.3.0配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
 
 | 错误编号 | 含义与处理 |
 | --- | --- |
@@ -55,15 +55,21 @@ flowchart TD
  D --> P[PREPARED：项目特有环境复核与项目指纹]
  P --> U[用户集中确认完整开工摘要]
  U --> C[START_CONFIRMED：固定委托与预算]
- C --> R[DOT提案 → 初始化 → L1独立审查及代理批准]
+ C --> A1[L1分配当前额度]
+ A1 --> R[DOT提案 → 初始化 → L1独立审查及代理批准]
  R --> E[既有运行器执行与回流]
+ E -->|当前额度不足| Q[L1评估与调整]
+ Q -->|授权内| E
+ Q -->|需扩大授权| H[用户原生批准或拒绝]
+ H -->|批准并重审受影响基线| A1
+ Q -->|无可行方案| F
  E --> F[L1提交最终报告 → 用户审核]
  P -->|必需项失败或未知| D
  U -->|取消、跳过或内容变化| D
  E -->|中断| X[UNKNOWN：保留记录、禁止自动重放]
 ```
 
-配置、基础环境、需求沟通及准备/确认阶段属于开工引导，不替代既有 REVIEW_PENDING、PLAN_PENDING、EXECUTING、VERIFYING 等运行状态。每个 Harness 会话固定一个任务。记录在用户目录 `.ai-programming-workflow/tasks/<会话摘要>/`，与产品和插件代码分离；重启会话沿用记录，不能重置累计消耗。新目标应开启新会话、再次集中确认，并在基线字段关联旧报告，不能通过换会话绕过失败或预算。
+配置、基础环境、需求沟通及准备/确认阶段属于开工引导，不替代既有 REVIEW_PENDING、PLAN_PENDING、EXECUTING、VERIFYING 等运行状态。每个 Harness 会话固定一个任务。记录在用户目录 `.ai-programming-workflow/tasks/<会话摘要>/`，与产品和插件代码分离；重启会话沿用记录，不能重置累计消耗。尚未终结的动态任务可申请明确目标变更，批准后重审基线；已终结或旧版任务保留原记录，新任务关联旧报告，不能通过换会话绕过失败或预算。
 
 工具在可能修改状态的操作之前记录 UNKNOWN 标记，收到完整结果才清除。宿主退出、取消、进程失败或结果不明会保留标记；只能查状态或提交停止/最终报告，不自动重放。终止桥进程不证明其所有后代进程已终止，需要核实旧进程和证据。DOT完整返回request_clarification会记录NEEDS_INFO并正常结束这次工具调用，清除本次在途标记；它允许同任务补事实并重新规划。完整模型响应内的草案格式/计划校验失败记录PLAN_REJECTED，返回COMPLETED_REJECTED，允许原预算内修正；管道或API响应未完成、真实异常及旧UNKNOWN不能据此解锁，明确最终报告仍保持终态。详见[事实补充与恢复](clarifications.md)及[计划拒绝指南](plan-rejections.md)。
 
@@ -85,7 +91,7 @@ flowchart TD
 
 插件入口为 `harness/index.js`，打包根为仓库根。`harness/cordis.patch.yml` 声明专用 L1 preset。`workflow_reference` 提供受限只读规则读取；内部 Python 管道不直接暴露给模型。开工和最终确认来自 `ctx.userQuestions` 的原生人类答复，模型无法传入 `confirmed=true`。
 
-运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.2.2.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.2.2验证记录](../reports/3.2.2-validation.md)。
+运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.3.0.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.3.0验证记录](../reports/3.3.0-validation.md)。
 
 ## 开工后发现资料缺口
 
@@ -94,3 +100,7 @@ flowchart TD
 ## 名称与图标
 
 3.2.1起显示为 ReqPilot · 需求领航，使用透明罗盘图标。内部包名和数据目录沿用旧标识以保持升级兼容；见[名称与兼容说明](branding.md)。更新本地安装后按宿主要求重启，新名称和图标才会显示。
+
+## 3.3.0动态资源管理
+
+新开工草案启用adaptive_limits:true；用户确认目标、权限、总上限和截止时间后，L1先调用l1_adjust_limits。BUDGET_REVIEW_PENDING不等于失败：L1评估收益，在上限内调整；越界先l1_request_authorization，再由workflow_review_authorization展示准确申请并读取用户批准/拒绝。相关基线变化仍须独立审查。最终报告包含调整前后值、理由、消耗与结果。见[完整规则与字段](adaptive-resources.md)。旧任务不自动改授权，不清除UNKNOWN或最终报告。

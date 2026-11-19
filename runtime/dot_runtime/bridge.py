@@ -10,9 +10,14 @@ from .gpt_dot import ResponsesClient, DotAdapter, execute, propose_plan
 from .checks import run_check
 from . import clarifications
 from . import planning
+from . import resources
 
 
 TOOLS = {
+    'l1_adjust_limits': ('Allocate operating limits within user ceilings; preserve cumulative usage.',
+                         {'proposal_json': 'string', 'l1_session_id': 'string'}),
+    'l1_request_authorization': ('Prepare an exact authorization amendment for native human review. Never approves it.',
+                                 {'proposal_json': 'string', 'l1_session_id': 'string'}),
     'dot_plan': ('Ask GPT/DOT to draft a plan. No execution or approval.', {'requirements': 'string'}),
     'dot_initialize': ('Initialize the current reviewed draft with pinned delegation. No workers.', {}),
     'l1_approve': ('L1 requests delegated approval; independent review may veto. Never human approval.',
@@ -54,12 +59,28 @@ class Bridge:
 
     def client(self):
         delegation = read_json(self.settings['delegation'])
-        validate_delegation(delegation)
+        validate_delegation(delegation, enforce_time=not resources.enabled(delegation, self.root))
         if file_hash(self.settings['raw_input']) != delegation['raw_input_sha256']:
             raise ValueError('Original input differs from delegation')
-        return self.client_factory(self.settings['model'], self.root / 'api', delegation)
+        client = self.client_factory(self.settings['model'], self.root / 'api', delegation)
+        client.governance_root = self.root
+        return client
 
     def status(self):
+        result = self._status()
+        original = read_json(self.settings['delegation'])
+        if resources.enabled(original, self.root):
+            state = read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None
+            governance = resources.report(self.root, original, state)
+            result['resources'] = governance
+            if not result.get('report') and not result.get('preflight_report'):
+                if governance['pending_authorization'] or governance['budget_review']:
+                    result['runtime_state'] = result['state']
+                    result['state'] = 'AUTHORIZATION_PENDING' if governance['pending_authorization'] else 'BUDGET_REVIEW_PENDING'
+                    result['next_owner'] = 'user' if governance['pending_authorization'] else 'L1'
+        return result
+
+    def _status(self):
         planning = read_json(self.root / 'planning-status.json') if (self.root / 'planning-status.json').exists() else None
         facts = clarifications.records(self.root)
         common = {'planning': planning, 'facts_revision': len(facts),
@@ -78,6 +99,24 @@ class Bridge:
             'next_owner': 'user' if state['state'] == 'REPORT_PENDING' and (state['report'] or {}).get('l1_submitted') else 'L1'}
 
     def call(self, name, arguments):
+        try:
+            return self._call(name, arguments)
+        except resources.BudgetReview as exc:
+            with run_lock(self.root):
+                original = read_json(self.settings['delegation'])
+                state = read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None
+                resources.pause(self.root, original, exc, state)
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_BUDGET_REVIEW'}
+
+    def preflight_report(self, reason):
+        original = read_json(self.settings['delegation'])
+        record = {'outcome': 'FAILED', 'reason': reason, 'execution_started': False,
+                  'owner': 'L1', 'user_review_required': True, 'planning_rejections': planning.history(self.root)}
+        if resources.enabled(original, self.root):
+            record['resource_governance'] = resources.report(self.root, original)
+        atomic_json(self.root / 'preflight-report.json', record)
+
+    def _call(self, name, arguments):
         import json
         if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) != set(TOOLS[name][1]) or any(
                 not isinstance(value, str) or not value.strip() for value in arguments.values()):
@@ -99,15 +138,30 @@ class Bridge:
             if name == 'l1_stop':
                 if c:
                     c.stop_with_report(arguments['reason'])
-                else:
-                    atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': arguments['reason'],
-                        'execution_started': False, 'owner': 'L1', 'user_review_required': True,
-                        'planning_rejections': planning.history(self.root)})
+                elif not (self.root / 'preflight-report.json').exists():
+                    self.preflight_report(arguments['reason'])
                 return self.status()
             if c is None and (self.root / 'preflight-report.json').exists():
                 raise ValueError('Preflight has ended with a final failure report; no automatic resumption')
+            original = read_json(self.settings['delegation'])
+            adaptive = resources.enabled(original, self.root)
+            if name in ('l1_adjust_limits', 'l1_request_authorization'):
+                if c and (c.state.get('active_run') or c.state.get('report')):
+                    return {**self.status(), 'accepted': False, 'reason': 'Unknown operation or final report requires a separate verified recovery; cannot rewrite it'}
+                try:
+                    proposal = json.loads(arguments['proposal_json'])
+                    action = resources.adjust if name == 'l1_adjust_limits' else resources.propose_authorization
+                    result = action(self.root, original, proposal, arguments['l1_session_id'], c.state if c else None)
+                except (ValueError, TypeError, KeyError) as exc:
+                    return {**self.status(), 'accepted': False, 'reason': str(exc)}
+                return {**self.status(), 'accepted': True, 'resource_result': result}
+            if adaptive:
+                journal = resources.read(self.root, original)
+                if journal['pause'] or journal['pending']:
+                    return {**self.status(), 'accepted': False, 'reason': 'Resolve resource review or native authorization before continuing'}
             # Read-only report access and failure submission remain possible after expiry/API failure.
             client = self.client()
+            operating = resources.effective(original, self.root) if adaptive else client.delegation
             planning_path = self.root / 'planning-status.json'
             pending = read_json(planning_path) if planning_path.exists() else {}
             if pending.get('status') == 'NEEDS_INFO' and name in ('dot_initialize', 'l1_approve', 'l1_revise', 'dot_run'):
@@ -123,12 +177,13 @@ class Bridge:
                 # All rejection checks precede mutations. A completed local rejection is not UNKNOWN.
                 try:
                     supplement = clarifications.validate_facts(json.loads(arguments['facts_json']))
-                    clarifications.check_remaining_time(self.root, client.delegation)
+                    clarifications.check_remaining_time(self.root, operating)
                     prior_facts = clarifications.records(self.root)
                     if prior_facts and prior_facts[-1]['supplement'] == supplement:
                         raise ValueError('Identical fact supplement already recorded; no new revision consumed')
                     count = c.state.get('revision_count', 0) if c else len(prior_facts)
-                    if count >= client.delegation['limits']['revisions']:
+                    resources.require(original, self.root, 'revisions', count)
+                    if count >= operating['limits']['revisions']:
                         raise ValueError('L1 revision budget exhausted; no new facts revision')
                     if c and (c.state['state'] not in ('PLAN_PENDING', 'DECISION_PENDING')
                               or c.state['active_run'] or c.state.get('report')):
@@ -138,7 +193,7 @@ class Bridge:
                         raise ValueError('Unresolved API attempt: reconcile before adding facts')
                 except (ValueError, TypeError) as exc:
                     return {**self.status(), 'accepted': False, 'reason': str(exc)}
-                record = clarifications.append(self.root, supplement, arguments['l1_session_id'], client.delegation, c)
+                record = clarifications.append(self.root, supplement, arguments['l1_session_id'], operating, c)
                 if c:
                     c.state['clarification_root'] = str(self.root)
                     c.save()
@@ -156,6 +211,8 @@ class Bridge:
                 base_sha = digest({'requirements': arguments['requirements'], 'facts': facts_sha})
                 feedback = planning.feedback(self.root, previous)
                 request_sha = digest({'base': base_sha, 'validation_feedback': feedback})
+                if adaptive:
+                    request_sha = digest({'request': request_sha, 'current_authority_and_allocation': operating})
                 if ((previous.get('status') == 'NEEDS_INFO' and previous.get('base_request_sha256') == base_sha)
                         or (previous.get('status') == 'PLAN_REJECTED' and previous.get('request_sha256') == request_sha)):
                     return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
@@ -174,6 +231,14 @@ class Bridge:
                             'next': 'L1 gathers facts, calls l1_add_facts, then dot_plan within the same remaining budget'}
                 except planning.PlanRejected as exc:
                     planning.record_rejection(self.root, name, exc, request_sha, base_sha)
+                    if (adaptive and exc.code == 'IMPLEMENTATION_DISPATCH_BUDGET'
+                            and (c.state['implementation_attempts'] if c else 0) + exc.details['initial_task_dispatches']
+                            > operating['limits']['implementation_attempts']):
+                        raise resources.BudgetReview('implementation_attempts',
+                            c.state['implementation_attempts'] if c else 0, exc.details['initial_task_dispatches'],
+                            operating['limits']['implementation_attempts'],
+                            resources.authority(original, self.root)['limits']['implementation_attempts'],
+                            'Draft needs more implementation dispatches; L1 must assess decomposition and remaining work') from exc
                     return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
                             'next': 'L1 reads validation feedback, then dot_plan to correct the draft within the original budget; '
                                     'l1_revise is available only after initialization. No product worker was dispatched.'}
@@ -181,12 +246,11 @@ class Bridge:
                     if c:
                         c.stop_with_report(str(exc))
                     else:
-                        atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': str(exc),
-                            'execution_started': False, 'owner': 'L1', 'user_review_required': True,
-                            'planning_rejections': planning.history(self.root)})
+                        self.preflight_report(str(exc))
                     raise
                 atomic_json(planning_path, {'status': 'PLAN_READY', 'facts_sha256': facts_sha,
                     'plan_sha256': digest(plan), 'requirements_sha256': digest(arguments['requirements']),
+                    'authorization_scope': resources.scope_digest(original, self.root) if adaptive else None,
                     'requires_revision': bool(c)})
                 if c:
                     return {'plan': plan, 'next': 'L1 inspects the proposal then calls l1_revise; approvals are not copied'}
@@ -198,11 +262,14 @@ class Bridge:
                     raise ValueError('Task already initialized; do not reset attempts')
                 planned = read_json(self.root / 'planning-status.json')
                 if (planned['status'] != 'PLAN_READY' or planned['facts_sha256'] != clarifications.signature(self.root)
+                        or (adaptive and planned.get('authorization_scope') != resources.scope_digest(original, self.root))
                         or planned['plan_sha256'] != digest(read_json(self.root / 'plan.json'))
                         or planned['requirements_sha256'] != digest((self.root / 'requirements.md').read_text(encoding='utf-8'))):
                     raise ValueError('Plan is missing or stale after clarification; replan before initialization')
                 initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
                 c = Controller(self.run_dir)
+                c.state['clarification_root'] = str(self.root)
+                c.save()
                 attach_delegation(c, self.settings['delegation'], self.settings['raw_input'])
                 c.state['delegated_started_at'] = read_json(self.root / 'api/ledger.json')['started_at']
                 c.state['clarification_root'] = str(self.root)
@@ -226,6 +293,7 @@ class Bridge:
                 delegation = check_binding(c.state)
                 clarifications.check_remaining_time(self.root, delegation)
                 if not c.state.get('pending_clarification_revision') and c.state['revision_count'] >= delegation['limits']['revisions']:
+                    resources.check_controller(c.state, 'revisions', c.state['revision_count'])
                     c.stop_with_report('L1 revision budget exhausted')
                     return self.status()
                 try:

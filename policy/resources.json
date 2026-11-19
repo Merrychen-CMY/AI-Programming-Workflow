@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "opt_in_field": "adaptive_limits",
+  "new_task_default": true,
+  "legacy_auto_migration": false,
+  "user_confirms": [
+    "goals_constraints_acceptance",
+    "permissions",
+    "resource_ceilings",
+    "final_deadline"
+  ],
+  "allocation_owner": "L1",
+  "exhaustion_state": "BUDGET_REVIEW_PENDING",
+  "human_request_state": "AUTHORIZATION_PENDING",
+  "status_layer": "bridge_overlay_preserves_runtime_state",
+  "allocation_tool": "l1_adjust_limits",
+  "request_tool": "l1_request_authorization",
+  "human_review_tool": "workflow_review_authorization",
+  "human_confirmation_provider": "native_ctx.userQuestions",
+  "model_supplied_human_approval": false,
+  "original_confirmation_immutable": true,
+  "usage_reset_allowed": false,
+  "history_deletion_allowed": false,
+  "unknown_auto_clear": false,
+  "final_report_auto_reopen": false,
+  "independent_verification_required": true,
+  "scope_change_requires_replan_and_independent_review": true,
+  "resource_only_change_invalidates_product_baseline": false,
+  "amendable_fields": [
+    "limits",
+    "expires_at",
+    "allowed_paths",
+    "hard_constraints",
+    "authorized_context"
+  ],
+  "final_report_includes": [
+    "user_authority",
+    "operating_limits",
+    "actual_usage",
+    "history",
+    "dot_api_reported_usage"
+  ],
+  "unified_monetary_hard_cap": false,
+  "guide": "docs/guides/adaptive-resources.md"
+}

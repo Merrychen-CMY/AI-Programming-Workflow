@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.2.2",
+  "workflow_version": "3.3.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -28,12 +28,12 @@
   "implementation_worker_can_issue_final_acceptance": false,
   "issue_intake": "DOT_as_L2",
   "direct_verifier_to_developer_dispatch": false,
-  "product_or_ac_change_requires_user_decision": false,
+  "product_or_ac_change_requires_user_decision": true,
   "plan_maintenance": {
-    "within_explicit_delegation": "equivalent_maintenance_logged_without_changing_approved_scope_checks_or_budget",
-    "semantic_change": "L1_reapproves_within_original_delegation_and_reruns_required_checks",
+    "within_explicit_delegation": "L1_adjusts_operating_limits_within_user_ceilings_preserving_cumulative_usage",
+    "semantic_change": "L1_reapproves_within_current_user_authority_and_reruns_required_checks",
     "may_lower_acceptance_standard": false,
-    "outside_delegation": "L1_submits_blocked_final_report_no_automatic_expansion"
+    "outside_delegation": "L1_requests_explicit_native_user_amendment_or_submits_final_report"
   },
   "delivery": {
     "execute_when_existing_authorization_covers_actual_action": true,
@@ -61,11 +61,13 @@
   "user_decision_triggers": [
     "initial_missing_facts",
     "consolidated_start_confirmation",
+    "explicit_authority_amendment_when_needed",
     "final_report"
   ],
   "user_visible_outputs": [
     "initial_requirements_questions",
     "consolidated_start_summary",
+    "bounded_authorization_request_when_needed",
     "success_or_failure_final_report_for_review"
   ],
   "states": [
@@ -106,7 +108,7 @@
         "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "Current requirements and plan approvals valid; dispatch within scope and cumulative budgets; failure or exhaustion produces report"
+      "guard": "Approved baselines, bounded dispatch and cumulative usage; adaptive allocation exhaustion pauses for L1 evaluation before any new dispatch"
     },
     {
       "id": "VERIFYING",
@@ -128,7 +130,7 @@
         "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "L1 handles requirements/verification/plan revision within immutable delegation; reapprove affected baselines, preserve counters; unresolved or outside scope produces final report"
+      "guard": "L1 revises within current user authority; changes beyond authority require native user approval; reapprove affected baselines and preserve all counters"
     },
     {
       "id": "BLOCKED",
@@ -207,5 +209,8 @@
     "requires_independent_baseline_review": true,
     "unknown_or_final_report_auto_resume": false,
     "guide": "docs/guides/clarifications.md"
-  }
+  },
+  "resource_policy": "policy/resources.json",
+  "authority_change_requires_user_decision": true,
+  "in_scope_requirement_clarification_requires_user_decision": false
 }

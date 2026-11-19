@@ -49,7 +49,9 @@ class SimpleFlowTests(unittest.TestCase):
         self.reject('delivery.require_new_approval_when_scope_not_covered', False)
 
     def test_ac_changes_and_lowered_standards_are_not_internal_repairs(self):
-        self.reject('product_or_ac_change_requires_user_decision', True)
+        self.reject('product_or_ac_change_requires_user_decision', False)
+        self.reject('in_scope_requirement_clarification_requires_user_decision', True)
+        self.reject('authority_change_requires_user_decision', False)
         self.reject('product_or_ac_change_requires_l1_decision', False)
         self.reject('plan_maintenance.may_lower_acceptance_standard', True)
 

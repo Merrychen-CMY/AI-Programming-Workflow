@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.2.2",
+  "workflow_version": "3.3.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -14,6 +14,7 @@
   "role_reading": {
     "L1": [
       "L1.md",
+      "docs/guides/adaptive-resources.md",
       "docs/guides/plan-rejections.md",
       "templates/requirements.md",
       "docs/guides/l1-harness.md",
@@ -34,6 +35,7 @@
     ],
     "L2": [
       "roles/orchestrator-l2.md",
+      "docs/guides/adaptive-resources.md",
       "docs/guides/plan-rejections.md",
       "docs/reference/06-l2-orchestration.md",
       "docs/reference/13-state-machine.md",
@@ -67,6 +69,7 @@
     ],
     "DOT": [
       "DOT.md",
+      "docs/guides/adaptive-resources.md",
       "docs/guides/plan-rejections.md",
       "policy/simple-flow.json",
       "templates/execution-plan.md",
@@ -166,6 +169,12 @@
       "templates/harness-start.example.json",
       "docs/guides/clarifications.md",
       "templates/fact-supplement.example.json"
+    ],
+    "resource_review": [
+      "policy/resources.json",
+      "docs/guides/adaptive-resources.md",
+      "templates/resource-allocation.example.json",
+      "templates/authorization-request.example.json"
     ]
   },
   "full_reference": [
@@ -337,10 +346,11 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.2.2-validation.md",
+    "validation_record": "docs/reports/3.3.0-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false,
     "harness_plugin_entrypoint": "harness/index.js"
-  }
+  },
+  "resource_policy": "policy/resources.json"
 }

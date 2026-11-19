@@ -29,7 +29,7 @@
       "requirements",
       "execution_plan"
     ],
-  "workflow_binding_version": "3.2.2",
+    "workflow_binding_version": "3.3.0",
     "evidence": "DOT在既有任务和证据中记录DOX条款适用性及结果；用户不另填清单。"
   },
   "verification_boundary": {

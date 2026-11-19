@@ -26,7 +26,8 @@
 | 完整草案未通过纯校验 | PLAN_REJECTED，accepted=false，operation_status=COMPLETED_REJECTED；当前工具调用正常返回 |
 | 尚缺关键事实 | NEEDS_INFO，按[事实补充指南](clarifications.md)处理 |
 | 传输中断、返回不完整、进程取消、落盘失败或结果不明 | 保留UNKNOWN，不自动重放 |
-| 明确终止、授权/预算耗尽或已有最终报告 | 继续按终态规则处理，不靠修订解锁 |
+| 当前额度不足（动态任务） | BUDGET_REVIEW_PENDING：L1评估、调整或申请追加授权，保留消耗 |
+| 明确终止、无法取得所需授权或已有最终报告 | 继续按终态规则处理，不靠修订解锁 |
 
 ```mermaid
 flowchart TD
@@ -53,3 +54,5 @@ flowchart TD
 ## 验证边界
 
 自动化验证结构、账本、状态和拒绝路径；不能证明模型总能正确识别任务角色、保留全部自然语言需求或真正完成硬件测试。独立审核和实际候选证据仍是必需条件。
+
+3.3.0动态任务补充：实际初始派工数超出当前分配时进入BUDGET_REVIEW_PENDING，L1先评估拆分、剩余工作和资源收益，在用户上限内调整后重新规划。仅草案自身的预算字段错误仍为PLAN_REJECTED。超过用户总上限不能自动放行；具体追加授权走[动态资源流程](adaptive-resources.md)。旧固定任务保持原规则，真实UNKNOWN和最终报告不被解锁。

@@ -1,6 +1,6 @@
 # L1 DeepSeek Harness → GPT/DOT接入
 
-版本3.2.2（ReqPilot）：用户只与L1沟通原始需求、审核最终报告。以下配置由L1或安装维护者准备一次，运行时用户不手动搬运需求/计划。
+版本3.3.0（ReqPilot）：用户只与L1沟通原始需求、审核最终报告。以下配置由L1或安装维护者准备一次，运行时用户不手动搬运需求/计划。
 
 推荐优先使用[L1原生插件](l1-plugin.md)，它自动生成本文中的配置/委托并提供开工和最终报告确认界面。本文保留给手动MCP集成与终端后备路径。原生插件按“配置模型和密钥 → 检查环境 → 沟通原始需求 → 集中确认开工 → L1 自动推进 → 用户审核最终报告”引导；基础环境检查无需需求草案。之后不恢复逐项人工审批。
 
@@ -45,6 +45,8 @@ Harness加载的文档至少包含AGENTS.md、L1.md及本文；按需读取DOT.m
 
 | 工具 | L1应做什么 | 结果 |
 | --- | --- | --- |
+| `l1_adjust_limits` | 新动态任务先分配当前额度，之后可在用户上限内调整并记录理由 | 无API调用、无派工 |
+| `l1_request_authorization` | 提交具体授权变更，由原生workflow_review_authorization取得人类决定；MCP没有模型代签入口 | AUTHORIZATION_PENDING |
 | `dot_plan` | 传需求全文，GPT结合固定环境生成执行草案 | 真实配置缺口时停止；不批准、不执行 |
 | `dot_initialize` | 固定项目起点和委托 | REVIEW_PENDING |
 | `l1_approve` | kind=requirements，传L1实际会话标识 | 独立Codex审查通过才记录L1批准；PLAN_PENDING |
@@ -52,10 +54,10 @@ Harness加载的文档至少包含AGENTS.md、L1.md及本文；按需读取DOT.m
 | `dot_run` | 请求GPT/DOT受控派工 | 独立实现、检查、测试、审核；问题统一回L2 |
 | `dot_status` | 读取实际状态、审查记录、decision或最终报告 | 不会自动派新任务 |
 | `dot_plan` / `l1_revise` | DECISION_PENDING时，L1修需求或内部L1-V计划；先生成新计划，再提交requirements和plan_json | 保留计数、清除旧批准，回REVIEW_PENDING |
-| `l1_stop` | 无法解决、超范围或预算耗尽，提供原因 | FAILED或UNKNOWN报告 |
+| `l1_stop` | 评估后无可行方案、授权未获批准且无法继续，提供原因 | FAILED或UNKNOWN报告 |
 | `l1_submit_report` | 阅读DOT结果后传summary和实际l1_session_id | 绑定L1说明及原结果，供用户最终审核 |
 
-L1不得把DOT的FAILED/INCOMPLETE/UNKNOWN改成SUCCESS。委托过期仍可读取报告并提交失败结论；不可继续执行。第一次计划生成失败时生成`control/preflight-report.json`，由L1直接呈现用户；此时没有创建产品运行，也没有任何实现授权。
+L1不得把DOT的FAILED/INCOMPLETE/UNKNOWN改成SUCCESS。委托过期仍可读取报告；动态任务可申请具体延期，批准并调整后才可继续，不能篡改原有效期。不可恢复的计划生成错误或明确停止时生成`control/preflight-report.json`，由L1直接呈现用户；此时没有创建产品运行，也没有任何实现授权。
 
 原始输入、委托或模型配置改变不能在旧控制目录悄悄重启。需求/计划变化用revision入口，审查与修复历史保留。模型语义审核不是数学证明，原始约束须有可验证AC和独立证据支持。
 
@@ -88,3 +90,5 @@ L1 AgentPreset同时读取[L1用户沟通指南](l1-user-expression.md)。桥的
 ## 同一委托内补充事实
 
 工具桥新增l1_add_facts(facts_json,l1_session_id)，原生插件的会话ID由宿主注入，模型不能填写。dot_plan返回NEEDS_INFO时按[澄清指南](clarifications.md)核实、追加事实并重新规划；MCP本机记录仍非强身份鉴权。
+
+动态新任务的调用顺序、额度字段与明确限制见[资源管理指南](adaptive-resources.md)。l1_add_facts不能改期限，但独立的原生追加授权可批准具体延期；两者不是同一入口。旧MCP桥没有人类追加批准界面，不接受模型填写“已获批准”。

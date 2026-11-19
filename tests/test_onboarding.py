@@ -24,6 +24,7 @@ class OnboardingTests(unittest.TestCase):
         self.task = self.base / 'task'
         self.settings = {'model': 'fixture-model', 'python': sys.executable, 'codex': 'fixture-codex'}
         self.draft = json.loads((ROOT / 'templates/harness-start.example.json').read_text(encoding='utf-8'))
+        self.draft.pop('adaptive_limits', None)  # These fixtures retain the legacy fixed-budget contract.
         self.draft.update(project=str(self.project), raw_input='原始要求：完成输入解析，不发布。',
                           topics={key: '明确测试条件' for key in o.TOPICS}, hard_constraints=['不得发布'], allowed_paths=['.'],
                           expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),

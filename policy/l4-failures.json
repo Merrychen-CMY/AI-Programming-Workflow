@@ -66,7 +66,7 @@
       "observation": "板卡/治具/网络/云服务不可用",
       "l2_analysis_and_blocking": "ERROR；不确定仍在运行则 UNKNOWN",
       "handler_after_l2_triage": "L4 恢复设施",
-      "resume_or_close_conditions": "确认旧会话/写入者停止；新 run_id；最多 2 次设施重试"
+      "resume_or_close_conditions": "确认旧会话/写入者停止；新 run_id；按当前设施额度重试，耗尽先L1评估，不借用其他预算"
     },
     {
       "id": "L4F-10",

@@ -1,0 +1,22 @@
+{
+  "changes": {
+    "limits": {
+      "implementation_attempts": 12,
+      "same_root_cause_attempts": 5,
+      "infrastructure_retries": 6,
+      "timeout_seconds": 2700,
+      "l1_reviews": 16,
+      "revisions": 8,
+      "api_calls": 40,
+      "api_max_output_tokens": 8192,
+      "wall_time_seconds": 14400
+    },
+    "expires_at": "REPLACE_WITH_明确的新截止时间含时区"
+  },
+  "reason": "REPLACE_WITH_为何原授权不能完成",
+  "evidence": "REPLACE_WITH_失败、进度、累计消耗及记录引用",
+  "remaining_work": "REPLACE_WITH_剩余工作",
+  "expected_benefit": "REPLACE_WITH_追加授权的收益",
+  "risk": "REPLACE_WITH_费用、时间、范围等实际风险",
+  "resume_plan": "REPLACE_WITH_调整额度、重审受影响基线、验证及继续方式"
+}

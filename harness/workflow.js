@@ -10,6 +10,7 @@ const exists = async path => { try { await readFile(path); return true; } catch(
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const save = (path, value) => writeFile(path, JSON.stringify(value, null, 2), { mode: 0o600 });
 const modelTools = {
+  l1_adjust_limits: ['proposal_json'], l1_request_authorization: ['proposal_json'],
   dot_plan: ['requirements'], dot_initialize: [], l1_approve: ['kind'], dot_run: [], dot_status: [],
   l1_revise: ['requirements', 'plan_json'], l1_submit_report: ['summary'], l1_stop: ['reason'],
   l1_add_facts: ['facts_json'],
@@ -20,10 +21,12 @@ const labels = { requirements: '需求目标', baseline: '现有基线', scope: 
 export function startupSummary(draft, settings, inspection, digest) {
   return `开工前集中确认\n项目：${draft.project}\nGPT/DOT 模型：${settings.model}\nPython：${settings.python}\nCodex：${settings.codex}\n项目指纹：${inspection.baseline.id}\n摘要编号：${digest}\n\n`
     + Object.entries(labels).map(([key,label])=>`${label}：${draft.topics[key]}`).join('\n\n')
+    + `\n\n资源管理方式：${draft.adaptive_limits === true ? 'L1在用户总上限内自动分配和调整；越界须追加授权' : '旧版固定额度；本任务未启用动态管理'}\n`
     + `\n\n原始信息与澄清记录：\n${draft.raw_input}\n\n不可降低的约束：\n${draft.hard_constraints.join('\n')}\n允许修改路径：${JSON.stringify(draft.allowed_paths)}\n`
     + `到期时间：${draft.expires_at}\n执行预算（次数、秒数和输出 token 上限）：\n${JSON.stringify(draft.limits,null,2)}\n环境检查：\n${JSON.stringify(inspection.checks,null,2)}\n${inspection.limits}\n\n`
-    + '预算含义：implementation_attempts 是整个任务累计的 L3 实现派工次数，包含初次实现和修复，不是每个子任务的重试次数。计划 tasks 只列实现派工；构建、Doxygen、独立测试和审核仍须完整安排在验证部分。规划调用消耗 API/时间预算，不消耗实现次数。\n\n'
-    + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。超出范围、预算耗尽或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
+    + '上述资源值是本任务授权上限。启用动态管理时，细粒度执行额度由 L1 在这些上限内制定和调整，无需逐项向你审批；达到当前额度先由 L1 评估，超过上限或需要改变目标/权限/截止时间时再次向你申请。每次调整与累计消耗均进入最终报告，不清零历史。\n\n'
+    + 'implementation_attempts 是全任务初次实现和修复的累计 L3 派工次数；独立构建、Doxygen、测试和审核仍须完整安排。API调用和时间另计，当前没有统一货币硬限额。\n\n'
+    + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。当前额度不足先由L1评估，超出授权须你明确批准；无可行方案或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
 }
 
 export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(), '.ai-programming-workflow'),
@@ -137,6 +140,28 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
           environment: await exists(`${task}/environment.json`) ? await json(`${task}/environment.json`) : null };
       }
       if (!receipt) throw new Error('请先完成环境检查和真实用户开工确认');
+      if (name === 'workflow_review_authorization') {
+        if (Object.keys(args).length) throw new Error('Authorization review accepts no model arguments');
+        if (await exists(`${task}/interrupted.json`)) throw new Error('UNKNOWN: authorization cannot clear an interrupted operation');
+        const preview = await call(settings, 'authorization_preview');
+        const proposal = preview.proposal;
+        const names = {limits:'资源总上限',expires_at:'最终截止时间',allowed_paths:'允许修改的路径',
+          hard_constraints:'硬约束',authorized_context:'明确的新目标与验收要求'};
+        const changes = Object.entries(proposal.changes).map(([key,value]) =>
+          `${names[key] || key}\n原值：${JSON.stringify(preview.before?.[key] ?? '未设置',null,2)}\n申请值：${JSON.stringify(value,null,2)}`).join('\n\n');
+        const question = `追加授权申请（${preview.sha256.slice(0,16)}）\n${changes}\n\n理由：${proposal.reason}\n证据：${proposal.evidence ?? '见申请记录'}\n剩余工作：${proposal.remaining_work ?? '见申请记录'}\n预期收益：${proposal.expected_benefit ?? '见申请记录'}\n风险：${proposal.risk ?? '见申请记录'}\n恢复方案：${proposal.resume_plan ?? '见申请记录'}\n累计消耗：${JSON.stringify(preview.usage ?? {},null,2)}\n\n仅批准列出的具体变化；累计消耗和历史记录保留。批准不代表未执行的验证已经通过，也不自动执行产品动作。`;
+        if (question.length > 65_000) throw new Error('授权申请超过界面上限，请缩小申请；未批准');
+        const reply = await ctx.userQuestions.ask({agent:exec.agent,signal:exec.signal,questions:[{
+          id:`authorization-${preview.sha256}`,question,header:'追加授权',multiSelect:false,
+          options:[{label:'批准这份追加授权',description:'批准列出的准确变更，保留历史消耗。'},
+                   {label:'拒绝这份追加授权',description:'维持原授权，由L1调整方案或提交报告。'}]}]});
+        const answer=reply.answers?.find(a=>a.id===`authorization-${preview.sha256}`);
+        if(exec.signal?.aborted || !answer || answer.custom || answer.selected?.length!==1 ||
+            !['批准这份追加授权','拒绝这份追加授权'].includes(answer.selected[0]))
+          throw new Error('用户未作出明确授权决定；申请继续等待');
+        return await call(settings,'authorization_decide',{sha256:preview.sha256,
+          approved:answer.selected[0]==='批准这份追加授权'});
+      }
       if (name === 'workflow_review_report') {
         if (Object.keys(args).length) throw new Error('Report review accepts no model arguments');
         const preview = await call(settings, 'report_preview');
@@ -178,10 +203,13 @@ export const toolFields = {
   workflow_setup: {}, workflow_reference: { path: 'Repository-relative .md/.json path', offset: 'Character offset as a decimal string; begin with 0' },
   workflow_check_environment: {},
   workflow_inspect: { draft_json: 'Complete JSON per templates/harness-start.example.json, prepared by L1 from user facts' },
-  workflow_confirm_start: {}, workflow_status: {}, workflow_review_report: {},
+  workflow_confirm_start: {}, workflow_status: {}, workflow_review_report: {}, workflow_review_authorization: {},
   ...Object.fromEntries(Object.entries(modelTools).map(([name,fields])=>[name,Object.fromEntries(fields.map(f=>[f,f]))])),
 };
 export const descriptions = {
+  l1_adjust_limits: 'L1 allocates bounded resources with evidence, remaining work, benefit and strategy; no user impersonation or counter reset.',
+  l1_request_authorization: 'Stage exact requested changes for the user; this does not approve or execute them.',
+  workflow_review_authorization: 'Show the exact pending amendment and obtain a real user decision. No model-supplied approval.',
   workflow_setup: 'Open local model/secret configuration UI. Never ask for a key in chat. No API call on opening.',
   workflow_reference: 'Read packaged workflow rules or templates in bounded chunks. No filesystem writes.',
   workflow_check_environment: 'After model/key setup, check Python, Git, Codex and login before requirements discovery. No project input, API call or worker dispatch.',
@@ -194,7 +222,7 @@ export const descriptions = {
   l1_approve: 'L1 requests independent review and delegated approval of requirements or plan. Not human approval.',
   dot_run: 'Run approved bounded GPT/DOT workflow with independent Codex sessions; may take minutes.',
   dot_status: 'Read current DOT state and original report.',
-  l1_revise: 'Revise within original user scope/budget; retain all attempts and invalidate old approvals.',
+  l1_revise: 'Revise within current user-authorized scope/limits; retain all attempts and invalidate old approvals.',
   l1_add_facts: 'Append sourced facts in the same paused task. Read templates/fact-supplement.example.json. '
     + 'Retain original confirmation, authority, counters and expiry; independent baseline review still required.',
   l1_submit_report: 'Submit L1 assessment while preserving DOT outcome/evidence, then request user report review.',

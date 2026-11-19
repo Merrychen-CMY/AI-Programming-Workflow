@@ -39,7 +39,7 @@
     {
       "state_or_phase": "ACCEPTANCE_READY",
       "transition": "L5汇总成功或失败报告 → L1核查提交 → REPORT_PENDING（用户审核）",
-      "guard": "成功需独立测试与独立审核；失败/耗尽亦提交报告，完整AC、风险、问题历史及证据"
+      "guard": "成功需独立测试与独立审核；失败且无可行恢复方案时提交报告，完整AC、风险、问题历史及证据"
     },
     {
       "state_or_phase": "REPORT_PENDING",

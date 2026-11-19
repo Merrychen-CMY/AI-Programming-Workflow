@@ -33,6 +33,7 @@ async function fixture(t, answer='approve') {
     if(request.action==='inspect')return{inspection:{ready:true,baseline:{id:'baseline'},checks:[],limits:'fixture only'},digest:'a'.repeat(64)};
     if(request.action==='confirm')await writeFile(resolve(task,'confirmation.json'),JSON.stringify({settings}));
     if(request.action==='report_preview')return{sha256:'b'.repeat(64),report:{outcome:'FAILED',evidence:['original']}};
+    if(request.action==='authorization_preview')return{sha256:'c'.repeat(64),proposal:{changes:{limits:{api_calls:20}},reason:'Remaining diagnosed work'}};
     if(request.action==='bridge' && controls.bridgeError)throw new Error(controls.bridgeError);
     if(request.action==='bridge' && controls.bridgeReply)return controls.bridgeReply;
     return {state:request.action==='confirm'?'START_CONFIRMED':'FIXTURE'};
@@ -47,6 +48,41 @@ async function fixture(t, answer='approve') {
 test('tool schema offers no human receipt, key or forged L1 session parameter',()=>{
   assert.deepEqual(toolFields.workflow_confirm_start,{});assert.deepEqual(toolFields.workflow_review_report,{});
   for(const fields of Object.values(toolFields))for(const k of Object.keys(fields))assert.ok(!['key','confirmed','receipt','l1_session_id'].includes(k));
+});
+for(const answer of ['approve','decline'])test(`native authorization ${answer} binds exact request without model approval`,async t=>{
+  const f=await fixture(t,answer);
+  await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await f.flow.invoke('workflow_review_authorization',{},f.exec);
+  assert.match(f.questions[0].questions[0].question,/Remaining diagnosed work/);
+  assert.equal(f.calls.at(-1).request.sha256,'c'.repeat(64));
+  assert.equal(f.calls.at(-1).request.approved,answer==='approve');
+  assert.equal(f.calls.at(-1).options.key,undefined);
+  assert.deepEqual(toolFields.workflow_review_authorization,{});
+});
+test('skipped authorization remains pending and model cannot approve it',async t=>{
+  const f=await fixture(t,'skip');
+  await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await assert.rejects(f.flow.invoke('workflow_review_authorization',{approved:true},f.exec),/no model arguments/);
+  await assert.rejects(f.flow.invoke('workflow_review_authorization',{},f.exec),/继续等待/);
+  assert.ok(!f.calls.some(c=>c.request.action==='authorization_decide'));
+});
+test('UNKNOWN blocks resource adjustments and human amendment without clearing the marker',async t=>{
+  const f=await fixture(t); await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await writeFile(resolve(f.task,'interrupted.json'),'{}');
+  for(const [name,args] of [['l1_adjust_limits',{proposal_json:'{}'}],['l1_request_authorization',{proposal_json:'{}'}],['workflow_review_authorization',{}]])
+    await assert.rejects(f.flow.invoke(name,args,f.exec),/UNKNOWN/);
+  assert.equal(f.calls.length,0);
+  assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),'{}');
+});
+test('completed budget review clears only the current in-flight marker and can resume',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  f.controls.bridgeReply={accepted:false,state:'BUDGET_REVIEW_PENDING',operation_status:'COMPLETED_BUDGET_REVIEW'};
+  const result=await f.flow.invoke('dot_run',{},f.exec);
+  assert.equal(result.state,'BUDGET_REVIEW_PENDING');
+  await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+  f.controls.bridgeReply={accepted:true};
+  await f.flow.invoke('l1_adjust_limits',{proposal_json:'{}'},f.exec);
+  assert.equal(f.calls.at(-1).options.key,undefined);
 });
 test('no native startup approval means no bridge calls',async t=>{
   const f=await fixture(t);await assert.rejects(f.flow.invoke('dot_run',{},f.exec),/真实用户开工确认/);assert.equal(f.calls.length,0);

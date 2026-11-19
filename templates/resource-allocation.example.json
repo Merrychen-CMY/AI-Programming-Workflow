@@ -1,0 +1,18 @@
+{
+  "limits": {
+    "implementation_attempts": 3,
+    "same_root_cause_attempts": 2,
+    "infrastructure_retries": 1,
+    "timeout_seconds": 600,
+    "l1_reviews": 6,
+    "revisions": 2,
+    "api_calls": 12,
+    "api_max_output_tokens": 4096,
+    "wall_time_seconds": 7200
+  },
+  "reason": "REPLACE_WITH_首次分配或本次调整理由",
+  "evidence": "REPLACE_WITH_任务规模、失败证据、根因及账本引用",
+  "remaining_work": "REPLACE_WITH_剩余实现与独立验证工作",
+  "expected_benefit": "REPLACE_WITH_增加资源的明确收益；无收益则停止",
+  "strategy": "REPLACE_WITH_执行策略及何时再次评估，不能盲重试"
+}
