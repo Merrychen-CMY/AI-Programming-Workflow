@@ -181,7 +181,7 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.2'],
                 'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
@@ -567,6 +567,8 @@ def validate_repository(root):
     simple = documents['policy/simple-flow.json']
     errors.extend(validate_simple_flow(simple))
     version = (root / 'VERSION').read_text(encoding='utf-8').strip()
+    if not (root / 'docs/releases' / (version + '.md')).is_file():
+        errors.append('Current version release notes are missing: docs/releases/' + version + '.md')
     if version != policy.get('policy_version') or version != index.get('workflow_version'):
         errors.append('VERSION, INDEX and policy versions differ')
     if version != simple.get('workflow_version') or version != documents['templates/project-context.json']['workflow']['version']:

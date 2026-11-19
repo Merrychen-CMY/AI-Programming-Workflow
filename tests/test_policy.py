@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -18,6 +19,14 @@ class PolicyTests(unittest.TestCase):
 
     def test_valid_reference_policy(self):
         self.assertEqual(validate_policy(self.policy), [])
+
+    def test_missing_release_notes_is_rejected_before_packaging(self):
+        from validate_repo import validate_repository
+        notes = ROOT / 'docs/releases' / ((ROOT / 'VERSION').read_text().strip() + '.md')
+        original = Path.is_file
+        with patch.object(Path, 'is_file', lambda path: False if path == notes else original(path)):
+            self.assertTrue(any('Current version release notes are missing' in error
+                                for error in validate_repository(ROOT)))
 
     def reject(self, path, value):
         policy = copy.deepcopy(self.policy)
