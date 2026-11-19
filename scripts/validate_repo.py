@@ -572,6 +572,9 @@ def validate_repository(root):
     simple = documents['policy/simple-flow.json']
     errors.extend(validate_simple_flow(simple))
     version = (root / 'VERSION').read_text(encoding='utf-8').strip()
+    readme_versions = re.findall(r'当前版本\s*\*\*([^*]+)\*\*', (root / 'README.md').read_text(encoding='utf-8'))
+    if readme_versions != [version]:
+        errors.append('README current version must appear once and match VERSION')
     if not (root / 'docs/releases' / (version + '.md')).is_file():
         errors.append('Current version release notes are missing: docs/releases/' + version + '.md')
     if version != policy.get('policy_version') or version != index.get('workflow_version'):
