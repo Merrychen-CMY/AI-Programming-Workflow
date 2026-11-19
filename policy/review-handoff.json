@@ -42,7 +42,7 @@
     "immutable_content_addressed_files": true,
     "new_report_returned_once_per_operation": true,
     "chat_delivery": "host_deliverables_presented_event",
-    "host_bootstrap_abi": 9,
+    "host_bootstrap_abi": 10,
     "final_confirmation_checks_markdown_digest": true,
     "adds_user_approval_checkpoint": false,
     "delivery_failure_replays_review_or_execution": false
