@@ -123,6 +123,24 @@ def pause(root, original, exc, state=None):
     return request
 
 
+def resolve_planning_pause(root, original, requirements, plan, state=None):
+    """A validated smaller plan can resolve dispatch demand without raising caps."""
+    from .controller import digest, pending_dispatch_count
+    journal = read(root, original)
+    checkpoint = journal['pause']
+    if not checkpoint or checkpoint['key'] != 'implementation_attempts' or journal['pending']:
+        return False
+    used = state.get('implementation_attempts', 0) if state else 0
+    remaining = pending_dispatch_count(state, requirements, plan)
+    require(original, root, 'implementation_attempts', used, remaining)
+    journal['pause'] = None
+    save(root, journal, 'l1_replanned_within_allocation', {
+        'checkpoint': checkpoint, 'plan_sha256': digest(plan),
+        'requirements_sha256': digest(requirements), 'remaining_dispatches': remaining,
+        'observed_usage': usage(root, state), 'limits': journal['current']})
+    return True
+
+
 def _numbers(value):
     if not isinstance(value, dict) or set(value) != set(LIMITS):
         raise ValueError('Supply exactly the nine operating limit fields')

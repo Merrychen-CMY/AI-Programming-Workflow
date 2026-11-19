@@ -119,6 +119,29 @@ test('known approval refusal clears its current marker and allows the next corre
   f.controls.bridgeReply={state:'PLAN_PENDING'};
   assert.equal((await f.flow.invoke('l1_approve',{kind:'requirements'},f.exec)).state,'PLAN_PENDING');
 });
+test('empty or non-string model arguments are completed refusals without a new interruption',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  for (const [name,args] of [['l1_prepare_requirements',{requirements:''}],
+    ['l1_prepare_requirements',{requirements:'  \n'}],['l1_approve',{kind:''}],['dot_plan',{requirements:null}]]) {
+    const result=await f.flow.invoke(name,args,f.exec);
+    assert.equal(result.accepted,false);assert.equal(result.operation_status,'COMPLETED_REJECTED');
+    await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+  }
+  assert.equal(f.calls.length,0);
+  f.controls.bridgeReply={state:'REQUIREMENTS_PENDING'};
+  assert.equal((await f.flow.invoke('l1_prepare_requirements',{requirements:'Valid requirements'},f.exec)).state,'REQUIREMENTS_PENDING');
+  assert.equal(f.calls.length,1);
+});
+test('pure argument rejection preserves an interruption from an older operation',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  const prior=JSON.stringify({name:'dot_run',status:'UNKNOWN'});
+  await writeFile(resolve(f.task,'interrupted.json'),prior);
+  const result=await f.flow.invoke('l1_approve',{kind:''},f.exec);
+  assert.equal(result.operation_status,'COMPLETED_REJECTED');
+  assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),prior);
+  await assert.rejects(f.flow.invoke('l1_approve',{kind:'requirements'},f.exec),/旧操作结果待核实/);
+  assert.equal(f.calls.length,0);
+});
 test('environment check waits for model/key setup',async t=>{
   const f=await fixture(t);await saveConfig(f.directory,{...settings,model:'',probe:null});
   await assert.rejects(f.flow.invoke('workflow_check_environment',{},f.exec),/配置页/);

@@ -66,3 +66,5 @@ REVIEW_PENDING只接受需求审批；PLAN_PENDING只接受计划审批。DECISI
 ## 3.11.0本地原生流程补充
 
 3.11.0流程顺序与恢复：新原生任务强制动态额度。开工确认并分配额度后，先l1_prepare_requirements → l1_approve(requirements)，通过后才dot_plan → dot_initialize → l1_approve(plan) → dot_run。初始化承接原需求独立审核及消耗，不重复审核。DECISION_PENDING使用dot_investigate继续只读分析，L1用l1_resume_decision选择有证据的恢复方案；旧操作未核实时先经原生恢复核对，不能重放。修订保留不受影响的已完成实现，候选与验证随基线重新核验。开工前后报告均先l1_submit_report再由用户审核；非成功结案须真实任务证据。新增入口需安装ABI7主包，历史CLI和已开工旧任务保留原收据，不得伪造先审后规划的历史或重开最终报告。详见[完整流程、恢复与拒绝检查](../guides/flow-recovery.md)。本节正式服务端/设备交付示例仍属于高级接入，不表示本地插件已实现外部交付。
+
+3.13.0：VERIFYING增加当前候选实际产品来源、必需测试逐项结果及输入不变门禁。设施错误由L2选择已批准恢复动作，失败再交L2，缺能力或权限转DECISION_PENDING交L1。BUDGET_REVIEW_PENDING只对实现额度允许受限重规划；合法替代方案写入历史，已有任务必须修订和重审。纯空参数拒绝为COMPLETED_REJECTED，不进入UNKNOWN。初始化state仅在绑定与审核承接完整后提交；旧版纯半状态须原生核验后专用恢复。

@@ -69,3 +69,5 @@ API异常先读取dot_status.api_review，进入API_REVIEW_PENDING由L1评估，
 非成功结案规则（3.10.0）：L2 可以暂停操作、提交问题和建议终止，不能直接把整个任务判为最终失败。遇到问题先根据证据在现有权限内思考解决方案，记录已考虑方案、预计收益、核验步骤、资源及权限缺口；可执行的修复仍按原分工派 L3/L4。证据不足应提出有边界的调查方案，不能以“未知”替代分析并结束。超出 L2 权限时，将方案交 L1 评估；L1 在授权内协调，越界主动向用户申请。所有非成功结案（FAILED、INCOMPLETE、UNKNOWN）都必须先经过 L1 明确评估。控制器自动错误及旧预算耗尽只暂停，不生成最终报告。l1_stop 的 reason 使用 templates/l1-closure.example.json 所示 JSON 字符串，记录方案、证据、权限、资源和终止依据；普通理由文本会被拒绝且不结案。成功验收门禁、原始失败、累计消耗和未决操作保护保持有效。详见 docs/guides/l1-closure.md。
 
 3.11.0流程顺序与恢复：新原生任务强制动态额度。开工确认并分配额度后，先l1_prepare_requirements → l1_approve(requirements)，通过后才dot_plan → dot_initialize → l1_approve(plan) → dot_run。初始化承接原需求独立审核及消耗，不重复审核。DECISION_PENDING使用dot_investigate继续只读分析，L1用l1_resume_decision选择有证据的恢复方案；旧操作未核实时先经原生恢复核对，不能重放。修订保留不受影响的已完成实现，候选与验证随基线重新核验。开工前后报告均先l1_submit_report再由用户审核；非成功结案须真实任务证据。新增入口需安装ABI7主包，历史CLI和已开工旧任务保留原收据，不得伪造先审后规划的历史或重开最终报告。详见[完整流程与恢复](docs/guides/flow-recovery.md)。
+
+3.13.0：规划须填写verification.test_contract，绑定必需项、当前候选产品源码及受控构建。L3派工必须附L2完整solutions、原失败和范围。设施问题通过facility_actions选择获批facility_recovery.actions；未列明操作交L1，不能仅重复原检查。独立test写产物只在分配工作区，禁止改输入；全部必需项及来源证据同时通过才可成功。详见[测试契约与恢复](docs/guides/verification-contract.md)。

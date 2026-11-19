@@ -200,7 +200,9 @@ class ApiBridgeTests(unittest.TestCase):
                                              'l1_session_id':'L1'})['accepted'])
         facts = b.call('l1_add_facts', {'facts_json':json.dumps(clarification.supplement()), 'l1_session_id':'L1'})
         self.assertTrue(facts['accepted'])
-        send.side_effect = [delegated.call_response('propose_plan', {'plan_json':json.dumps(fixtures.fixture_plan())}),
+        plan = fixtures.fixture_plan()
+        plan['verification']['test_contract']['required_tests'] = ['test_value.TestValue.test_value']
+        send.side_effect = [delegated.call_response('propose_plan', {'plan_json':json.dumps(plan)}),
                             delegated.call_response('run_approved_workflow')]
         b.call('dot_plan', {'requirements':'Fixture'})
         self.assertEqual(b.call('dot_initialize', {})['state'], 'REVIEW_PENDING')

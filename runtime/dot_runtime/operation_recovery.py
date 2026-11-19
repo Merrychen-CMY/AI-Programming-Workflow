@@ -362,7 +362,8 @@ def _guard(task, receipt, session, *, finishing=False):
         raise ValueError('No interrupted operation to reconcile')
     if marker and marker.get('status') != 'UNKNOWN':
         raise ValueError('Unsupported host interruption record')
-    if marker and marker.get('name') == 'dot_initialize' and not state:
+    from .initialization_recovery import incomplete_native_state
+    if marker and marker.get('name') == 'dot_initialize' and (not state or incomplete_native_state(task, settings)):
         raise ValueError('Use the dedicated uncommitted initialization recovery')
     return settings, original, state, marker
 

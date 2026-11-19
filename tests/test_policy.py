@@ -37,6 +37,11 @@ class PolicyTests(unittest.TestCase):
     def test_non_l2_triage_is_rejected(self):
         self.reject('reflow.triage_owner', 'L4')
 
+    def test_test_contract_and_required_obligations_cannot_be_relaxed(self):
+        self.reject('candidate_verification.require_test_contract', False)
+        self.reject('candidate_verification.require_actual_product_provenance', False)
+        self.reject('candidate_verification.required_test_skip_passes', True)
+
     def test_wrong_root_cause_routes_are_rejected(self):
         for kind in ('implementation', 'product_requirement', 'task_plan_or_design',
                      'verification_plan_or_test', 'test_infrastructure', 'delivery_target_or_authorization'):

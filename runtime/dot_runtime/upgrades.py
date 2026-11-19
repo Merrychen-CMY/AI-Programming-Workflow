@@ -93,6 +93,19 @@ def records_for_control(root):
     return journal(task, read_json(task / 'confirmation.json'))[0]['records']
 
 
+def _baseline_revision(state):
+    """An old valid plan may require new evidence fields in the target runtime."""
+    if state is None:
+        return None
+    from .controller import validate_plan
+    try:
+        validate_plan(read_json(state['plan']))
+    except (ValueError, KeyError, TypeError) as exc:
+        return {'reason': str(exc), 'plan_sha256': file_hash(state['plan']),
+                'required_action': 'l1_revise', 'independent_reapproval_required': True}
+    return None
+
+
 def preview(task, receipt, session, source):
     if (task / PENDING).exists():
         raise ValueError('UPGRADE_PENDING: recover the existing local migration before another upgrade')
@@ -108,6 +121,7 @@ def preview(task, receipt, session, source):
              'state_sha256': digest(state), 'journal_sha256': digest(log),
              'original_confirmation_sha256': file_hash(task / 'confirmation.json'),
              'state': state['state'] if state else 'START_CONFIRMED',
+             'baseline_revision': _baseline_revision(state),
              'effect': 'Invalidate approvals/candidate; preserve completed tasks, all usage and evidence. '
                        'L1 independent reapproval and full candidate reverification required. No product dispatch.'}
     return {**value, 'sha256': digest(value)}
@@ -134,7 +148,10 @@ def _finish(task, receipt, session):
         atomic_json(task / JOURNAL, intent['after_journal'])
     journal(task, receipt)
     (task / PENDING).unlink()
-    return {'status': 'UPGRADED', 'record': entry, 'next': 'Read current rules; L1 independently reapproves requirements and plan, then DOT reruns required verification. No new startup or budget reset.'}
+    next_step = ('Legacy plan needs l1_revise before independent requirements and plan reapproval: '
+                 + entry['baseline_revision']['reason'] if entry.get('baseline_revision') else
+                 'Read current rules; L1 independently reapproves requirements and plan, then DOT reruns required verification.')
+    return {'status': 'UPGRADED', 'record': entry, 'next': next_step + ' No new startup or budget reset.'}
 
 
 def dispatch(task, receipt, request):
@@ -155,13 +172,14 @@ def dispatch(task, receipt, request):
         before = read_json(task / STATE) if (task / STATE).exists() else None
         after = deepcopy(before)
         log, _ = journal(task, receipt)
-        entry = {k: plan[k] for k in ('source', 'target', 'task_snapshot_sha256', 'original_confirmation_sha256', 'effect')}
+        entry = {k: plan[k] for k in ('source', 'target', 'task_snapshot_sha256', 'original_confirmation_sha256', 'effect', 'baseline_revision')}
         entry.update(sequence=len(log['records']) + 1, at=now(), authority='local_harness_user', session=request['session'],
                      previous_sha256=log['records'][-1]['sha256'] if log['records'] else None)
         entry['sha256'] = digest(entry)
         if after:
             next_state = 'DECISION_PENDING' if (after['state'] == 'DECISION_PENDING'
-                or after.get('pending_authorization_revision') or after.get('pending_clarification_revision')) else 'REVIEW_PENDING'
+                or plan['baseline_revision'] or after.get('pending_authorization_revision')
+                or after.get('pending_clarification_revision')) else 'REVIEW_PENDING'
             # Keep old evidence and decisions in history; do not replay completed implementation.
             after['history'].append({'action': 'runtime_upgrade', 'at': entry['at'], 'from': after['state'],
                 'to': next_state, 'upgrade': entry, 'prior_approvals': after['approvals'],

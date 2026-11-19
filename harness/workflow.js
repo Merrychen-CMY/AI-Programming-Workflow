@@ -216,6 +216,9 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       }
       if (!Object.hasOwn(modelTools, name) || JSON.stringify(Object.keys(args).sort()) !== JSON.stringify([...modelTools[name]].sort()))
         throw new Error('Unknown tool or invalid model arguments');
+      if (Object.values(args).some(value => typeof value !== 'string' || !value.trim()))
+        return { accepted: false, operation_status: 'COMPLETED_REJECTED',
+          reason: 'Tool arguments must be nonempty strings; no operation started' };
       const wasInterrupted = await exists(`${task}/interrupted.json`);
       if (wasInterrupted && !['dot_status','dot_read_record','l1_stop','l1_submit_report','l1_prepare_recovery'].includes(name))
         throw new Error('旧操作结果待核实；先查看记录，由L1调用l1_prepare_recovery提交核实证据，再通过workflow_recover_operation原生审核恢复。禁止自动重放。');

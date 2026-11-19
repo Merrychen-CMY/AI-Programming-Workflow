@@ -121,6 +121,123 @@ class ResourceTests(unittest.TestCase):
         self.assertIn('plan', b.call('dot_plan', {'requirements': 'Four genuine implementation units'}))
         self.assertEqual(len(read_json(b.root / 'api/ledger.json')['attempts']), 2)
 
+    def test_initial_dispatch_shortfall_replans_within_same_user_ceiling_and_approval(self):
+        self.original['limits']['implementation_attempts'] = 3
+        atomic_json(self.delegation_path, self.original)
+        plan = fixtures.fixture_plan()
+        plan['tasks'] = [dict(id='task' + str(i), instruction='Implementation unit ' + str(i), depends_on=[])
+                         for i in range(4)]
+        smaller = copy.deepcopy(plan)
+        smaller['tasks'] = [dict(id='combined', instruction='Implement all four specified behaviors together', depends_on=[])]
+        b = self.bridge([delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)}),
+                         delegated.call_response('propose_plan', {'plan_json': json.dumps(smaller)})])
+        b.settings['requirements_first'] = True
+        self.allocate(b)
+        text = 'Implement all four fixture behaviors; keep every independent verification requirement.'
+        b.call('l1_prepare_requirements', {'requirements': text})
+        b.call('l1_approve', {'kind': 'requirements', 'l1_session_id': 'host-L1'})
+        review_before = (b.root / 'requirements-review/state.json').read_bytes()
+        raw_before, authority_before = self.raw.read_bytes(), self.delegation_path.read_bytes()
+        self.assertEqual(b.call('dot_plan', {'requirements': text})['state'], 'BUDGET_REVIEW_PENDING')
+        ledger_before = read_json(b.root / 'api/ledger.json')
+        self.assertFalse(self.allocate(b, implementation_attempts=3)['accepted'])
+        self.assertFalse(b.call('dot_initialize', {})['accepted'])
+        self.assertFalse(b.call('dot_plan', {'requirements': text + ' changed'})['accepted'])
+        self.assertEqual(len(self.requests), 1)
+        self.assertIn('plan', b.call('dot_plan', {'requirements': text}))
+        journal = resources.read(b.root, self.original)
+        self.assertIsNone(journal['pause'])
+        self.assertEqual(journal['current']['implementation_attempts'], 3)
+        self.assertEqual(journal['amendments'], {})
+        self.assertEqual(journal['events'][-1]['record']['kind'], 'l1_replanned_within_allocation')
+        self.assertEqual(journal['events'][-1]['record']['payload']['checkpoint']['requested'], 4)
+        self.assertEqual((b.root / 'requirements-review/state.json').read_bytes(), review_before)
+        self.assertEqual((self.raw.read_bytes(), self.delegation_path.read_bytes()), (raw_before, authority_before))
+        ledger_after = read_json(b.root / 'api/ledger.json')
+        self.assertEqual(ledger_after['started_at'], ledger_before['started_at'])
+        self.assertEqual(ledger_after['attempts'][0], ledger_before['attempts'][0])
+        self.assertEqual(len(ledger_after['attempts']), 2)
+        self.assertEqual(len(list((b.root / 'planning-rejections').glob('*.json'))), 1)
+        self.assertEqual(b.call('dot_initialize', {})['state'], 'PLAN_PENDING')
+        self.assertFalse(b.call('dot_run', {})['accepted'])
+        self.assertEqual(b.workers.calls, ['review'])
+        self.assertEqual(b.call('l1_approve', {'kind': 'plan', 'l1_session_id': 'host-L1'})['state'], 'EXECUTING')
+        self.assertEqual(Controller(b.run_dir).state['implementation_attempts'], 0)
+
+    def test_dispatch_pause_replanning_keeps_api_and_pending_user_authorization_gates(self):
+        plan = fixtures.fixture_plan()
+        plan['tasks'] = [dict(id='task' + str(i), instruction='Implementation unit ' + str(i), depends_on=[])
+                         for i in range(4)]
+        b = self.bridge([delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})])
+        self.allocate(b, implementation_attempts=3, api_calls=1)
+        b.call('dot_plan', {'requirements': 'All fixture requirements'})
+        ledger_before = (b.root / 'api/ledger.json').read_bytes()
+        request = resources.propose_authorization(b.root, self.original,
+            amendment({'limits': self.original['limits']}), 'host-L1')
+        self.assertFalse(b.call('dot_plan', {'requirements': 'All fixture requirements'})['accepted'])
+        self.assertEqual(len(self.requests), 1)
+        resources.decide_authorization(b.root, self.original, request['sha256'], False, 'native-user')
+        refused = b.call('dot_plan', {'requirements': 'All fixture requirements'})
+        self.assertEqual(refused['state'], 'BUDGET_REVIEW_PENDING')
+        self.assertEqual(refused['resources']['budget_review']['key'], 'api_calls')
+        self.assertEqual((b.root / 'api/ledger.json').read_bytes(), ledger_before)
+        self.assertFalse(b.workers.calls)
+        self.assertFalse((b.root / 'preflight-report.json').exists())
+
+    def test_invalid_replan_does_not_clear_implementation_checkpoint(self):
+        plan = fixtures.fixture_plan()
+        plan['tasks'] = [dict(id='task' + str(i), instruction='Implementation unit ' + str(i), depends_on=[])
+                         for i in range(4)]
+        invalid = fixtures.fixture_plan()
+        invalid['verification']['test_instructions'] = ''
+        b = self.bridge([delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)}),
+                         delegated.call_response('propose_plan', {'plan_json': json.dumps(invalid)})])
+        self.allocate(b, implementation_attempts=3)
+        b.call('dot_plan', {'requirements': 'Keep all independent checks'})
+        before = resources.read(b.root, self.original)
+        refused = b.call('dot_plan', {'requirements': 'Keep all independent checks'})
+        self.assertFalse(refused['accepted'])
+        self.assertEqual(refused['operation_status'], 'COMPLETED_REJECTED')
+        after = resources.read(b.root, self.original)
+        self.assertEqual(after['pause'], before['pause'])
+        self.assertEqual(after['current'], before['current'])
+        self.assertFalse((b.root / 'plan.json').exists())
+        self.assertFalse(b.call('dot_initialize', {})['accepted'])
+        self.assertFalse(b.workers.calls)
+
+    def test_initialized_dispatch_pause_replanning_requires_staging_and_new_approvals(self):
+        b, c = self.prepared()
+        self.allocate(b, implementation_attempts=3)
+        resources.pause(b.root, self.original,
+            resources.BudgetReview('implementation_attempts', 0, 4, 3, 8), c.state)
+        self.responses.append(delegated.call_response('propose_plan', {'plan_json': json.dumps(fixtures.fixture_plan())}))
+        before = copy.deepcopy(c.state)
+        response = b.call('dot_plan', {'requirements': 'Implement fixture value'})
+        self.assertIn('plan', response)
+        self.assertIsNone(resources.read(b.root, self.original)['pause'])
+        current = Controller(b.run_dir).state
+        self.assertEqual(current['state'], 'DECISION_PENDING')
+        self.assertEqual(current['implementation_attempts'], before['implementation_attempts'])
+        self.assertEqual(current['completed_tasks'], before['completed_tasks'])
+        self.assertFalse(b.call('dot_run', {})['accepted'])
+        b.call('l1_revise', {'requirements': 'Implement fixture value', 'plan_json': json.dumps(response['plan'])})
+        self.assertEqual(Controller(b.run_dir).state['state'], 'REVIEW_PENDING')
+        self.assertEqual(Controller(b.run_dir).state['approvals'], {})
+
+    def test_invalid_string_arguments_are_completed_refusals_before_any_operation(self):
+        b = self.bridge([])
+        for name, arguments in [('l1_prepare_requirements', {'requirements': ''}),
+                                ('l1_prepare_requirements', {'requirements': '  \n'}),
+                                ('l1_approve', {'kind': '', 'l1_session_id': 'host-L1'}),
+                                ('dot_plan', {'requirements': None})]:
+            response = b.call(name, arguments)
+            self.assertFalse(response['accepted'])
+            self.assertEqual(response['operation_status'], 'COMPLETED_REJECTED')
+        self.assertFalse(self.requests)
+        self.assertFalse(b.workers.calls)
+        self.assertFalse((b.root / 'settings-binding.json').exists())
+        self.assertFalse((b.root / 'resources.json').exists())
+
     def test_api_pause_does_not_reserve_request_or_reset_start_time(self):
         b = self.bridge([clarification.needs_info(), clarification.needs_info()])
         self.allocate(b, api_calls=1)

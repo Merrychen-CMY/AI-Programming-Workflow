@@ -332,10 +332,16 @@ def require_approved(settings, requirements=None):
 
 def adopt(controller, settings):
     """Carry real pre-plan review evidence into the initialized controller."""
+    prepare_adoption(controller.state, controller.run_dir, settings)
+    controller.transition('PLAN_PENDING', 'Adopted independent requirements approval obtained before DOT planning')
+    return controller.state
+
+
+def prepare_adoption(state, run_dir, settings):
+    """Copy and bind existing review evidence before the first native state commit."""
     root = Path(settings['control_dir'])
     receipt = require_approved(settings)
     source = _load(root)
-    state = controller.state
     if (state['state'] != 'REVIEW_PENDING' or state['approvals']
             or state.get('l1_reviews') or state.get('active_run') or not state.get('delegation')):
         raise ApprovalRejected('Only a fresh delegated initialization may adopt requirements approval')
@@ -347,7 +353,7 @@ def adopt(controller, settings):
     for review in reviews:
         for entry in review['evidence_files']:
             source_path = root / entry['path']
-            target = controller.run_dir / 'preflight-requirements' / entry['path']
+            target = run_dir / 'preflight-requirements' / entry['path']
             disk = _filesystem_path(target)
             disk.parent.mkdir(parents=True, exist_ok=True)
             content = _filesystem_path(source_path).read_bytes()
@@ -356,14 +362,13 @@ def adopt(controller, settings):
             disk.write_bytes(content)
             if file_hash(target) != entry['sha256']:
                 raise ApprovalRejected('Requirements review import failed integrity checking')
-            entry['path'] = target.relative_to(controller.run_dir).as_posix()
+            entry['path'] = target.relative_to(run_dir).as_posix()
     state['l1_reviews'] = reviews
     state['revision_count'] = revision_count(root)
     state['delegated_started_at'] = source['started_at']
     state['approvals']['requirements'] = {**receipt, 'run_id': state['run_id'],
                                          'source_review_run_id': source['run_id']}
     state['requirements_first'] = {'source': STATE, 'source_sha256': file_hash(root / STATE)}
-    controller.transition('PLAN_PENDING', 'Adopted independent requirements approval obtained before DOT planning')
     return state
 
 

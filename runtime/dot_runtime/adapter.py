@@ -23,7 +23,7 @@ ROOT_CAUSES = (
     "verification_plan_or_test", "test_infrastructure", "evidence_collection",
     "delivery_target_or_authorization", "security", "needs_analysis", "mixed",
 )
-ROLES = {"implementation": "workspace-write", "test": "read-only",
+ROLES = {"implementation": "workspace-write", "test": "workspace-write",
          "review": "read-only", "triage": "read-only"}
 EVIDENCE_PROPERTIES = {
     "kind": {"type": "string", "enum": ["command", "review"]},
@@ -63,6 +63,7 @@ TRIAGE_PROPERTIES = {
     'investigation_steps': {'type': 'array', 'items': {'type': 'string'}},
     'missing_information': {'type': 'array', 'items': {'type': 'string'}},
     'permission_gaps': {'type': 'array', 'items': {'type': 'string'}},
+    'facility_actions': {'type': 'array', 'items': {'type': 'string'}},
     'recommended_action': {'type': 'string', 'enum': list(TRIAGE_ACTIONS)},
 }
 TRIAGE_SCHEMA = {**RESULT_SCHEMA, 'properties': {**RESULT_SCHEMA['properties'], **TRIAGE_PROPERTIES},
@@ -81,7 +82,7 @@ def _valid_triage(report):
         return False
     if report['recommended_action'] not in TRIAGE_ACTIONS:
         return False
-    for key in ('investigation_steps', 'missing_information', 'permission_gaps'):
+    for key in ('investigation_steps', 'missing_information', 'permission_gaps', 'facility_actions'):
         if not _nonempty_strings(report[key]):
             return False
     solutions = report['solutions']
@@ -100,6 +101,8 @@ def _valid_triage(report):
     if report['root_cause'] == 'needs_analysis' and not report['investigation_steps']:
         return False
     action = report['recommended_action']
+    if action != 'reverify' and report['facility_actions']:
+        return False
     if action in ('repair', 'reverify'):
         if (not solutions or report['root_cause'] == 'needs_analysis' or report['permission_gaps']
                 or report['missing_information'] or any(s['permission_gaps'] for s in solutions)):
@@ -276,8 +279,11 @@ class CodexAdapter:
                     return result
                 tree_stopped = False
                 try:
+                    writable = ([str(workspace.parent / 'artifacts')] if role == 'test'
+                                and (workspace.parent / 'request.json').is_file() else [])
                     run_session(process, instructions=instructions, sandbox=ROLES[role], workspace=workspace,
-                                schema=schema, output_dir=output_dir, timeout_seconds=timeout_seconds)
+                                schema=schema, output_dir=output_dir, timeout_seconds=timeout_seconds,
+                                writable_roots=writable)
                 except subprocess.TimeoutExpired:
                     confirmed = _terminate_tree(process, output_dir)
                     tree_stopped = confirmed

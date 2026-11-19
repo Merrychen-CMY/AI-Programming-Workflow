@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.12.1",
+  "workflow_version": "3.13.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -246,5 +246,13 @@
     "REQUIREMENTS_APPROVED",
     "DECISION_PENDING"
   ],
-  "execution_scope_policy": "policy/execution-scope.json"
+  "execution_scope_policy": "policy/execution-scope.json",
+  "candidate_verification": {
+    "guide": "docs/guides/verification-contract.md",
+    "require_test_contract": true,
+    "require_actual_product_provenance": true,
+    "required_test_skip_passes": false,
+    "independent_test_artifacts": "isolated_writable_copy_with_immutable_inputs",
+    "facility_actions": "L2_selects_baseline_approved_actions_or_requests_L1_review"
+  }
 }

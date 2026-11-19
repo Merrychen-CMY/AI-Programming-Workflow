@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.12.1",
+  "policy_version": "3.13.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -56,7 +56,7 @@
     "routes": {
       "implementation": {
         "owner": "L3",
-        "action": "L2 派发实现修复；新候选独立重验"
+        "action": "L2传递原失败、完整方案、验证步骤、资源及权限边界，派L3修复；新候选独立重验"
       },
       "product_requirement": {
         "owner": "L1",
@@ -72,7 +72,7 @@
       },
       "test_infrastructure": {
         "owner": "L4",
-        "action": "恢复环境、治具、会话或采集设施；有限重试"
+        "action": "L2选择计划中已批准的本地设施动作交L4；缺方案或权限交L1；恢复后完整重验"
       },
       "evidence_collection": {
         "owner": "L4",
@@ -188,5 +188,13 @@
     "guide": "docs/guides/l1-closure.md"
   },
   "flow_recovery_policy": "policy/flow-recovery.json",
-  "execution_scope_policy": "policy/execution-scope.json"
+  "execution_scope_policy": "policy/execution-scope.json",
+  "candidate_verification": {
+    "guide": "docs/guides/verification-contract.md",
+    "require_test_contract": true,
+    "require_actual_product_provenance": true,
+    "required_test_skip_passes": false,
+    "independent_test_artifacts": "isolated_writable_copy_with_immutable_inputs",
+    "facility_actions": "L2_selects_baseline_approved_actions_or_requests_L1_review"
+  }
 }

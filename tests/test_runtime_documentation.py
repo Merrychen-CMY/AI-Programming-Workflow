@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from dot_runtime.controller import Controller, atomic_json, initialize, file_hash, read_json, validate_plan
 from dot_runtime.documentation import validate_settings, validate_report
 from check_doxygen import source_manifest, manifest_digest, build_config
-from test_runtime_controller import fixture_plan, FakeAdapter, result
+from test_runtime_controller import fixture_plan, fixture_verification, FakeAdapter, result
 
 
 SETTINGS = {'executable': 'doxygen', 'expected_version': '1.18.0', 'include': ['.'], 'timeout_seconds': 5}
@@ -45,6 +45,10 @@ class DocumentationControllerTests(unittest.TestCase):
         process = {'status': 'PASS', 'exit_code': 0, 'command': command,
                    'output': 'Ran 3 tests in 0.001s\nOK\n', 'log_path': str(log)}
         if '--source-root' not in command:
+            if '--request' in command:
+                _, commitment = fixture_verification(Path(command[command.index('--request') + 1]))
+                process['output'] += commitment
+                log.write_text(process['output'], encoding='utf-8')
             return process
         artifacts = Path(command[command.index('--output-dir') + 1])
         artifacts.mkdir(parents=True)

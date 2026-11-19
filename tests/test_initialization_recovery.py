@@ -8,7 +8,7 @@ from unittest.mock import patch
 import test_onboarding as fixtures
 from test_runtime_controller import fixture_plan, FakeAdapter
 from dot_runtime import onboarding as o, initialization_recovery as r
-from dot_runtime.controller import atomic_json, read_json, digest, initialize, InitializationIncomplete, run_lock
+from dot_runtime.controller import atomic_json, read_json, digest, file_hash, initialize, InitializationIncomplete, run_lock, ROOT
 from dot_runtime.bridge import Bridge
 from dot_runtime.gpt_dot import ResponsesClient
 
@@ -55,6 +55,21 @@ class InitializationRecoveryTests(unittest.TestCase):
         p = self.preview()
         self.assertEqual(p['api_calls'], 1); self.assertEqual(p['usage']['total_tokens'], 123)
         self.assertFalse(p['baseline_changed']); self.assertEqual(before, r._files(self.task))
+
+    def test_current_and_recent_sources_have_a_reviewed_recovery_path(self):
+        versions = ['3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', (ROOT / 'VERSION').read_text().strip()]
+        before = r._files(self.task)
+        for version in versions:
+            with self.subTest(version=version):
+                self.source['version'] = version
+                self.assertEqual(self.preview()['source']['version'], version)
+        self.assertEqual(before, r._files(self.task))
+        self.source['version'] = '3.13.0'
+        with patch.object(r, '_target', return_value={'version': '3.13.0', 'manifest_sha256': 'b' * 64}):
+            self.assertEqual(self.preview()['source']['version'], '3.13.0')
+        self.source['version'] = '9.0.0'
+        with self.assertRaisesRegex(ValueError, 'Unsupported'):
+            self.preview()
 
     def test_originals_and_partial_files_retained_and_same_plan_can_initialize(self):
         before = self.originals(); partial = (self.partial / 'partial.txt').read_bytes()
@@ -254,6 +269,224 @@ class InitializationRecoveryTests(unittest.TestCase):
         archived=next((self.task/'initialization-archives').rglob('partial.txt'))
         archived.write_text('tampered')
         with self.assertRaisesRegex(ValueError,'records changed'): self.request('initialization_finish')
+
+
+class NativeInitializationCommitTests(unittest.TestCase):
+    request = fixtures.OnboardingTests.request
+    prepare = fixtures.OnboardingTests.prepare
+    confirm = fixtures.OnboardingTests.confirm
+    allocate = fixtures.OnboardingTests.allocate
+    approve_requirements = fixtures.OnboardingTests.approve_requirements
+
+    def setUp(self):
+        fixtures.OnboardingTests.setUp(self)
+        def cleanup_long_task():
+            import shutil, tempfile
+            from dot_runtime.snapshot import _filesystem_path, _root
+            expected = Path(self.tmp.name).absolute()
+            if self.base.absolute() != expected or expected.parent != Path(tempfile.gettempdir()).absolute():
+                raise ValueError('Unexpected temporary cleanup target')
+            _root(expected, exists=True)
+            shutil.rmtree(_filesystem_path(expected))
+        self.addCleanup(cleanup_long_task)
+        self.settings['workflow_sha256'] = file_hash(ROOT / 'MANIFEST.json')
+        self.confirm()
+        self.root = self.task / 'control'
+        self.run = self.root / 'run'
+        self.workers = FakeAdapter()
+        from test_plan_rejections import proposed
+        self.native_bridge = patch.object(o, 'Bridge', side_effect=lambda settings: Bridge(settings,
+            workers=self.workers, client_factory=lambda m, p, d: ResponsesClient(m, p, d,
+                send=lambda *_: proposed(fixture_plan()))))
+        self.native_bridge.start()
+        self.addCleanup(self.native_bridge.stop)
+        self.allocate()
+        self.approve_requirements('Complete the approved input parsing task; no external actions.')
+        self.request('bridge', name='dot_plan', arguments={
+            'requirements': 'Complete the approved input parsing task; no external actions.'})
+        self.source = {'version': (ROOT / 'VERSION').read_text().strip(),
+                       'manifest_sha256': self.settings['workflow_sha256']}
+
+    def originals(self):
+        return {name: (self.task / name).read_bytes() for name in (
+            'confirmation.json', 'delegation.json', 'raw-input.md', 'bridge.json', 'draft.json',
+            'control/api/ledger.json', 'control/resources.json', 'control/requirements-review/state.json')}
+
+    def initialize(self):
+        return self.request('bridge', name='dot_initialize', arguments={})
+
+    def recover(self):
+        preview = self.request('initialization_preview', source=self.source)
+        return self.request('initialization_commit', source=self.source, sha256=preview['sha256'])
+
+    def assert_completed_once(self, originals):
+        state = read_json(self.run / 'state.json')
+        self.assertEqual(state['state'], 'PLAN_PENDING')
+        self.assertEqual(len(state['l1_reviews']), 1)
+        self.assertEqual(state['implementation_attempts'], 0)
+        self.assertTrue(state['delegation'])
+        self.assertEqual(state['approvals']['requirements']['reviewer_session_id'],
+                         read_json(self.root / 'requirements-review/state.json')['approval']['reviewer_session_id'])
+        self.assertEqual(self.workers.calls, ['review'])
+        self.assertEqual(originals, self.originals())
+
+    def test_binding_failure_commits_no_state_and_recovers_without_repeating_review(self):
+        before = self.originals()
+        with patch('dot_runtime.delegation.prepare_delegation', side_effect=OSError('fixture binding write failure')):
+            result = self.initialize()
+        self.assertEqual(result['operation_status'], 'COMPLETED_INITIALIZATION_FAILED')
+        self.assertFalse((self.run / 'state.json').exists())
+        self.recover()
+        self.initialize()
+        self.assert_completed_once(before)
+
+    def test_review_copy_failure_has_no_partial_state_and_preserves_original_approval(self):
+        before = self.originals()
+        real_write = Path.write_bytes
+        def fail_copy(path, content):
+            if 'preflight-requirements' in path.parts:
+                real_write(path, content[:5])
+                raise OSError('fixture partial review import')
+            return real_write(path, content)
+        with patch.object(Path, 'write_bytes', fail_copy):
+            result = self.initialize()
+        self.assertEqual(result['operation_status'], 'COMPLETED_INITIALIZATION_FAILED')
+        self.assertFalse((self.run / 'state.json').exists())
+        result = self.recover()
+        archive = self.task / 'initialization-archives' / result['record']['sha256']
+        self.assertTrue((archive / 'control/run/preflight-requirements').is_dir())
+        self.initialize()
+        self.assert_completed_once(before)
+
+    def test_state_atomic_replace_failure_archives_uncommitted_temporary(self):
+        before = self.originals()
+        from dot_runtime import controller as controller_module
+        real_replace = controller_module.os.replace
+        def fail_replace(source, destination):
+            if Path(destination).name == 'state.json' and Path(destination).parent.name == 'run':
+                raise OSError('fixture state replace failure')
+            return real_replace(source, destination)
+        with patch.object(controller_module.os, 'replace', side_effect=fail_replace):
+            result = self.initialize()
+        self.assertEqual(result['operation_status'], 'COMPLETED_INITIALIZATION_FAILED')
+        self.assertFalse((self.run / 'state.json').exists())
+        temporary = next(self.run.glob('state.json.*.tmp'))
+        original = temporary.read_bytes()
+        result = self.recover()
+        archive = self.task / 'initialization-archives' / result['record']['sha256']
+        from dot_runtime.snapshot import _filesystem_path
+        self.assertEqual(_filesystem_path(archive / 'control/run' / temporary.name).read_bytes(), original)
+        self.assertFalse(temporary.exists())
+        self.initialize()
+        self.assert_completed_once(before)
+
+    def test_initial_operation_replace_failure_requires_native_interruption_review(self):
+        before = self.originals()
+        from dot_runtime import controller as controller_module
+        real_replace = controller_module.os.replace
+        def fail_replace(source, destination):
+            if Path(destination).name == 'initialization.json':
+                raise OSError('fixture initial operation replace failure')
+            return real_replace(source, destination)
+        with patch.object(controller_module.os, 'replace', side_effect=fail_replace):
+            with self.assertRaisesRegex(OSError, 'initial operation replace'):
+                self.initialize()
+        self.assertFalse((self.run / 'state.json').exists())
+        self.assertFalse((self.run / 'initialization.json').exists())
+        temporary = next(self.run.glob('initialization.json.*.tmp'))
+        original = temporary.read_bytes()
+        atomic_json(self.task / 'interrupted.json', {'name': 'dot_initialize', 'status': 'UNKNOWN'})
+        result = self.recover()
+        archive = self.task / 'initialization-archives' / result['record']['sha256']
+        from dot_runtime.snapshot import _filesystem_path
+        self.assertEqual(_filesystem_path(archive / 'control/run' / temporary.name).read_bytes(), original)
+        self.initialize()
+        self.assert_completed_once(before)
+
+    def make_legacy_partial(self, bound=False):
+        from dot_runtime.controller import Controller
+        from dot_runtime.delegation import attach_delegation
+        initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run)
+        controller = Controller(self.run)
+        controller.state['clarification_root'] = str(self.root)
+        controller.save()
+        if bound:
+            attach_delegation(controller, self.task / 'delegation.json', self.task / 'raw-input.md')
+            partial = self.run / 'preflight-requirements/partial.json'
+            partial.parent.mkdir()
+            partial.write_text('partial old review import')
+        atomic_json(self.task / 'interrupted.json', {'name': 'dot_initialize', 'status': 'UNKNOWN'})
+        return controller
+
+    def test_old_state_without_delegation_is_archived_and_original_review_is_reused(self):
+        before = self.originals()
+        self.make_legacy_partial()
+        state_bytes = (self.run / 'state.json').read_bytes()
+        from dot_runtime import operation_recovery
+        with self.assertRaisesRegex(ValueError, 'dedicated'):
+            operation_recovery._guard(self.task, read_json(self.task / 'confirmation.json'), 'native-session')
+        result = self.recover()
+        archive = self.task / 'initialization-archives' / result['record']['sha256']
+        self.assertEqual((archive / 'control/run/state.json').read_bytes(), state_bytes)
+        self.assertFalse((self.task / 'interrupted.json').exists())
+        self.initialize()
+        self.assert_completed_once(before)
+
+    def test_old_bound_state_without_review_adoption_uses_the_same_recovery(self):
+        before = self.originals()
+        self.make_legacy_partial(bound=True)
+        self.assertTrue(self.request('initialization_preview', source=self.source)['incomplete_native_state'])
+        self.recover()
+        self.initialize()
+        self.assert_completed_once(before)
+
+    def test_executed_or_approved_state_is_never_reset_as_partial_initialization(self):
+        controller = self.make_legacy_partial(bound=True)
+        original = copy.deepcopy(controller.state)
+        for key, value in [('implementation_attempts', 1), ('sessions', [{'role': 'implementation'}]),
+                           ('candidate', {'id': 'existing'}), ('approvals', {'plan': {}}),
+                           ('state', 'PLAN_PENDING'), ('active_run', {'role': 'implementation'})]:
+            with self.subTest(key=key):
+                atomic_json(self.run / 'state.json', {**original, key: value})
+                with self.assertRaisesRegex(ValueError, 'initialized task'):
+                    self.request('initialization_preview', source=self.source)
+        atomic_json(self.run / 'state.json', original)
+
+    def test_full_state_commit_before_host_loss_is_kept_for_normal_reconciliation(self):
+        before = self.originals()
+        from dot_runtime import controller as controller_module, operation_recovery
+        real_write = controller_module.atomic_json
+        def interrupted_after_commit(path, value):
+            real_write(path, value)
+            if Path(path) == self.run / 'state.json':
+                raise OSError('fixture host result lost after complete state commit')
+        with patch.object(controller_module, 'atomic_json', side_effect=interrupted_after_commit):
+            with self.assertRaisesRegex(OSError, 'complete state commit'):
+                self.initialize()
+        atomic_json(self.task / 'interrupted.json', {'name': 'dot_initialize', 'status': 'UNKNOWN'})
+        self.assert_completed_once(before)
+        with self.assertRaisesRegex(ValueError, 'initialized task'):
+            self.request('initialization_preview', source=self.source)
+        _, _, state, _ = operation_recovery._guard(self.task, read_json(self.task / 'confirmation.json'), 'native-session')
+        self.assertEqual(state['state'], 'PLAN_PENDING')
+        self.assertTrue((self.task / 'interrupted.json').exists())
+
+    def test_native_state_recovery_itself_can_finish_after_state_archive(self):
+        before = self.originals()
+        self.make_legacy_partial(bound=True)
+        real_write = r.atomic_json
+        def fail_journal(path, value):
+            if Path(path).name == r.JOURNAL:
+                raise OSError('fixture recovery interruption after archive')
+            return real_write(path, value)
+        with patch.object(r, 'atomic_json', side_effect=fail_journal):
+            with self.assertRaises(OSError):
+                self.recover()
+        self.assertFalse((self.run / 'state.json').exists())
+        self.assertTrue((self.task / r.PENDING).exists())
+        self.request('initialization_finish')
+        self.initialize()
+        self.assert_completed_once(before)
 
 
 if __name__ == '__main__':

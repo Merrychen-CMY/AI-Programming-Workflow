@@ -96,32 +96,37 @@ def bounded_timeout(state, requested):
 
 
 def attach_delegation(controller, path, raw_input):
-    from .controller import digest, file_hash, read_json, run_lock
+    from .controller import read_json, run_lock
     with run_lock(controller.run_dir):
         controller.state = read_json(controller.state_path)
-        state = controller.state
-        if state['state'] != 'REVIEW_PENDING' or state['approvals'] or state.get('delegation'):
-            raise ValueError('Delegation must be attached once, before any approval')
-        path, raw_input = Path(path).resolve(), Path(raw_input).resolve()
-        for item in (path, raw_input):
-            if item == Path(state['project']) or Path(state['project']) in item.parents:
-                raise ValueError('Delegation inputs must be outside worker project')
-        value = read_json(path)
-        from . import resources
-        validate_delegation(value, enforce_time=not resources.enabled(value, state.get('clarification_root')))
-        if file_hash(raw_input) != value['raw_input_sha256']:
-            raise ValueError('Original user input hash mismatch')
-        plan = read_json(state['plan'])
-        adaptive = resources.enabled(value, state.get('clarification_root'))
-        # Binding is local initialization, not execution. Once initialization has
-        # begun, finish its identity record even if the deadline just elapsed.
-        effective = resources.effective(value, state.get('clarification_root'), enforce_time=not adaptive)
-        check_plan_bounds(dict(plan, budgets={}) if adaptive else plan, effective, enforce_time=not adaptive)
-        state['delegation'] = {'path': str(path), 'raw_input': str(raw_input), 'sha256': digest(value)}
-        state['l1_reviews'] = []
-        state['revision_count'] = 0
+        prepare_delegation(controller.state, path, raw_input)
         controller.save()
-        return state
+        return controller.state
+
+
+def prepare_delegation(state, path, raw_input):
+    """Validate a fresh binding before native initialization commits its state."""
+    from .controller import digest, file_hash, read_json
+    if state['state'] != 'REVIEW_PENDING' or state['approvals'] or state.get('delegation'):
+        raise ValueError('Delegation must be attached once, before any approval')
+    path, raw_input = Path(path).resolve(), Path(raw_input).resolve()
+    for item in (path, raw_input):
+        if item == Path(state['project']) or Path(state['project']) in item.parents:
+            raise ValueError('Delegation inputs must be outside worker project')
+    value = read_json(path)
+    from . import resources
+    validate_delegation(value, enforce_time=not resources.enabled(value, state.get('clarification_root')))
+    if file_hash(raw_input) != value['raw_input_sha256']:
+        raise ValueError('Original user input hash mismatch')
+    plan = read_json(state['plan'])
+    adaptive = resources.enabled(value, state.get('clarification_root'))
+    # This is local initialization, not execution; retain the original deadline.
+    effective = resources.effective(value, state.get('clarification_root'), enforce_time=not adaptive)
+    check_plan_bounds(dict(plan, budgets={}) if adaptive else plan, effective, enforce_time=not adaptive)
+    state['delegation'] = {'path': str(path), 'raw_input': str(raw_input), 'sha256': digest(value)}
+    state['l1_reviews'] = []
+    state['revision_count'] = 0
+    return state
 
 
 class ApprovalRejected(ValueError):
@@ -176,8 +181,11 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             controller.report('FAILED', 'L1 review budget exhausted')
             return controller.state
         from .controller import validate_plan
-        plan = read_json(state['plan'])
-        validate_plan(plan)
+        try:
+            plan = read_json(state['plan'])
+            validate_plan(plan)
+        except (ValueError, KeyError, TypeError) as exc:
+            raise ApprovalRejected('Plan requires baseline revision before independent approval: ' + str(exc)) from exc
         from . import resources
         original, resource_root = resources.controller_context(state)
         adaptive = resources.enabled(original, resource_root)

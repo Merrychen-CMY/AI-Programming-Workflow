@@ -193,6 +193,11 @@ def propose_plan(client, requirements, example, context, implementation_used=0, 
         'not a per-task limit and not the number of workflow phases. Used dispatches: ' + str(implementation_used) + '. '
         'Read/understand code and implement its documentation within relevant implementation assignments. '
         'Put independent build/test/HIL steps in verification.test_instructions and the supported test_command; '
+        'verification.test_contract must bind exact required test IDs, approved non-applicable IDs with reasons, '
+        'and current candidate product source files to a supported unittest/pytest/CMake-CTest protocol. '
+        'Do not pass an old build directory or an arbitrary wrapper; the controller owns fresh build/test paths. '
+        'Declare bounded local facility_recovery actions only when the baseline authorizes their exact commands; '
+        'otherwise facility repair needs L1 review, never an invented retry action. '
         'Doxygen generation uses verification.doxygen; independent code/standards review uses review_instructions '
         'and existing compliance gates. Do not create extra L3 tasks just to label these verification stages. '
         'Preserve all required work and evidence; do not remove AC, hide work, raise caps or claim unavailable '
@@ -265,7 +270,9 @@ class DotAdapter:
                 'root_cause=needs_analysis and state the missing facts, requested permissions and next '
                 'investigation steps for L1. Populate solutions with expected benefit, verification_steps, '
                 'required_resources and permission_gaps; include investigation_steps, missing_information, '
-                'permission_gaps and recommended_action. Unknown causes require concrete bounded steps. '
+                'permission_gaps, facility_actions and recommended_action. For reverify, choose only facility action '
+                'IDs in the approved plan; leave facility_actions empty for other actions. '
+                'Unknown causes require concrete bounded steps. '
                 'Never use lack of diagnosis as a reason to finalize the task.', schema=TRIAGE_SCHEMA)
             output_dir.mkdir(parents=True)
             text = ''.join(c.get('text', '') for item in response['output'] if item.get('type') == 'message'

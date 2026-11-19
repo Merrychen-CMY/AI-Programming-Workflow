@@ -1,6 +1,7 @@
 """Real local state migration tests; fake Codex results are not product acceptance."""
 import copy
 import json
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -96,6 +97,78 @@ class TaskUpgradeTests(unittest.TestCase):
         for key in ['implementation_attempts', 'revision_count', 'infrastructure_retries',
                     'root_cause_counts', 'pending_repair', 'pending_clarification_revision']:
             self.assertEqual(before[key], after[key])
+
+    def test_legacy_verification_plan_pauses_for_revision_without_replaying_implementation(self):
+        from dot_runtime.bridge import Bridge
+        import dot_runtime.controller as controller_module
+        c = self.initialized()
+        legacy = read_json(c.state['plan'])
+        legacy['verification'].pop('test_contract')
+        atomic_json(c.state['plan'], legacy)
+        # Represent the source version's validator only while creating its
+        # original approvals. The separate published-source migration uses the
+        # actual old release rather than this unit fixture.
+        validate_current = controller_module.validate_plan
+        def validate_legacy(plan):
+            compatible = copy.deepcopy(plan)
+            compatible['verification']['test_contract'] = fixture_plan()['verification']['test_contract']
+            return validate_current(compatible)
+        with patch.object(controller_module, 'validate_plan', side_effect=validate_legacy):
+            approve_l1(c, 'requirements', 'native-session', c.adapter)
+            approve_l1(c, 'plan', 'native-session', c.adapter)
+        c.state['implementation_attempts'] = 1
+        c.worker('implementation', 'Add value', self.project)
+        c.state['checkpoint'] = snapshot_project(self.project, self.run_dir / 'legacy-checkpoint')
+        c.state['completed_tasks'] = ['build']; c.save()
+        c.make_candidate(); c.transition('VERIFYING', 'Legacy task before verification')
+        before = copy.deepcopy(c.state)
+        originals = {name: (self.task / name).read_bytes() for name in (
+            'confirmation.json', 'delegation.json', 'raw-input.md', 'bridge.json')}
+        upgraded = self.upgrade()
+        c.state = read_json(c.state_path)
+        self.assertEqual(c.state['state'], 'DECISION_PENDING')
+        self.assertIn('test_contract', upgraded['record']['baseline_revision']['reason'])
+        settings = read_json(self.task / 'bridge.json')
+        bridge = Bridge(settings, workers=c.adapter)
+        calls_before = list(c.adapter.calls)
+        rejected = bridge.call('l1_approve', {'kind': 'requirements', 'l1_session_id': 'native-session'})
+        self.assertFalse(rejected['accepted'])
+        self.assertEqual(rejected['operation_status'], 'COMPLETED_REJECTED')
+        self.assertEqual(c.adapter.calls, calls_before)
+        self.assertFalse((self.task / 'interrupted.json').exists())
+        revised = copy.deepcopy(legacy)
+        revised['verification']['test_contract'] = fixture_plan()['verification']['test_contract']
+        reply = bridge.call('l1_revise', {'requirements': Path(c.state['requirements']).read_text(encoding='utf-8'),
+                                       'plan_json': json.dumps(revised)})
+        self.assertEqual(reply['state'], 'REVIEW_PENDING')
+        c.state = read_json(c.state_path)
+        self.assertEqual(c.state['revision_count'], before['revision_count'] + 1)
+        self.assertEqual(c.state['completed_tasks'], ['build'])
+        approve_l1(c, 'requirements', 'native-session', c.adapter)
+        approve_l1(c, 'plan', 'native-session', c.adapter)
+        state = c.run()
+        self.assertEqual(state['report']['outcome'], 'SUCCESS')
+        self.assertEqual(state['implementation_attempts'], 1)
+        self.assertEqual(c.adapter.calls.count('implementation'), 1)
+        self.assertEqual(len(state['l1_reviews']), len(before['l1_reviews']) + 2)
+        self.assertEqual(state['l1_reviews'][:len(before['l1_reviews'])], before['l1_reviews'])
+        for name, content in originals.items():
+            self.assertEqual((self.task / name).read_bytes(), content)
+
+    def test_invalid_plan_approval_is_completed_refusal_before_review_dispatch(self):
+        from dot_runtime.bridge import Bridge
+        c = self.initialized()
+        plan = read_json(c.state['plan'])
+        plan['verification'].pop('test_contract')
+        atomic_json(c.state['plan'], plan)
+        before = read_json(c.state_path)
+        bridge = Bridge(read_json(self.task / 'bridge.json'), workers=c.adapter)
+        reply = bridge.call('l1_approve', {'kind': 'requirements', 'l1_session_id': 'native-session'})
+        self.assertFalse(reply['accepted'])
+        self.assertEqual(reply['operation_status'], 'COMPLETED_REJECTED')
+        self.assertIn('test_contract', reply['reason'])
+        self.assertEqual(read_json(c.state_path), before)
+        self.assertFalse(c.adapter.calls)
 
     def test_unknown_and_final_are_rejected_without_changes(self):
         c = self.initialized()

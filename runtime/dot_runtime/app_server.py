@@ -87,10 +87,11 @@ class PipeWriter:
 class Session:
     """Track the single thread/turn and keep protocol acknowledgements separate from replies."""
 
-    def __init__(self, process, instructions, sandbox, workspace, schema, events, wire, supervision, send_message):
+    def __init__(self, process, instructions, sandbox, workspace, schema, events, wire, supervision, send_message, writable_roots=()):
         self.process, self.events, self.wire, self.supervision = process, events, wire, supervision
         self.instructions, self.sandbox, self.workspace, self.schema = instructions, sandbox, str(workspace), schema
         self.send_message = send_message
+        self.writable_roots = list(writable_roots)
         self.pending, self.next_id = {}, 1
         self.thread_id = self.turn_id = None
         self.dispatched = self.completed = False
@@ -181,7 +182,7 @@ class Session:
             self.bind_thread((result.get('thread') or {}).get('id'))
             policy = {'type': 'readOnly', 'networkAccess': False}
             if self.sandbox == 'workspace-write':
-                policy = {'type': 'workspaceWrite', 'writableRoots': [], 'networkAccess': False}
+                policy = {'type': 'workspaceWrite', 'writableRoots': self.writable_roots, 'networkAccess': False}
             # Mark before writing: a broken pipe cannot prove that the turn was not sent.
             self.dispatched = True
             self.request('turn/start', {'threadId': self.thread_id,
@@ -280,7 +281,7 @@ class Session:
             _write(self.events, {'type': 'error', 'error': params.get('error')})
 
 
-def run_session(process, *, instructions, sandbox, workspace, schema, output_dir: Path, timeout_seconds):
+def run_session(process, *, instructions, sandbox, workspace, schema, output_dir: Path, timeout_seconds, writable_roots=()):
     """Keep stdin open for steering; the caller owns process-tree termination and records."""
     deadline = time.monotonic() + timeout_seconds
     inbox = queue.Queue()
@@ -304,7 +305,7 @@ def run_session(process, *, instructions, sandbox, workspace, schema, output_dir
             (output_dir / 'app-server.jsonl').open('w', encoding='utf-8') as wire, \
             (output_dir / 'supervision.jsonl').open('w', encoding='utf-8') as supervision:
         writer = PipeWriter(process.stdin, deadline, timeout_seconds)
-        session = Session(process, instructions, sandbox, workspace, schema, events, wire, supervision, writer.send)
+        session = Session(process, instructions, sandbox, workspace, schema, events, wire, supervision, writer.send, writable_roots)
         try:
             session.start()
             while not session.completed:

@@ -83,15 +83,27 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(command[:2], ["codex-test-path", "app-server"])
         self.assertNotIn("resume", command)
         self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", command)
-        self.assertEqual(self.sessions[0]['sandbox'], 'read-only')
+        self.assertEqual(self.sessions[0]['sandbox'], 'workspace-write')
         self.assertEqual(command[command.index('--listen') + 1], 'stdio://')
         self.assertIn("Assigned scope only", self.inputs[0])
         self.assertNotIn("Assigned scope only", command)
         self.assertIs(options["stdin"], subprocess.PIPE)
 
-    def test_implementation_is_only_role_with_workspace_write(self):
+    def test_implementation_uses_workspace_write(self):
         self.assertEqual(self.run_adapter("implementation")["status"], "PASS")
         self.assertEqual(self.sessions[0]['sandbox'], 'workspace-write')
+
+    def test_independent_test_writes_only_artifacts_and_review_remains_read_only(self):
+        self.workspace = self.root / 'verification' / 'artifacts'
+        self.workspace.mkdir(parents=True)
+        (self.workspace.parent / 'request.json').write_text('{}')
+        self.run_adapter('test')
+        self.assertEqual(self.sessions[-1]['sandbox'], 'workspace-write')
+        self.assertEqual(self.sessions[-1]['writable_roots'], [str(self.workspace)])
+        self.output = self.root / 'runs' / 'review'
+        self.run_adapter('review')
+        self.assertEqual(self.sessions[-1]['sandbox'], 'read-only')
+        self.assertEqual(self.sessions[-1]['writable_roots'], [])
 
     def test_zero_exit_without_session_is_not_pass(self):
         self.events = self.events[1:]

@@ -54,6 +54,13 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(self.sent()[3]['params']['sandboxPolicy'],
                          {'type': 'workspaceWrite', 'writableRoots': [], 'networkAccess': False})
 
+    def test_test_artifact_write_root_does_not_add_the_source_root(self):
+        self.session.sandbox = 'workspace-write'
+        self.session.writable_roots = ['/approved/artifacts']
+        self.start()
+        self.assertEqual(self.sent()[3]['params']['sandboxPolicy'],
+                         {'type': 'workspaceWrite', 'writableRoots': ['/approved/artifacts'], 'networkAccess': False})
+
     def test_check_in_after_120_seconds_and_repeat_same_turn_without_new_turn(self):
         self.start()
         self.clock.return_value = 119.9

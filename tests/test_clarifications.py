@@ -122,6 +122,7 @@ class ClarificationTests(unittest.TestCase):
             '    def test_value(self):\n        self.assertEqual(value(), 3)\n', encoding='utf-8')
         plan = fixtures.fixture_plan()
         plan['verification']['test_command'] = [sys.executable, '-B', '-m', 'unittest', '-v']
+        plan['verification']['test_contract']['required_tests'] = ['test_value.ValueTest.test_value']
         bridge = self.bridge([needs_info(), delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)}),
                               delegated.call_response('run_approved_workflow')])
         bridge.call('dot_plan', {'requirements': 'fixture value 3'})

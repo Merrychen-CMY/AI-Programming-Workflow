@@ -16,6 +16,10 @@ JOURNAL = 'initialization-recoveries.json'
 PENDING = 'initialization-recovery-pending.json'
 
 
+def _initialization_temporary(name):
+    return re.fullmatch(r'(?:state|initialization)\.json\.[0-9a-f]{32}\.tmp', name) is not None
+
+
 def journal(task, receipt):
     value = read_json(task / JOURNAL) if (task / JOURNAL).exists() else {'schema_version': 1, 'records': []}
     if value.get('schema_version') != 1 or not isinstance(value.get('records'), list):
@@ -94,18 +98,64 @@ def _identity(task, receipt, session):
     return settings, original
 
 
+def incomplete_native_state(task, settings):
+    """Recognize only the old local gap before delegation/review adoption finished."""
+    run = task / 'control/run'
+    if not (run / 'state.json').exists():
+        return False
+    state = read_json(run / 'state.json')
+    allowed = {'schema_version', 'run_id', 'state', 'created_at', 'project', 'requirements', 'plan',
+               'approvals', 'implementation_attempts', 'infrastructure_retries', 'root_cause_counts',
+               'completed_tasks', 'history', 'sessions', 'issues', 'active_run', 'candidate', 'report',
+               'pending_repair', 'initial_snapshot', 'clarification_root', 'delegation', 'l1_reviews',
+               'revision_count', 'delegated_started_at'}
+    if (set(state) - allowed or state.get('schema_version') != 1 or state.get('state') != 'REVIEW_PENDING'
+            or not isinstance(state.get('run_id'), str) or not state['run_id']
+            or any(state.get(key) for key in ('approvals', 'implementation_attempts', 'infrastructure_retries',
+                'root_cause_counts', 'completed_tasks', 'history', 'sessions', 'issues', 'active_run',
+                'candidate', 'report', 'pending_repair', 'l1_reviews'))):
+        return False
+    for key, expected in (('project', settings['project']), ('requirements', task / 'control/requirements.md'),
+                          ('plan', task / 'control/plan.json')):
+        if not isinstance(state.get(key), str) or Path(state[key]).resolve() != Path(expected).resolve():
+            return False
+    if state.get('clarification_root') and Path(state['clarification_root']).resolve() != (task / 'control').resolve():
+        return False
+    operation = read_json(run / 'initialization.json') if (run / 'initialization.json').exists() else {}
+    if operation.get('operation') != 'dot_initialize' or operation.get('status') not in ('IN_PROGRESS', 'SNAPSHOT_COMMITTED', 'FAILED'):
+        return False
+    # A bound legacy task is already fully initialized. Only requirements-first
+    # tasks still awaiting adoption have a recoverable post-binding gap.
+    if state.get('delegation'):
+        expected = {'path': str(Path(settings['delegation']).resolve()),
+                    'raw_input': str(Path(settings['raw_input']).resolve()),
+                    'sha256': digest(read_json(settings['delegation']))}
+        if not settings.get('requirements_first') or state['delegation'] != expected:
+            return False
+    from .snapshot import verify_snapshot
+    from .requirements_review import revision_count
+    return (state.get('revision_count', 0) in (0, revision_count(task / 'control'))
+            and verify_snapshot(run / 'initial-project', state.get('initial_snapshot')))
+
+
 def _guard(task, receipt, session, *, finishing=False):
     settings, original = _identity(task, receipt, session)
     run = task / 'control/run'
-    if ((run / 'state.json').exists() or (task / 'control/preflight-report.json').exists()
+    partial_state = incomplete_native_state(task, settings)
+    if (((run / 'state.json').exists() and not partial_state) or (task / 'control/preflight-report.json').exists()
             or (task / 'preflight-review.json').exists() or (task / 'runtime-upgrade-pending.json').exists()):
         raise ValueError('Recovery only supports uncommitted initialization, never an initialized task or final report')
+    operation = read_json(run / 'initialization.json') if (run / 'initialization.json').exists() else None
+    allowed = {'.lock', 'initial-project', 'initialization.json'}
+    if partial_state:
+        allowed.update(('state.json', 'preflight-requirements'))
+    elif operation and operation.get('native_initialization') is True:
+        allowed.add('preflight-requirements')
     if run.exists():
         for p in run.iterdir():
-            if p.name not in ('.lock', 'initial-project', 'initialization.json'):
+            if p.name not in allowed and not (_initialization_temporary(p.name) and p.is_file()):
                 raise ValueError('Unexpected run records require separate reconciliation: ' + p.name)
     marker = read_json(task / 'interrupted.json') if (task / 'interrupted.json').exists() else None
-    operation = read_json(run / 'initialization.json') if (run / 'initialization.json').exists() else None
     if marker and (marker.get('name') != 'dot_initialize' or marker.get('status') != 'UNKNOWN'):
         raise ValueError('Only a dot_initialize interruption can be recovered here')
     if not finishing and not marker and not (operation and operation.get('operation') == 'dot_initialize'
@@ -145,6 +195,7 @@ def preview(task, receipt, session, source):
              'baseline_changed': before != after, 'project': settings['project'],
              'original_confirmation_sha256': file_hash(task / 'confirmation.json'),
              'records_sha256': digest(files), 'failure': operation,
+             'incomplete_native_state': incomplete_native_state(task, settings),
              'usage': resources.report(task / 'control', original)['dot_api_reported_usage'],
              'api_calls': len(read_json(task / 'control/api/ledger.json')['attempts']),
              'action': 'Archive partial initialization and marker; preserve original authority, usage and history. '
@@ -246,9 +297,16 @@ def dispatch(task, receipt, request):
         if (task / archive).exists():
             raise ValueError('Recovery archive already exists')
         moves = []
-        for name in ('interrupted.json', 'control/run/initial-project', 'control/run/initialization.json'):
+        for name in ('interrupted.json', 'control/run/preflight-requirements', 'control/run/state.json',
+                     'control/run/initial-project', 'control/run/initialization.json'):
             if (task / name).exists():
                 moves.append([name, archive + '/' + name])
+        run = task / 'control/run'
+        if run.exists():
+            for temporary in sorted(run.iterdir()):
+                if _initialization_temporary(temporary.name):
+                    name = temporary.relative_to(task).as_posix()
+                    moves.append([name, archive + '/' + name])
         writes = {JOURNAL: {'schema_version': 1, 'records': [*log['records'], entry]}}
         if plan['baseline_changed']:
             old = 'control/planning-status.json'

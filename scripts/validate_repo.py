@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -177,8 +177,8 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0'],
-                'scope': 'uncommitted_local_initialization_only', 'native_confirmation_required': True,
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0'],
+                'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
                 'reset_usage_or_deadline': False, 'product_write_or_api_replay': False,
@@ -225,6 +225,10 @@ def validate_policy(policy):
         'candidate_rules.immutable': True,
         'candidate_rules.reuse_pass_across_candidates': False,
         'candidate_rules.plan_or_verifier_semantic_change': 'new_approval_and_rerun_all_required_checks',
+        'candidate_verification.require_test_contract': True,
+        'candidate_verification.require_actual_product_provenance': True,
+        'candidate_verification.required_test_skip_passes': False,
+        'candidate_verification.facility_actions': 'L2_selects_baseline_approved_actions_or_requests_L1_review',
         'approval_rules.L5_can_approve_delivery': False,
         'approval_rules.merge_implies_release': False,
         'approval_rules.example_is_authorization': False,
@@ -319,6 +323,9 @@ def validate_simple_flow(flow):
         'routine_in_scope_work_requires_new_user_approval': False,
         'internal_verification_plan_requires_separate_user_document': False,
         'independent_verification_required': True,
+        'candidate_verification.require_test_contract': True,
+        'candidate_verification.require_actual_product_provenance': True,
+        'candidate_verification.required_test_skip_passes': False,
         'independent_review_required': True,
         'distinct_worker_sessions': ['developer', 'tester', 'reviewer'],
         'implementation_worker_can_issue_final_acceptance': False,

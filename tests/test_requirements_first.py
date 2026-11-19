@@ -273,6 +273,7 @@ class NativeRequirementsFlowTests(unittest.TestCase):
                                  'required': True, 'evidence': 'Fixture uses the current interpreter'}])
         self.plan = fixtures.fixture_plan()
         self.plan['verification']['test_command'] = [sys.executable, '-B', '-m', 'unittest', '-v']
+        self.plan['verification']['test_contract']['required_tests'] = ['test_value.ValueTest.test_value']
         self.responses = [call_response('propose_plan', {'plan_json': json.dumps(self.plan)}),
                           call_response('run_approved_workflow')]
         self.workers = fixtures.FakeAdapter()

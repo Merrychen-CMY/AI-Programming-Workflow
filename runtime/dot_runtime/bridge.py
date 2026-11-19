@@ -221,9 +221,11 @@ class Bridge:
 
     def _call(self, name, arguments):
         import json
-        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) != set(TOOLS[name][1]) or any(
-                not isinstance(value, str) or not value.strip() for value in arguments.values()):
+        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) != set(TOOLS[name][1]):
             raise ValueError('Unknown tool or invalid arguments')
+        if any(not isinstance(value, str) or not value.strip() for value in arguments.values()):
+            return {'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                    'reason': 'Tool arguments must be nonempty strings; no operation started'}
         with run_lock(self.root):
             if name == 'dot_read_record':
                 from .presentation import read_record
@@ -303,9 +305,14 @@ class Bridge:
             if api_recovery.unresolved(self.root) or api_recovery.load(self.root)['pending']:
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_API_REVIEW',
                         'reason': 'Review the recorded API request first; do not replay, approve or initialize while unresolved'}
+            replanning_for_budget = False
             if adaptive:
                 journal = resources.read(self.root, original)
-                if journal['pause'] or journal['pending']:
+                replanning_for_budget = (name == 'dot_plan' and not journal['pending']
+                    and journal['pause'] and journal['pause']['key'] == 'implementation_attempts'
+                    and not (c and (c.state.get('active_run') or c.state.get('analysis_activity') or c.state.get('report')))
+                    and not requirements_review.status(self.root).get('active_run'))
+                if journal['pending'] or (journal['pause'] and not replanning_for_budget):
                     return {**self.status(), 'accepted': False, 'reason': 'Resolve resource review or native authorization before continuing'}
             if name == 'l1_prepare_requirements':
                 if c:
@@ -376,7 +383,8 @@ class Bridge:
                         requirements_review.require_approved(self.settings, arguments['requirements'])
                     except ValueError as exc:
                         return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED', 'reason': str(exc)}
-                if c and c.state['state'] not in ('DECISION_PENDING', 'PLAN_PENDING'):
+                if (c and c.state['state'] not in ('DECISION_PENDING', 'PLAN_PENDING')
+                        and not (replanning_for_budget and c.state['state'] in ('EXECUTING', 'VERIFYING'))):
                     raise ValueError('Planning cannot overwrite an active/final baseline')
                 if c and c.state['active_run']:
                     raise ValueError('Unresolved process forbids new planning')
@@ -430,9 +438,15 @@ class Bridge:
                     'authorization_scope': resources.scope_digest(original, self.root) if adaptive else None,
                     'requires_revision': bool(c)})
                 if c:
+                    if replanning_for_budget:
+                        if c.state['state'] in ('EXECUTING', 'VERIFYING'):
+                            c.transition('DECISION_PENDING', 'L1 replanned within implementation allocation; stage and independently review before dispatch')
+                        resources.resolve_planning_pause(self.root, original, arguments['requirements'], plan, c.state)
                     return {'plan': plan, 'next': 'L1 inspects the proposal then calls l1_revise; approvals are not copied'}
                 (self.root / 'requirements.md').write_text(arguments['requirements'], encoding='utf-8', newline='\n')
                 atomic_json(self.root / 'plan.json', plan)
+                if replanning_for_budget:
+                    resources.resolve_planning_pause(self.root, original, arguments['requirements'], plan)
                 return {'plan': plan, 'next': 'dot_initialize, then l1_approve plan' if self.settings.get('requirements_first') else 'dot_initialize, then l1_approve requirements and plan'}
             if name == 'dot_initialize':
                 if c:
@@ -456,21 +470,25 @@ class Bridge:
                 if adaptive:
                     resources.require(original, self.root, 'implementation_attempts', 0,
                                       len(read_json(self.root / 'plan.json')['tasks']))
+                def prepare_initial_state(state, run_dir):
+                    from .delegation import prepare_delegation
+                    state['clarification_root'] = str(self.root)
+                    prepare_delegation(state, self.settings['delegation'], self.settings['raw_input'])
+                    state['delegated_started_at'] = read_json(self.root / 'api/ledger.json')['started_at']
+                    state['revision_count'] = requirements_review.revision_count(self.root)
+                    if self.settings.get('requirements_first'):
+                        requirements_review.prepare_adoption(state, run_dir, self.settings)
+                        state['state'] = 'PLAN_PENDING'
+                        from .controller import now
+                        state['history'].append({'at': now(), 'from': 'REVIEW_PENDING', 'to': 'PLAN_PENDING',
+                            'reason': 'Adopted independent requirements approval obtained before DOT planning'})
                 try:
-                    initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
+                    initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir,
+                               prepare_state=prepare_initial_state)
                 except InitializationIncomplete as exc:
                     return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_INITIALIZATION_FAILED',
                             'recovery_required': True, 'reason': str(exc)}
                 c = Controller(self.run_dir)
-                c.state['clarification_root'] = str(self.root)
-                c.save()
-                attach_delegation(c, self.settings['delegation'], self.settings['raw_input'])
-                c.state['delegated_started_at'] = read_json(self.root / 'api/ledger.json')['started_at']
-                c.state['clarification_root'] = str(self.root)
-                c.state['revision_count'] = requirements_review.revision_count(self.root)
-                c.save()
-                if self.settings.get('requirements_first'):
-                    requirements_review.adopt(c, self.settings)
             elif c is None and name == 'l1_revise':
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
                         'reason': ('No initialized baseline exists; use l1_prepare_requirements, then '

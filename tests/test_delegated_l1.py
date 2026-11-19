@@ -231,6 +231,7 @@ class DelegatedTests(unittest.TestCase):
             '    def test_value(self):\n        self.assertEqual(value(), 3)\n', encoding='utf-8')
         plan = fixtures.fixture_plan()
         plan['verification']['test_command'] = [sys.executable, '-B', '-m', 'unittest', '-v']
+        plan['verification']['test_contract']['required_tests'] = ['test_value.ValueTest.test_value']
         responses = [call_response('propose_plan', {'plan_json': json.dumps(plan)}), call_response('run_approved_workflow')]
         def factory(model, path, envelope):
             return ResponsesClient(model, path, envelope, send=lambda *_: responses.pop(0))

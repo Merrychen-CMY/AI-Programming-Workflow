@@ -23,8 +23,13 @@ def fixture_plan():
             'allowed_paths': ['value.py'],
             'environment': {'python': '3.12'},
             'tasks': [{'id': 'build', 'instruction': 'Add value function', 'depends_on': []}],
-            'verification': {'test_report_format': 'unittest', 'test_command': ['python', '-B', '-m', 'unittest'], 'test_instructions': 'Independently test value',
-                             'review_instructions': 'Independently review value'},
+            'verification': {'test_report_format': 'unittest', 'test_command': ['python', '-B', '-m', 'unittest'],
+                             'test_contract': {'protocol': 'python-unittest', 'source_root': '.', 'product_files': ['value.py'],
+                                               'required_tests': ['test_value.Test.test_value'], 'not_applicable_tests': []},
+                             'test_instructions': 'Independently test value',
+                             'review_instructions': 'Independently review value',
+                             'facility_recovery': {'actions': [{'id': 'fixture-retry', 'kind': 'retry',
+                                 'description': 'Repeat a stopped fixture check after an evidenced transient fault'}]}},
             'budgets': {'implementation_attempts': 3, 'same_root_cause_attempts': 2,
                         'infrastructure_retries': 1, 'timeout_seconds': 15}}
 
@@ -45,7 +50,8 @@ def triage_fields(cause='needs_analysis'):
                 'verification_steps': ['Run the approved independent checks'],
                 'required_resources': ['Existing bounded allocation'], 'permission_gaps': []}],
             'investigation_steps': ['Inspect the recorded fixture failure against its source'],
-            'missing_information': [], 'permission_gaps': [], 'recommended_action': action}
+            'missing_information': [], 'permission_gaps': [], 'recommended_action': action,
+            'facility_actions': ['fixture-retry'] if action == 'reverify' else []}
 
 
 class FakeAdapter:
@@ -70,12 +76,33 @@ class FakeAdapter:
                 if item.get('kind') == 'review':
                     item['test_count'] = 0
         report['session_id'] = 'reused' if self.reused_session else f'session-{len(self.calls)}'
+        if (role == 'test' and (workspace.parent / 'request.json').exists()
+                and observed_test_count(report, 'unittest') > 0):
+            command, commitment = fixture_verification(workspace.parent / 'request.json')
+            report.setdefault('runtime_evidence', {})['command_events'] = [{'command': command, 'exit_code': 0,
+                'aggregated_output': report['evidence'][0]['output'] + '\n' + commitment}]
         output_dir.mkdir(parents=True)
         atomic_json(output_dir / 'result.json', report)
         report['runtime_evidence'] = dict(report.get('runtime_evidence', {}), result_path=str(output_dir / 'result.json'))
         if self.hook:
             self.hook(role, workspace)
         return report
+
+
+def fixture_verification(request_path):
+    """Synthetic provenance for controller-unit fixtures, never product evidence."""
+    from dot_runtime.controller import file_hash
+    request = read_json(request_path)
+    source = Path(request['source'])
+    record = {'request_sha256': file_hash(request_path), 'framework_exit_code': 0,
+        'tests': [{'id': name, 'status': 'PASS'} for name in request['contract']['required_tests']],
+        'product_sources': {name: {'path': str((source / name).resolve()), 'sha256': file_hash(source / name)}
+                           for name in request['contract']['product_files']}, 'tested_artifacts': []}
+    atomic_json(Path(request['artifacts']) / 'verification-result.json', record)
+    runner = ROOT / 'runtime/dot_runtime/verification_runner.py'
+    command = [request['test_command'][0], '-B', str(runner), '--request', str(request_path)]
+    commitment = 'REQPILOT_VERIFICATION_RESULT_SHA256=' + file_hash(Path(request['artifacts']) / 'verification-result.json') + '\n'
+    return ' '.join('"' + word + '"' for word in command), commitment
 
 
 class ControllerTests(unittest.TestCase):
@@ -86,6 +113,7 @@ class ControllerTests(unittest.TestCase):
         self.project = self.root / 'project'
         self.project.mkdir()
         (self.project / 'README.md').write_text('Fixture project', encoding='utf-8')
+        (self.project / 'value.py').write_text('def value():\n    return 0\n', encoding='utf-8')
         self.requirements = self.root / 'requirements.md'
         self.requirements.write_text('Return the specified fixture value; no external actions.', encoding='utf-8')
         self.plan = self.root / 'plan.json'
@@ -98,6 +126,9 @@ class ControllerTests(unittest.TestCase):
             output_dir.mkdir(parents=True)
             log = output_dir / 'test.log'
             output = 'Ran 3 tests in 0.001s\nOK\n'
+            if (workspace.parent / 'request.json').exists():
+                _, commitment = fixture_verification(workspace.parent / 'request.json')
+                output += commitment
             log.write_text(output, encoding='utf-8')
             return {'status': 'PASS', 'command': command, 'exit_code': 0, 'output': output, 'log_path': str(log)}
         return Controller(self.run_dir, adapter or FakeAdapter(), check_runner=fake_check)
@@ -291,7 +322,8 @@ class ControllerTests(unittest.TestCase):
     def test_verifier_modifying_candidate_is_rejected(self):
         def tamper(role, workspace):
             if role == 'test':
-                (workspace / 'value.py').write_text('changed', encoding='utf-8')
+                source = Path(read_json(workspace.parent / 'request.json')['source'])
+                (source / 'value.py').write_text('changed', encoding='utf-8')
         c = self.approved(FakeAdapter(hook=tamper))
         self.assertEqual(c.run()['state'], 'DECISION_PENDING')
         self.assertIsNone(c.state['report'])

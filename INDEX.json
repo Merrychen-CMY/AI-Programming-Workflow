@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.12.1",
+  "workflow_version": "3.13.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -34,7 +34,8 @@
       "docs/guides/investigation.md",
       "docs/guides/flow-recovery.md",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/verification-contract.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -43,7 +44,8 @@
       "docs/reference/08-software-evidence.md",
       "docs/reference/20-reflow.md",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/verification-contract.md"
     ],
     "L2": [
       "roles/orchestrator-l2.md",
@@ -58,7 +60,8 @@
       "docs/guides/investigation.md",
       "docs/guides/flow-recovery.md",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/verification-contract.md"
     ],
     "L3": [
       "roles/implementer-l3.md",
@@ -77,7 +80,8 @@
       "docs/reference/19-security.md",
       "docs/reference/20-reflow.md",
       "docs/guides/execution-scope.md",
-      "policy/execution-scope.json"
+      "policy/execution-scope.json",
+      "docs/guides/verification-contract.md"
     ],
     "L5": [
       "roles/delivery-l5.md",
