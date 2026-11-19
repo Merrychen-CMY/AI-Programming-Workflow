@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'runtime'))
 sys.path.insert(0, str(ROOT / 'scripts'))
 from dot_runtime import communication
-from dot_runtime.controller import read_json
+from dot_runtime.controller import file_hash, read_json
 from dot_runtime.delegation import approve_l1, submit_l1_report
 from dot_runtime.gpt_dot import ResponsesClient
 from l1_bridge import dispatch
@@ -222,6 +222,15 @@ class L1ExpressionRuntimeTests(unittest.TestCase):
         submit_l1_report(self.c, summary, 'l1-author')
         submitted = read_json(path)
         submission = submitted.pop('l1_submission')
+        self.assertIs(submitted.pop('markdown_required'), True)
+        markdown = submitted.pop('markdown_report')
+        markdown_path = Path(markdown['path'])
+        self.assertTrue(markdown_path.is_absolute() and markdown_path.is_relative_to(self.run_dir))
+        self.assertEqual(markdown['mime_type'], 'text/markdown')
+        self.assertEqual(file_hash(markdown_path), markdown['sha256'])
+        markdown_text = markdown_path.read_text(encoding='utf-8')
+        self.assertIn(summary, markdown_text)
+        self.assertIn(json.dumps({**original, 'l1_submission': submission}, ensure_ascii=False, indent=2), markdown_text)
         self.assertEqual(submitted, original)
         self.assertEqual(submission['outcome'], original['outcome'])
         self.assertEqual(submission['summary'], summary)

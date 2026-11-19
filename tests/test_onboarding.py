@@ -85,7 +85,8 @@ class OnboardingTests(unittest.TestCase):
         with patch.object(o, 'fingerprint', side_effect=AssertionError('Must not read a project')):
             result = self.request('environment',settings=self.settings)
         self.assertTrue(result['ready'])
-        self.assertEqual(len(result['checks']),4)
+        self.assertEqual(len(result['checks']),5)
+        self.assertIn('Codex App Server', [check['name'] for check in result['checks']])
         self.assertFalse((self.task/'raw-input.md').exists())
         self.assertFalse((self.task/'confirmation.json').exists())
 

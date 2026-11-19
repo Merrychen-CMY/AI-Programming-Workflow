@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.11.0",
+  "workflow_version": "3.12.0",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -81,5 +81,6 @@
   "review_handoff_policy": "policy/review-handoff.json",
   "requirements_approval_before_initial_dot_plan": true,
   "new_native_tasks_require_adaptive_limits": true,
-  "flow_recovery_policy": "policy/flow-recovery.json"
+  "flow_recovery_policy": "policy/flow-recovery.json",
+  "execution_scope_policy": "policy/execution-scope.json"
 }

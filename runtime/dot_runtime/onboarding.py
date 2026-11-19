@@ -96,6 +96,7 @@ def check_environment(settings):
         {'name': 'Python >= 3.11', 'status': 'PASS' if sys.version_info >= (3, 11) else 'FAIL', 'required': True},
         {'name': 'Git', 'required': True, **tool_check('git', ['--version'])},
         {'name': 'Codex CLI', 'required': True, **tool_check(settings['codex'], ['--version'])},
+        {'name': 'Codex App Server', 'required': True, **tool_check(settings['codex'], ['app-server', '--help'])},
         {'name': 'Codex login status', 'required': True, **tool_check(settings['codex'], ['login', 'status'])},
     ]
     return {'checks': checks, 'ready': all(c['status'] == 'PASS' for c in checks),
@@ -264,21 +265,26 @@ def dispatch(request):
         if action == 'report_preview':
             status = bridge.call('dot_status', {})
             from .presentation import compact
+            from .report_markdown import verify
             preflight = status.get('preflight_report')
             if preflight:
                 if status['state'] != 'REPORT_PENDING' or not preflight.get('l1_submission'):
                     raise ValueError('L1 must submit the final report first')
                 return {'preflight': True, 'report': compact(status)['preflight_report'],
-                        'full_report_path': str(bridge.root / 'preflight-report.json'), 'sha256': digest(preflight)}
+                        'full_report_path': str(bridge.root / 'preflight-report.json'), 'sha256': digest(preflight),
+                        'markdown_report': verify(preflight, bridge.root)}
             if status.get('state') != 'REPORT_PENDING' or not (status.get('report') or {}).get('l1_submitted'):
                 raise ValueError('L1 must submit the final report first')
             return {'preflight': False, 'report': compact(status)['final_report'],
-                    'full_report_path': str(bridge.run_dir / 'final-report.json'), 'sha256': status['report']['sha256']}
+                    'full_report_path': str(bridge.run_dir / 'final-report.json'), 'sha256': status['report']['sha256'],
+                    'markdown_report': verify(status['final_report'], bridge.run_dir)}
         if action == 'report_confirm':
             preflight = bridge.root / 'preflight-report.json'
             if not (bridge.run_dir / 'state.json').exists() and preflight.exists():
                 if not read_json(preflight).get('l1_submission'):
                     raise ValueError('L1 must submit the final report first')
+                from .report_markdown import verify
+                verify(read_json(preflight), bridge.root)
                 if digest(read_json(preflight)) != request['sha256']:
                     raise ValueError('Report changed during review')
                 atomic_json(task / 'preflight-review.json', {'authority': 'local_harness_user',
@@ -297,7 +303,18 @@ def dispatch(request):
             if 'l1_session_id' in arguments:
                 raise ValueError('L1 session identity comes from the host, not model arguments')
             arguments = {**arguments, 'l1_session_id': request['session']}
-        if name not in ('dot_status', 'dot_read_record', 'l1_stop', 'l1_submit_report'):
+        report_only = False
+        if name == 'l1_approve':
+            from .report_markdown import pending
+            if (bridge.run_dir / 'state.json').exists():
+                stored = read_json(bridge.run_dir / 'state.json')
+                reviews = [] if stored.get('report') else stored.get('l1_reviews', [])
+            else:
+                from .requirements_review import status as requirements_status
+                reviews = [] if (bridge.root / 'preflight-report.json').exists() else requirements_status(bridge.root)['reviews']
+            report_only = bool(reviews and pending(reviews[-1]) and reviews[-1].get('kind') == arguments['kind']
+                               and reviews[-1].get('result'))
+        if not report_only and name not in ('dot_status', 'dot_read_record', 'l1_stop', 'l1_submit_report'):
             if digest(read_json(task / 'delegation.json')) != receipt['delegation_sha256']:
                 raise ValueError('Confirmed delegation changed')
             if (name not in ('l1_adjust_limits', 'l1_request_authorization', 'l1_review_api')

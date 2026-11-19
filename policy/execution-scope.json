@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "guide": "docs/guides/execution-scope.md",
+  "minimal_change_instruction": "Make the smallest change that fully solves the task. Do not add abstractions, fallbacks, defensive guards, refactors, or features unless they are strictly required.",
+  "scope_before_action": [
+    "expected_outcome",
+    "allowed_objects",
+    "preserved_constraints",
+    "acceptance_conditions"
+  ],
+  "unclear_path_search": "smallest_relevant_scope",
+  "read_only_requests": [
+    "explanation",
+    "diagnosis",
+    "review"
+  ],
+  "read_only_may_edit_product": false,
+  "read_only_may_run_tests": false,
+  "explicitly_assigned_verification_may_run_authorized_tests": true,
+  "unrequired_compatibility_layers_switches_dependencies_abstractions": false,
+  "unrelated_findings_authorize_repairs": false,
+  "unrelated_findings_route": "report_to_L1_for_user_decision",
+  "stop_when_acceptance_work_complete": true,
+  "progress_check": {
+    "owner": "L2_DOT",
+    "transport": "same_active_codex_thread_turn_steer",
+    "no_visible_progress_seconds": 120,
+    "reasoning_or_heartbeat_resets_timer": false,
+    "running_explicit_command_is_thinking": false,
+    "repeat_after_ack_and_another_full_interval": true,
+    "pending_ack_allows_duplicate": false,
+    "rejected_steer_retried_automatically": false,
+    "acknowledgement_is_answer": false,
+    "request": "你正在做什么？请说明当前步骤、已完成内容、阻碍和最小下一步；避免过度设计。",
+    "requests_private_chain_of_thought": false,
+    "starts_new_turn_or_replays_work": false,
+    "extends_permissions_budget_or_deadline": false,
+    "scope": "active_codex_workers_only_L5_summary_remains_DOT"
+  }
+}

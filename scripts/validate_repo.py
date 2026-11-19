@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -86,7 +86,14 @@ def validate_review_handoff_policy(value):
         'wrong_phase_changes_authority_or_usage': False, 'latest_review_before_history': True,
         'record_tool': 'dot_read_record', 'record_page_characters': 6000,
         'record_read_clears_unknown': False, 'reopen_final_report': False,
-        'retain_full_report_and_original_hash': True}
+        'retain_full_report_and_original_hash': True,
+        'markdown_reports': {
+            'stages': ['requirements_review', 'execution_plan_review', 'final_success_or_failure_including_preflight'],
+            'format': 'markdown', 'metadata_field': 'report_files', 'original_json_retained': True,
+            'immutable_content_addressed_files': True, 'new_report_returned_once_per_operation': True,
+            'chat_delivery': 'host_deliverables_presented_event', 'host_bootstrap_abi': 8,
+            'final_confirmation_checks_markdown_digest': True, 'adds_user_approval_checkpoint': False,
+            'delivery_failure_replays_review_or_execution': False}}
     if not isinstance(value, dict) or set(value) != set(expected):
         return ['Review handoff policy differs from implemented scope']
     return ['Review handoff boundary drift: ' + key for key, wanted in expected.items()
@@ -103,7 +110,7 @@ def validate_closure_policy(value):
 
 
 def validate_flow_recovery(value):
-    expected = {'schema_version': 1, 'guide': 'docs/guides/flow-recovery.md', 'bootstrap_abi': 7,
+    expected = {'schema_version': 1, 'guide': 'docs/guides/flow-recovery.md', 'bootstrap_abi': 8,
         'new_native_adaptive_limits_required': True, 'requirements_review_before_initial_planning': True,
         'initialization_adopts_review_without_replay': True, 'preflight_review_usage_preserved': True,
         'read_only_investigation_tool': 'dot_investigate', 'l1_decision_tool': 'l1_resume_decision',
@@ -113,6 +120,29 @@ def validate_flow_recovery(value):
         'recovery_preserves_original_unknown_and_usage': True, 'recovery_reopens_final_report': False,
         'preflight_report_requires_l1_submission': True, 'legacy_receipts_rewritten_as_requirements_first': False}
     return [] if value == expected else ['Flow recovery policy differs from implemented boundaries']
+
+
+def validate_execution_scope(value):
+    expected = {'schema_version': 1, 'guide': 'docs/guides/execution-scope.md',
+        'minimal_change_instruction': 'Make the smallest change that fully solves the task. Do not add abstractions, fallbacks, defensive guards, refactors, or features unless they are strictly required.',
+        'scope_before_action': ['expected_outcome', 'allowed_objects', 'preserved_constraints', 'acceptance_conditions'],
+        'unclear_path_search': 'smallest_relevant_scope',
+        'read_only_requests': ['explanation', 'diagnosis', 'review'],
+        'read_only_may_edit_product': False, 'read_only_may_run_tests': False,
+        'explicitly_assigned_verification_may_run_authorized_tests': True,
+        'unrequired_compatibility_layers_switches_dependencies_abstractions': False,
+        'unrelated_findings_authorize_repairs': False, 'unrelated_findings_route': 'report_to_L1_for_user_decision',
+        'stop_when_acceptance_work_complete': True,
+        'progress_check': {'owner': 'L2_DOT', 'transport': 'same_active_codex_thread_turn_steer',
+            'no_visible_progress_seconds': 120, 'reasoning_or_heartbeat_resets_timer': False,
+            'running_explicit_command_is_thinking': False,
+            'repeat_after_ack_and_another_full_interval': True, 'pending_ack_allows_duplicate': False,
+            'rejected_steer_retried_automatically': False, 'acknowledgement_is_answer': False,
+            'request': '你正在做什么？请说明当前步骤、已完成内容、阻碍和最小下一步；避免过度设计。',
+            'requests_private_chain_of_thought': False, 'starts_new_turn_or_replays_work': False,
+            'extends_permissions_budget_or_deadline': False,
+            'scope': 'active_codex_workers_only_L5_summary_remains_DOT'}}
+    return [] if value == expected else ['Execution scope or progress check policy differs from implemented boundaries']
 
 
 def validate_input_material_policy(value):
@@ -164,7 +194,7 @@ def validate_initialization_recovery_policy(value):
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 7,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 8,
         'default_enabled': True, 'check_interval_seconds': 21600,
         'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
         'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
@@ -638,13 +668,16 @@ def validate_repository(root):
     errors.extend(validate_api_recovery_policy(documents.get('policy/api-recovery.json')))
     errors.extend(validate_review_handoff_policy(documents.get('policy/review-handoff.json')))
     errors.extend(validate_flow_recovery(documents.get('policy/flow-recovery.json')))
+    errors.extend(validate_execution_scope(documents.get('policy/execution-scope.json')))
     errors.extend(validate_input_material_policy(documents.get('policy/input-material.json')))
     errors.extend(validate_closure_policy(documents.get('policy/closure.json')))
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):
         errors.extend(validate_closure_policy(documents[key].get('non_success_closure')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 7:
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 8:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
+        if documents[key].get('execution_scope_policy') != 'policy/execution-scope.json':
+            errors.append('Workflow must reference execution scope and progress supervision: ' + key)
         if documents[key].get('update_policy') != 'policy/updates.json':
             errors.append('Workflow must reference automatic update policy: ' + key)
         if documents[key].get('task_upgrade_policy') != 'policy/task-upgrades.json':

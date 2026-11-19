@@ -13,6 +13,9 @@ import re
 import signal
 import subprocess
 
+from .scope_constraints import prompt as scope_prompt
+from .app_server import ProtocolError, run_session
+
 
 STATUSES = ("PASS", "FAIL", "ERROR", "TIMEOUT", "UNKNOWN")
 ROOT_CAUSES = (
@@ -213,7 +216,7 @@ class CodexAdapter:
             raise ValueError("Run evidence must be outside the product/candidate workspace")
         output_dir.mkdir(parents=True, exist_ok=True)
         reserved = ("events.jsonl", "stderr.log", "result.json", "output-schema.json", "prompt.txt")
-        if any((output_dir / name).exists() for name in reserved):
+        if any((output_dir / name).exists() for name in (*reserved, 'app-server.jsonl', 'supervision.jsonl')):
             raise ValueError("Run output must be fresh; existing evidence must not be overwritten")
         stdout_path, stderr_path, result_path, schema_path, prompt_path = (
             output_dir / name for name in reserved)
@@ -221,7 +224,8 @@ class CodexAdapter:
         schema_path.write_text(json.dumps(schema, ensure_ascii=False, indent=2), encoding="utf-8")
         instructions = (
             f"Your delegated responsibility is {role}. Work only on the assigned task below. "
-            "Return only the required JSON report. Never invent execution, evidence or approval. "
+            "Return the required JSON as your final report; brief public progress may precede it. "
+            "Never invent execution, evidence or approval. "
             "PASS requires concrete evidence; unresolved findings require FAIL. "
             "For command evidence copy the exact executed command and its complete output, "
             "actual exit_code and actual test_count (zero for non-test commands). "
@@ -237,29 +241,31 @@ class CodexAdapter:
             "match. A category such as implementation is not a concrete cause key. Outside "
             "triage root_cause_key may be an empty string. For triage supply solutions with benefit, "
             "verification steps, resources and permission gaps, plus investigation_steps, missing_information, "
-            "permission_gaps and recommended_action. An unresolved cause requires concrete investigation steps.\n\n" + prompt
+            "permission_gaps and recommended_action. An unresolved cause requires concrete investigation steps.\n"
+            + scope_prompt(role) + "\n" + prompt
         )
         prompt_path.write_text(instructions, encoding="utf-8")
         command = [
-            self.executable, "exec", "--json", "--color", "never",
-            "--sandbox", ROLES[role], "--config", 'approval_policy="never"',
+            self.executable, "app-server", "--listen", "stdio://",
+            "--config", 'approval_policy="never"',
             "--config", "sandbox_workspace_write.writable_roots=[]",
             "--config", "sandbox_workspace_write.network_access=false",
-            "--cd", str(workspace), "--skip-git-repo-check",
-            "--output-schema", str(schema_path), "--output-last-message", str(result_path), "-",
         ]
         metadata = {"stdout_path": str(stdout_path), "stderr_path": str(stderr_path),
                     "result_path": str(result_path), "command_events": [],
-                    "process_exit_code": None}
+                    "process_exit_code": None, "transport": "app-server",
+                    "protocol_path": str(output_dir / 'app-server.jsonl'),
+                    "supervision_path": str(output_dir / 'supervision.jsonl')}
         result = {"status": "ERROR", "session_id": None, "summary": "Codex did not complete",
                   "evidence": [], "findings": [], "root_cause": "test_infrastructure",
                   "root_cause_key": "",
                   "runtime_evidence": metadata}
         options = {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)} if os.name == "nt" else {"start_new_session": True}
         process = None
+        protocol_failed = False
         try:
-            with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
-                process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
+            with stderr_path.open("w", encoding="utf-8") as stderr:
+                process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr,
                                            text=True, encoding="utf-8", cwd=workspace, env=self.environment, **options)
                 from .operation_recovery import record_process_start, record_process_end
                 try:
@@ -270,19 +276,35 @@ class CodexAdapter:
                     return result
                 tree_stopped = False
                 try:
-                    process.communicate(instructions, timeout=timeout_seconds)
+                    run_session(process, instructions=instructions, sandbox=ROLES[role], workspace=workspace,
+                                schema=schema, output_dir=output_dir, timeout_seconds=timeout_seconds)
                 except subprocess.TimeoutExpired:
                     confirmed = _terminate_tree(process, output_dir)
                     tree_stopped = confirmed
                     result.update(status="TIMEOUT" if confirmed else "UNKNOWN",
                                   summary="Codex timed out; process tree terminated" if confirmed else
                                   "Codex timed out; process tree termination unconfirmed, reconcile before retry")
+                except ProtocolError as exc:
+                    protocol_failed = True
+                    # No model turn exists before dispatch; allow the stdio server to close cleanly.
+                    if not exc.dispatched:
+                        try:
+                            process.wait(timeout=1)
+                        except subprocess.TimeoutExpired:
+                            pass
+                    tree_stopped = _terminate_tree(process, output_dir) if process.poll() is None else False
+                    uncertain = exc.dispatched or (process.poll() is None and not tree_stopped)
+                    result.update(status='UNKNOWN' if uncertain else 'ERROR', summary=str(exc))
+                    if not uncertain:
+                        result['summary'] += '; require a compatible Codex App Server, with no exec fallback'
                 try:
                     record_process_end(output_dir, process.pid, tree_stopped=tree_stopped)
                 except (OSError, ValueError, TypeError) as exc:
                     result.update(status='UNKNOWN', summary='Process outcome record could not be saved: ' + str(exc))
                     return result
             metadata["process_exit_code"] = process.returncode
+            # IO threads close their own pipes; the main process exiting does not prove that
+            # descendants released those pipes or that the threads released their IO locks.
         except (OSError, subprocess.SubprocessError) as exc:
             result["summary"] = f"Codex execution failed: {exc}"
             if process is not None and process.poll() is None:
@@ -291,7 +313,7 @@ class CodexAdapter:
             return result
         session_id, commands, completed, event_error = _events(stdout_path)
         result["session_id"], metadata["command_events"] = session_id, commands
-        if result["status"] in ("TIMEOUT", "UNKNOWN"):
+        if protocol_failed or result["status"] in ("TIMEOUT", "UNKNOWN"):
             return result
         if process.returncode != 0 or event_error or not completed:
             result["summary"] = event_error or f"Codex incomplete/nonzero run (exit={process.returncode}, completed={completed})"

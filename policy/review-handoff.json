@@ -29,5 +29,22 @@
     "l1_plan_approval",
     "execution"
   ],
-  "preplan_reviews_counted_and_imported": true
+  "preplan_reviews_counted_and_imported": true,
+  "markdown_reports": {
+    "stages": [
+      "requirements_review",
+      "execution_plan_review",
+      "final_success_or_failure_including_preflight"
+    ],
+    "format": "markdown",
+    "metadata_field": "report_files",
+    "original_json_retained": true,
+    "immutable_content_addressed_files": true,
+    "new_report_returned_once_per_operation": true,
+    "chat_delivery": "host_deliverables_presented_event",
+    "host_bootstrap_abi": 8,
+    "final_confirmation_checks_markdown_digest": true,
+    "adds_user_approval_checkpoint": false,
+    "delivery_failure_replays_review_or_execution": false
+  }
 }

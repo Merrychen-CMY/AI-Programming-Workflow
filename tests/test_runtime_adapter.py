@@ -1,4 +1,5 @@
-"""Mocked CLI transport checks, not evidence of a real Codex/product run."""
+"""Mocked App Server adapter checks, not evidence of a real Codex/product run."""
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -38,22 +39,16 @@ class AdapterTests(unittest.TestCase):
         self.exit_code, self.timeout = 0, False
         self.invocations = []
         self.inputs = []
+        self.sessions = []
 
     def fake_popen(self, command, **options):
         self.invocations.append((command, options))
-        options["stdout"].write("\n".join(json.dumps(e) for e in self.events) + "\n")
-        options["stdout"].flush()
-        if self.report is not None:
-            Path(command[command.index("--output-last-message") + 1]).write_text(json.dumps(self.report), encoding="utf-8")
         owner = self
         class Process:
             pid = 43210
             returncode = owner.exit_code
-            def communicate(self, data, timeout):
-                owner.inputs.append(data)
-                if owner.timeout:
-                    self.returncode = None
-                    raise subprocess.TimeoutExpired(command, timeout)
+            stdin = io.StringIO()
+            stdout = io.StringIO()
             def wait(self, timeout):
                 self.returncode = -1
                 return -1
@@ -61,8 +56,20 @@ class AdapterTests(unittest.TestCase):
                 return self.returncode
         return Process()
 
+    def fake_session(self, process, **options):
+        self.inputs.append(options['instructions'])
+        self.sessions.append(options)
+        output = options['output_dir']
+        (output / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in self.events) + '\n', encoding='utf-8')
+        if self.report is not None:
+            (output / 'result.json').write_text(json.dumps(self.report), encoding='utf-8')
+        if self.timeout:
+            process.returncode = None
+            raise subprocess.TimeoutExpired('codex app-server', options['timeout_seconds'])
+
     def run_adapter(self, role="test"):
         with patch.object(adapter.subprocess, "Popen", side_effect=self.fake_popen), \
+                patch.object(adapter, 'run_session', side_effect=self.fake_session), \
                 patch('dot_runtime.operation_recovery.boot_identity', return_value='fixture-boot'):
             return adapter.CodexAdapter("codex-test-path").run(role, "Assigned scope only", self.workspace, self.output, 10)
 
@@ -73,19 +80,18 @@ class AdapterTests(unittest.TestCase):
         self.assertTrue(Path(result["runtime_evidence"]["result_path"]).is_file())
         self.assertEqual(result["runtime_evidence"]["command_events"][0]["aggregated_output"], self.command_output)
         command, options = self.invocations[0]
-        self.assertEqual(command[:2], ["codex-test-path", "exec"])
+        self.assertEqual(command[:2], ["codex-test-path", "app-server"])
         self.assertNotIn("resume", command)
         self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", command)
-        self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
-        self.assertEqual(command[-1], "-")
+        self.assertEqual(self.sessions[0]['sandbox'], 'read-only')
+        self.assertEqual(command[command.index('--listen') + 1], 'stdio://')
         self.assertIn("Assigned scope only", self.inputs[0])
         self.assertNotIn("Assigned scope only", command)
         self.assertIs(options["stdin"], subprocess.PIPE)
 
     def test_implementation_is_only_role_with_workspace_write(self):
         self.assertEqual(self.run_adapter("implementation")["status"], "PASS")
-        command = self.invocations[0][0]
-        self.assertEqual(command[command.index("--sandbox") + 1], "workspace-write")
+        self.assertEqual(self.sessions[0]['sandbox'], 'workspace-write')
 
     def test_zero_exit_without_session_is_not_pass(self):
         self.events = self.events[1:]
@@ -180,6 +186,30 @@ class AdapterTests(unittest.TestCase):
         self.timeout = True
         with patch.object(adapter, "_terminate_tree", return_value=False):
             self.assertEqual(self.run_adapter()["status"], "UNKNOWN")
+
+    def test_exited_main_process_does_not_close_pipes_still_owned_by_blocked_io_threads(self):
+        original_session = self.fake_session
+        pipes = []
+
+        def interrupted_session(process, **options):
+            original_session(process, **options)
+            process.returncode = 0  # A descendant may still hold both pipe handles.
+            process.stdin = Mock()
+            process.stdout = Mock()
+            for pipe in (process.stdin, process.stdout):
+                pipe.close.side_effect = AssertionError('Main-thread close would wait for the IO lock')
+                pipes.append(pipe)
+            raise subprocess.TimeoutExpired('codex app-server', options['timeout_seconds'])
+
+        with patch.object(self, 'fake_session', side_effect=interrupted_session), \
+                patch.object(adapter, '_terminate_tree', return_value=False):
+            result = self.run_adapter()
+        self.assertEqual(result['status'], 'UNKNOWN')
+        self.assertIn('termination unconfirmed', result['summary'])
+        for pipe in pipes:
+            pipe.close.assert_not_called()
+        record = json.loads((self.output / 'process-record.json').read_text(encoding='utf-8'))
+        self.assertEqual(record['process_tree_status'], 'UNKNOWN')
 
     def test_existing_run_evidence_cannot_be_overwritten(self):
         self.run_adapter()

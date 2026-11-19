@@ -388,6 +388,8 @@ class Controller:
                     raise ValueError('L1 must submit its final assessment before user report review')
                 if self.state.get('report', {}).get('sha256') != file_hash(path):
                     raise ValueError('Final report changed outside controller')
+                from .report_markdown import verify
+                verify(read_json(path), self.run_dir)
                 if self.state['report']['outcome'] == 'SUCCESS':
                     self.check_approvals()
                     self.check_candidate()
@@ -400,6 +402,8 @@ class Controller:
                 raise ValueError('Approval declined')
             if file_hash(path) != sha or (not failure_report and self.baseline() != baseline):
                 raise ValueError('Inputs changed during approval')
+            if kind == 'report':
+                verify(read_json(path), self.run_dir)
             if kind == 'report' and self.state['report']['outcome'] == 'SUCCESS':
                 self.check_candidate()
                 self.check_evidence()

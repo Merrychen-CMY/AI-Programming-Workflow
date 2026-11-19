@@ -4,13 +4,15 @@ import { defineTool } from '@deepseek-ai/dsh-tools';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { toolFields, descriptions } from './workflow.js';
 import { createBootstrap, updateFields, updateDescriptions } from './bootstrap.js';
+import { reportDelivery } from './report-delivery.js';
 
 export const name = 'ai-programming-workflow';
-export const inject = ['tools', 'systemPrompt', 'credentials', 'userQuestions'];
+export const inject = ['tools', 'systemPrompt', 'credentials', 'userQuestions', 'agents', 'fs'];
 
 export function apply(ctx) {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const workflow = createBootstrap({ ctx, root, fields: toolFields, keyRef: credentialRef('AI_WORKFLOW_OPENAI_API_KEY') });
+  const deliver = reportDelivery(ctx);
   ctx.effect(() => () => workflow.dispose());
   ctx.systemPrompt.section({ name, order: 150, interpolate: false,
     text: ['harness/prompt.md','AGENTS.md','L1.md'].map(path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')).join('\n\n') });
@@ -20,7 +22,7 @@ export function apply(ctx) {
         [key,{ type: 'string', required: true, description }])),
       output: { schema: { type: 'string' }, render: (_args,value)=>[{ type: 'text', text: value }] },
       async execute(args, exec) {
-        try { return JSON.stringify(await workflow.invoke(toolName,args,exec)); }
+        try { return JSON.stringify(await deliver(await workflow.invoke(toolName,args,exec),exec)); }
         catch(error) { return JSON.stringify({ error: error.message, executed_successfully: false }); }
       },
     }));

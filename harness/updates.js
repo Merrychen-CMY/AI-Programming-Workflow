@@ -7,7 +7,7 @@ import { githubCredential } from './github-auth.js';
 import { taskRuntime } from './task-runtime.js';
 
 export const REPOSITORY = 'Merrychen-CMY/ReqPilot';
-export const BOOTSTRAP_ABI = 7;
+export const BOOTSTRAP_ABI = 8;
 export const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const MAX_ARCHIVE = 8_000_000, MAX_EXPANDED = 32_000_000;
 const sha = data => createHash('sha256').update(data).digest('hex');
@@ -91,7 +91,7 @@ export async function verifyRuntime(root, expected, { pinned = false } = {}) {
     if (path !== 'MANIFEST.json' && sha(await readFile(current)) !== manifest.files[path]) fail('RUNTIME_INTEGRITY');
   }
   // Retain old engines until a separately reviewed migration through the stable tool contract.
-  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4, 5, 6, 7] : [BOOTSTRAP_ABI]);
+  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4, 5, 6, 7, 8] : [BOOTSTRAP_ABI]);
   return { version: manifest.workflow_version, manifest_sha256: hash, root };
 }
 /** A GitHub credential is restricted to exact repository API URLs, never redirects/CDN. */

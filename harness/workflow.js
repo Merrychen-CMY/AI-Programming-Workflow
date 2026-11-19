@@ -208,8 +208,10 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       if (name === 'workflow_review_report') {
         if (Object.keys(args).length) throw new Error('Report review accepts no model arguments');
         const preview = await call(settings, 'report_preview');
+        const markdown = preview.markdown_report;
+        const markdownLink = markdown ? `Markdown审核报告：[${markdown.title}](<${markdown.path}>)\n文件SHA-256：${markdown.sha256}\n` : '';
         await ask(exec, `report-${preview.sha256.slice(0,16)}`,
-          `最终报告摘要（完整报告摘要校验值：${preview.sha256}）\n${JSON.stringify(preview.report,null,2)}\n完整报告：${preview.full_report_path || '见任务记录'}\n可请L1用dot_read_record分页展示完整报告后再确认；此处摘要不代替完整证据。\n\n确认失败/未知仅表示已审核现状，不允许继续重试。确认成功也不执行发布、合并或刷写。`, '已审核此报告');
+          `${markdownLink}最终报告摘要（完整报告摘要校验值：${preview.sha256}）\n${JSON.stringify(preview.report,null,2)}\n完整报告：${preview.full_report_path || '见任务记录'}\n可请L1用dot_read_record分页展示完整报告后再确认；此处摘要不代替完整证据。\n\n确认失败/未知仅表示已审核现状，不允许继续重试。确认成功也不执行发布、合并或刷写。`, '已审核此报告');
         return await call(settings, 'report_confirm', { sha256: preview.sha256 });
       }
       if (!Object.hasOwn(modelTools, name) || JSON.stringify(Object.keys(args).sort()) !== JSON.stringify([...modelTools[name]].sort()))

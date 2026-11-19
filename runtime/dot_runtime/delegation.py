@@ -128,9 +128,37 @@ class ApprovalRejected(ValueError):
     """Known pre-dispatch refusal; no worker or approval was started."""
 
 
+def _finish_review_report(controller, record, number, usage=None):
+    from . import report_markdown
+    context = record.setdefault('markdown_context', {
+        'approval': controller.state['approvals'].get(record['kind']), 'usage': usage})
+    record['markdown_required'] = True
+    controller.save()
+    report_markdown.generate(record, report_markdown.review, controller.run_dir, record, number,
+                             context['approval'], context['usage'])
+    controller.save()
+    return controller.state
+
+
+def repair_review_report(controller, kind):
+    """Finish a derived local file only; retain the existing result and approval."""
+    from .controller import read_json, run_lock
+    from .report_markdown import pending
+    with run_lock(controller.run_dir):
+        controller.state = read_json(controller.state_path)
+        reviews = controller.state.get('l1_reviews', [])
+        if (controller.state.get('report') or not reviews or not pending(reviews[-1])
+                or reviews[-1].get('kind') != kind or not reviews[-1].get('result')):
+            return False
+        _finish_review_report(controller, reviews[-1], len(reviews))
+        return True
+
+
 def approve_l1(controller, kind, l1_session_id, reviewer):
     """The L1 tool invocation requests approval; a separate read-only reviewer can veto it."""
     from .controller import atomic_json, file_hash, now, read_json, run_lock
+    if repair_review_report(controller, kind):
+        return controller.state
     with run_lock(controller.run_dir):
         controller.state = read_json(controller.state_path)
         state = controller.state
@@ -178,8 +206,11 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             atomic_json(workspace / 'current-resource-allocation.json', value['limits'])
         record = {'kind': kind, 'baseline': baseline, 'l1_session_id': l1_session_id, 'at': now(), 'status': 'UNKNOWN'}
         state['l1_reviews'].append(record)  # Reserve the attempt BEFORE any external dispatch.
+        def finish_review():
+            return _finish_review_report(controller, record, number, review_usage)
         from .review_packet import prepare
         packet = prepare(controller, workspace, original, resource_root, number)
+        review_usage = read_json(workspace / 'sources/usage.json')
         state['active_run'] = {'role': 'l1_independent_review', 'output': str(output), 'at': now()}
         controller.save()
         prompt = ('Independently review the ' + kind + ' baseline against raw-input.md and delegation.json. '
@@ -221,19 +252,25 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
         identity = result.get('session_id')
         if result.get('status') == 'UNKNOWN':
             controller.report('UNKNOWN', 'Independent L1 review outcome unknown; no automatic replay')
-            return state
+            return finish_review()
         state['active_run'] = None
         controller.save()
-        if any(file_hash(controller.run_dir / entry['path']) != entry['sha256'] for entry in packet):
-            controller.transition('DECISION_PENDING', 'Review source packet changed; approval refused')
-            return state
+        try:
+            if any(file_hash(controller.run_dir / entry['path']) != entry['sha256'] for entry in packet):
+                raise ValueError('Review source packet changed; approval refused')
+            if controller.baseline() != baseline:
+                raise ValueError('Inputs changed during independent review')
+            check_binding(state)
+        except (ValueError, OSError, resources.BudgetReview) as exc:
+            record['refusal'] = str(exc)
+            if isinstance(exc, resources.BudgetReview):
+                resources.pause(resource_root, original, exc, state)
+            controller.transition('DECISION_PENDING', 'Completed independent review cannot approve this baseline: ' + str(exc))
+            return finish_review()
         if (result.get('status') != 'PASS' or not identity or identity == l1_session_id or identity in seen
                 or not result.get('evidence') or result.get('findings') or not record['evidence_files']):
             controller.transition('DECISION_PENDING', 'Independent L1 review rejected or lacks evidence: ' + result.get('summary', ''))
-            return state
-        if controller.baseline() != baseline:
-            raise ValueError('Inputs changed during independent review')
-        check_binding(state)
+            return finish_review()
         state['approvals'][kind] = {'authority': 'delegated_l1', 'l1_session_id': l1_session_id,
             'reviewer_session_id': identity, 'review_number': number, 'sha256': baseline[kind],
             'baseline': baseline, 'delegation_sha256': state['delegation']['sha256'], 'at': now(), 'run_id': state['run_id']}
@@ -241,7 +278,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             state['approved_plan'], state['approved_baseline'] = plan, baseline
         controller.transition('PLAN_PENDING' if kind == 'requirements' else 'EXECUTING',
                               'L1 delegated approval after independent review; no human receipt was created')
-        return state
+        return finish_review()
 
 
 def submit_l1_report(controller, summary, l1_session_id):
@@ -255,14 +292,23 @@ def submit_l1_report(controller, summary, l1_session_id):
         if file_hash(path) != state['report']['sha256']:
             raise ValueError('DOT report changed before L1 review')
         report = read_json(path)
+        from . import report_markdown
         # L1 adds its assessment but cannot upgrade the controller outcome or remove evidence.
-        report['l1_submission'] = {'authority': 'delegated_l1', 'session_id': l1_session_id,
-            'summary': summary, 'outcome': state['report']['outcome'], 'dot_report_sha256': file_hash(path), 'at': now()}
-        atomic_json(path, report)
-        archive = controller.run_dir / 'reports' / ('l1-' + now().replace(':', '-') + '.json')
-        atomic_json(archive, report)
-        state['report'].update(sha256=file_hash(path), l1_submitted=True, archive=archive.relative_to(controller.run_dir).as_posix())
-        controller.save()
+        if not report_markdown.pending(report):
+            report['l1_submission'] = {'authority': 'delegated_l1', 'session_id': l1_session_id,
+                'summary': summary, 'outcome': state['report']['outcome'], 'dot_report_sha256': file_hash(path), 'at': now()}
+            report.pop('markdown_report', None)
+        report['markdown_required'] = True
+        archive = controller.run_dir / 'reports' / ('l1-' + report['l1_submission']['at'].replace(':', '-') + '.json')
+        def persist_submission():
+            atomic_json(archive, report)
+            atomic_json(path, report)
+            state['report'].update(sha256=file_hash(path), l1_submitted=True,
+                                  archive=archive.relative_to(controller.run_dir).as_posix())
+            controller.save()
+        persist_submission()
+        report_markdown.generate(report, report_markdown.final, controller.run_dir, report, state=state)
+        persist_submission()
         return state
 
 
@@ -276,12 +322,18 @@ def submit_preflight_report(root, summary, l1_session_id):
     if (root.parent / 'preflight-review.json').exists():
         raise ValueError('A reviewed final report cannot be rewritten')
     report = read_json(path)
-    if report.get('l1_submission'):
+    from . import report_markdown
+    if report.get('l1_submission') and not report_markdown.pending(report):
         raise ValueError('L1 report already submitted; do not replace its original assessment')
-    report['l1_submission'] = {'authority': 'delegated_l1', 'session_id': l1_session_id,
-        'summary': summary, 'outcome': report['outcome'], 'dot_report_sha256': file_hash(path), 'at': now()}
-    archive = root / 'preflight-reports' / ('l1-' + now().replace(':', '-') + '.json')
+    if not report_markdown.pending(report):
+        report['l1_submission'] = {'authority': 'delegated_l1', 'session_id': l1_session_id,
+            'summary': summary, 'outcome': report['outcome'], 'dot_report_sha256': file_hash(path), 'at': now()}
+    report['markdown_required'] = True
+    archive = root / 'preflight-reports' / ('l1-' + report['l1_submission']['at'].replace(':', '-') + '.json')
     archive.parent.mkdir(exist_ok=True)
+    atomic_json(archive, report)
+    atomic_json(path, report)
+    report_markdown.generate(report, report_markdown.final, root, report, preflight=True)
     atomic_json(archive, report)
     atomic_json(path, report)
     return report

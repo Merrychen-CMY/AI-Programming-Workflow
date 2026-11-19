@@ -167,9 +167,34 @@ def _check_evidence(root, records):
                 raise ApprovalRejected('Requirements review evidence changed')
 
 
+def _finish_review_report(root, value, record, number, usage=None):
+    from . import report_markdown
+    context = record.setdefault('markdown_context', {'approval': value.get('approval'), 'usage': usage})
+    record['markdown_required'] = True
+    _save(root, value)
+    report_markdown.generate(record, report_markdown.review, root, record, number,
+                             context['approval'], context['usage'], preflight=True)
+    _save(root, value)
+    return status(root)
+
+
+def repair_review_report(settings):
+    from .report_markdown import pending
+    root = Path(settings['control_dir'])
+    value = _load(root)
+    if ((root / 'run/state.json').exists() or (root / 'preflight-report.json').exists()
+            or not value or not value['reviews'] or not value['reviews'][-1].get('result')
+            or not pending(value['reviews'][-1])):
+        return False
+    _finish_review_report(root, value, value['reviews'][-1], len(value['reviews']))
+    return True
+
+
 def approve(settings, l1_session_id, reviewer):
     """Reserve and execute one fresh read-only review, then record L1 approval."""
     root = Path(settings['control_dir'])
+    if repair_review_report(settings):
+        return status(root)
     value = _preflight(root)
     if not value or not value['drafts'] or not l1_session_id.strip():
         raise ApprovalRejected('Stage requirements and supply the host L1 session before review')
@@ -205,6 +230,8 @@ def approve(settings, l1_session_id, reviewer):
     record = {'kind': 'requirements', 'baseline': binding, 'l1_session_id': l1_session_id,
               'at': now(), 'status': 'UNKNOWN', 'evidence_files': []}
     value['reviews'].append(record)
+    def finish_review():
+        return _finish_review_report(root, value, record, number, review_usage)
     value['active_run'] = {'role': 'l1_independent_review', 'output': str(output),
                            'review_number': number, 'at': now(), 'operation_id': uuid.uuid4().hex}
     _save(root, value)  # Reserve BEFORE preparing sources or dispatching externally.
@@ -213,6 +240,7 @@ def approve(settings, l1_session_id, reviewer):
         'initial_snapshot': binding['project'], 'l1_reviews': value['reviews'],
         'implementation_attempts': 0, 'revision_count': revision_count(root)})
     packet = prepare_packet(pseudo, workspace, original, root, number)
+    review_usage = read_json(workspace / 'sources/usage.json')
     record['evidence_files'] = packet
     _save(root, value)
     from .communication import l1_prompt
@@ -246,7 +274,7 @@ def approve(settings, l1_session_id, reviewer):
     value['state'] = 'DECISION_PENDING'
     if result.get('status') == 'UNKNOWN':
         _save(root, value)
-        return status(root)
+        return finish_review()
     value['active_run'] = None
     _save(root, value)
     try:
@@ -254,24 +282,26 @@ def approve(settings, l1_session_id, reviewer):
         if _binding(settings) != binding:
             raise ApprovalRejected('Requirements baseline changed during independent review')
         resources.effective(original, root)
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, resources.BudgetReview) as exc:
         record['refusal'] = str(exc)
+        if isinstance(exc, resources.BudgetReview):
+            resources.pause(root, original, exc)
         _save(root, value)
-        return status(root)
+        return finish_review()
     identity = result.get('session_id')
     seen = {r.get('result', {}).get('session_id') for r in value['reviews'][:-1]}
     outputs = [x for x in record['evidence_files'] if x['path'].startswith('requirements-review/outputs/')]
     if (result.get('status') != 'PASS' or not identity or identity == l1_session_id
             or identity in seen or not result.get('evidence') or result.get('findings') or not outputs):
         _save(root, value)
-        return status(root)
+        return finish_review()
     value['approval'] = {'authority': 'delegated_l1', 'l1_session_id': l1_session_id,
         'reviewer_session_id': identity, 'review_number': number, 'sha256': binding['requirements'],
         'baseline': binding, 'delegation_sha256': binding['delegation'], 'at': now(),
         'run_id': value['run_id']}
     value['state'] = 'REQUIREMENTS_APPROVED'
     _save(root, value)
-    return status(root)
+    return finish_review()
 
 
 def require_approved(settings, requirements=None):

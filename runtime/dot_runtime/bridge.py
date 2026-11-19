@@ -246,13 +246,22 @@ class Bridge:
             if name == 'dot_status':
                 return self.status()
             c = Controller(self.run_dir) if (self.run_dir / 'state.json').exists() else None
+            from .report_markdown import delivery
+            if name == 'l1_approve':
+                from .delegation import repair_review_report
+                repaired = (repair_review_report(c, arguments['kind']) if c else
+                            arguments['kind'] == 'requirements' and requirements_review.repair_review_report(self.settings))
+                if repaired:
+                    record = (c.state['l1_reviews'][-1] if c else requirements_review.status(self.root)['reviews'][-1])
+                    return {**self.status(), **delivery(record, 'l1_approve kind=' + arguments['kind'])}
             if name == 'l1_submit_report':
                 if c:
                     submit_l1_report(c, arguments['summary'], arguments['l1_session_id'])
+                    report = read_json(self.run_dir / 'final-report.json')
                 else:
                     from .delegation import submit_preflight_report
-                    submit_preflight_report(self.root, arguments['summary'], arguments['l1_session_id'])
-                return self.status()
+                    report = submit_preflight_report(self.root, arguments['summary'], arguments['l1_session_id'])
+                return {**self.status(), **delivery(report, 'l1_submit_report')}
             if name == 'l1_stop':
                 from .closure import validate_assessment
                 try:
@@ -308,11 +317,14 @@ class Bridge:
                     return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED', 'reason': str(exc)}
                 return {**self.status(), 'requirements_preparation': result}
             if name == 'l1_approve' and c is None and arguments['kind'] == 'requirements':
+                previous_count = requirements_review.review_count(self.root)
                 try:
                     result = requirements_review.approve(self.settings, arguments['l1_session_id'], self.workers)
                 except ValueError as exc:
                     return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED', 'reason': str(exc)}
-                return {**self.status(), 'requirements_approval': result}
+                report_result = (delivery(result['reviews'][-1], 'l1_approve kind=requirements')
+                                 if len(result['reviews']) > previous_count else {'report_files': []})
+                return {**self.status(), 'requirements_approval': result, **report_result}
             # Read-only report access and failure submission remain possible after expiry/API failure.
             client = self.client()
             operating = resources.effective(original, self.root) if adaptive else client.delegation
@@ -471,7 +483,11 @@ class Bridge:
             elif not c.state.get('delegation'):
                 raise ValueError('Incomplete bridge initialization; do not dispatch or synthesize approvals')
             elif name == 'l1_approve':
+                previous_count = len(c.state['l1_reviews'])
                 approve_l1(c, arguments['kind'], arguments['l1_session_id'], self.workers)
+                report_result = (delivery(c.state['l1_reviews'][-1], 'l1_approve kind=' + arguments['kind'])
+                                 if len(c.state['l1_reviews']) > previous_count else {'report_files': []})
+                return {**self.status(), **report_result}
             elif name == 'l1_revise':
                 # Pure preflight before writing staged inputs or changing the controller baseline.
                 if c.state['state'] not in ('PLAN_PENDING', 'DECISION_PENDING') or c.state['active_run'] or c.state.get('report'):

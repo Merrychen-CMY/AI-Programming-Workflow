@@ -47,7 +47,8 @@ def _review_summary(last, number, *, prefix, fallback):
                    if entry.get('path', '').endswith('/result.json')), None)
     return {'number': number, 'kind': last['kind'], 'status': last['status'],
             'summary': review.get('summary'), 'findings': review.get('findings', []),
-            'record': prefix + output if output else fallback}
+            'record': prefix + output if output else fallback,
+            'markdown_report': last.get('markdown_report'), 'markdown_error': last.get('markdown_error')}
 
 
 def compact(value):
@@ -89,7 +90,8 @@ def compact(value):
         report = result.get(key)
         if report:
             result[key] = {k: report[k] for k in ('outcome', 'reason', 'created_at', 'l1_submission',
-                'implementation_attempts', 'delivery_executed', 'l1_closure_assessment') if k in report}
+                'implementation_attempts', 'delivery_executed', 'l1_closure_assessment', 'markdown_report',
+                'markdown_required', 'markdown_error') if k in report}
             governance = report.get('resource_governance', {})
             result[key]['actual_usage'] = governance.get('actual_usage')
             result[key]['dot_api_reported_usage'] = governance.get('dot_api_reported_usage')
@@ -112,6 +114,14 @@ def compact(value):
             'AUTHORIZATION_PENDING': 'workflow_review_authorization',
             'REPORT_PENDING': 'workflow_review_report' if (result.get('report') or {}).get('l1_submitted') else 'L1 reads final report then l1_submit_report',
         }.get(state, 'Inspect current planning or API diagnostics before the next dependent action')
+    if any((result.get(key) or {}).get('markdown_required') and not (result.get(key) or {}).get('markdown_report')
+           for key in ('final_report', 'preflight_report')):
+        result['next'] = 'Retry l1_submit_report to generate the missing Markdown from the recorded assessment; no worker replay or new assessment.'
+    else:
+        latest = result.get('latest_review') or (result.get('requirements_review') or {}).get('latest_review')
+        if latest and latest.get('markdown_error'):
+            result['next'] = ('Retry l1_approve kind=' + latest['kind'] +
+                ' only to generate the recorded review Markdown. Approval, usage and any unresolved operation remain unchanged.')
     # Prevent host spill even with adversarially verbose reviews or old journals.
     if len(json.dumps(result, ensure_ascii=False)) > 18000:
         for key in ('decision', 'planning', 'resources', 'api_review', 'requirements_review', 'latest_review', 'final_report', 'preflight_report'):

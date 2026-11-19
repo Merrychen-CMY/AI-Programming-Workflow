@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.11.0",
+  "workflow_version": "3.12.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -68,7 +68,8 @@
     "initial_requirements_questions",
     "consolidated_start_summary",
     "bounded_authorization_request_when_needed",
-    "success_or_failure_final_report_for_review"
+    "success_or_failure_final_report_for_review",
+    "requirements_and_plan_markdown_review_reports_without_new_user_approval"
   ],
   "states": [
     {
@@ -244,5 +245,6 @@
     "REQUIREMENTS_PENDING",
     "REQUIREMENTS_APPROVED",
     "DECISION_PENDING"
-  ]
+  ],
+  "execution_scope_policy": "policy/execution-scope.json"
 }

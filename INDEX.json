@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.11.0",
+  "workflow_version": "3.12.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -32,14 +32,18 @@
       "templates/api-review.example.json",
       "docs/guides/normal-start.md",
       "docs/guides/investigation.md",
-      "docs/guides/flow-recovery.md"
+      "docs/guides/flow-recovery.md",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
       "docs/reference/17-dual-l1.md",
       "docs/reference/18-quality.md",
       "docs/reference/08-software-evidence.md",
-      "docs/reference/20-reflow.md"
+      "docs/reference/20-reflow.md",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ],
     "L2": [
       "roles/orchestrator-l2.md",
@@ -52,14 +56,18 @@
       "docs/guides/l1-dot-communication.md",
       "policy/communication.json",
       "docs/guides/investigation.md",
-      "docs/guides/flow-recovery.md"
+      "docs/guides/flow-recovery.md",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ],
     "L3": [
       "roles/implementer-l3.md",
       "docs/reference/07-l3-implementation.md",
       "docs/reference/04-directories.md",
       "docs/reference/08-software-evidence.md",
-      "docs/reference/20-reflow.md"
+      "docs/reference/20-reflow.md",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ],
     "L4": [
       "roles/verifier-l4.md",
@@ -67,7 +75,9 @@
       "docs/reference/09-esp32-hil.md",
       "docs/reference/18-quality.md",
       "docs/reference/19-security.md",
-      "docs/reference/20-reflow.md"
+      "docs/reference/20-reflow.md",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ],
     "L5": [
       "roles/delivery-l5.md",
@@ -75,7 +85,9 @@
       "docs/reference/20-reflow.md",
       "docs/reference/21-acceptance.md",
       "docs/guides/l1-dot-communication.md",
-      "policy/communication.json"
+      "policy/communication.json",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ],
     "DOT": [
       "DOT.md",
@@ -85,7 +97,9 @@
       "templates/execution-plan.md",
       "templates/final-report.md",
       "docs/guides/l1-dot-communication.md",
-      "policy/communication.json"
+      "policy/communication.json",
+      "docs/guides/execution-scope.md",
+      "policy/execution-scope.json"
     ]
   },
   "event_reading": {
@@ -198,6 +212,14 @@
     ],
     "review_handoff": [
       "docs/guides/normal-start.md"
+    ],
+    "l1_review_report_delivery": [
+      "policy/review-handoff.json",
+      "docs/guides/execution-scope.md"
+    ],
+    "execution_scope_or_slow_thinking": [
+      "policy/execution-scope.json",
+      "docs/guides/execution-scope.md"
     ]
   },
   "full_reference": [
@@ -383,5 +405,6 @@
   "review_handoff_policy": "policy/review-handoff.json",
   "input_material_policy": "policy/input-material.json",
   "closure_policy": "policy/closure.json",
-  "flow_recovery_policy": "policy/flow-recovery.json"
+  "flow_recovery_policy": "policy/flow-recovery.json",
+  "execution_scope_policy": "policy/execution-scope.json"
 }
