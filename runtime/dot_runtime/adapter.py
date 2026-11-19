@@ -18,7 +18,7 @@ STATUSES = ("PASS", "FAIL", "ERROR", "TIMEOUT", "UNKNOWN")
 ROOT_CAUSES = (
     "implementation", "product_requirement", "task_plan_or_design",
     "verification_plan_or_test", "test_infrastructure", "evidence_collection",
-    "delivery_target_or_authorization", "security", "unknown", "mixed",
+    "delivery_target_or_authorization", "security", "needs_analysis", "mixed",
 )
 ROLES = {"implementation": "workspace-write", "test": "read-only",
          "review": "read-only", "triage": "read-only"}
@@ -228,11 +228,11 @@ class CodexAdapter:
         if not _valid_report(report):
             result["summary"] = "Structured report does not match the required schema"
             return result
-        if role == "triage" and report["status"] in ("PASS", "FAIL"):
+        if role == "triage" and report["root_cause"] != "needs_analysis" and report["status"] in ("PASS", "FAIL"):
             key = report["root_cause_key"]
             if key in ROOT_CAUSES or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}", key):
                 result["summary"] = "Triage requires a stable concrete root_cause_key, not a broad category"
-                result["root_cause"] = "unknown"
+                result["root_cause"] = "needs_analysis"
                 return result
         if report["status"] == "PASS":
             evidence = report["evidence"]

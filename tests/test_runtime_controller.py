@@ -28,7 +28,7 @@ def fixture_plan():
                         'infrastructure_retries': 1, 'timeout_seconds': 15}}
 
 
-def result(status='PASS', cause='unknown', output='Ran 3 tests in 0.001s\n\nOK\n'):
+def result(status='PASS', cause='needs_analysis', output='Ran 3 tests in 0.001s\n\nOK\n'):
     return {'status': status, 'summary': 'Fixture evidence', 'root_cause': cause, 'root_cause_key': 'fixture.value.defect', 'findings': [],
             'evidence': [{'kind': 'review', 'description': 'Inspected fixture', 'output': output,
                           'command': '', 'exit_code': 0, 'test_count': 3}],
@@ -242,23 +242,27 @@ class ControllerTests(unittest.TestCase):
         c.state['active_run'] = {'role': 'implementation', 'sequence': 1}
         c.state['implementation_attempts'] = 1
         c.save()
-        self.assertEqual(c.run()['report']['outcome'], 'UNKNOWN')
-        self.assertFalse(c.adapter.calls)
-        c.approve('report', lambda *_: True)
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
+        self.assertEqual(c.adapter.calls, ['triage'])
+        self.assertEqual(c.state['active_run'], {'role': 'implementation', 'sequence': 1})
         with self.assertRaises(ValueError):
             c.revise(self.requirements, self.plan)
         c.reconcile(lambda *_: True)
         c.revise(self.requirements, self.plan)
         self.assertEqual(c.state['implementation_attempts'], 1)
 
-    def test_unknown_worker_is_not_triaged_or_retried(self):
+    def test_unknown_worker_gets_readonly_triage_but_is_not_retried(self):
         c = self.approved(FakeAdapter([('implementation', result('UNKNOWN'))]))
-        self.assertEqual(c.run()['report']['outcome'], 'UNKNOWN')
-        self.assertEqual(c.adapter.calls, ['implementation'])
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
+        self.assertTrue(c.state['active_run'])
+        self.assertEqual(c.adapter.calls, ['implementation', 'triage'])
 
     def test_reused_session_cannot_pass_independence(self):
         c = self.approved(FakeAdapter(reused_session=True))
-        self.assertNotEqual(c.run()['report']['outcome'], 'SUCCESS')
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
 
     def test_verifier_modifying_candidate_is_rejected(self):
         def tamper(role, workspace):
@@ -270,7 +274,8 @@ class ControllerTests(unittest.TestCase):
 
     def test_missing_real_tests_cannot_pass_with_claimed_count(self):
         c = self.approved(FakeAdapter([('test', result(output='0 tests; fine'))]))
-        self.assertNotEqual(c.run()['report']['outcome'], 'SUCCESS')
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
 
     def test_dependency_cycle_and_missing_dependency_rejected(self):
         for deps in (['build'], ['missing']):

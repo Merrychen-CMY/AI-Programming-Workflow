@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.8.0",
+  "workflow_version": "3.9.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -30,7 +30,8 @@
       "templates/l1-progress.md",
       "docs/guides/api-recovery.md",
       "templates/api-review.example.json",
-      "docs/guides/normal-start.md"
+      "docs/guides/normal-start.md",
+      "docs/guides/investigation.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -48,7 +49,8 @@
       "docs/reference/14-adapters.md",
       "docs/reference/20-reflow.md",
       "docs/guides/l1-dot-communication.md",
-      "policy/communication.json"
+      "policy/communication.json",
+      "docs/guides/investigation.md"
     ],
     "L3": [
       "roles/implementer-l3.md",
@@ -376,5 +378,6 @@
   "task_upgrade_policy": "policy/task-upgrades.json",
   "initialization_recovery_policy": "policy/initialization-recovery.json",
   "api_recovery_policy": "policy/api-recovery.json",
-  "review_handoff_policy": "policy/review-handoff.json"
+  "review_handoff_policy": "policy/review-handoff.json",
+  "input_material_policy": "policy/input-material.json"
 }

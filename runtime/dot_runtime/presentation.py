@@ -8,8 +8,10 @@ from .snapshot import _filesystem_path
 def read_record(root, name, offset):
     relative = PurePosixPath(name)
     allowed = name in ('requirements.md', 'plan.json', 'resources.json', 'api-review.json',
-        'planning-status.json', 'preflight-report.json', 'api/ledger.json', 'run/final-report.json', 'run/state.json')
-    allowed |= name.startswith(('run/l1-reviews/', 'run/l1-review-inputs/', 'run/reports/'))
+        'planning-status.json', 'preflight-report.json', 'api/ledger.json', 'run/final-report.json',
+        'run/state.json', 'run/decision-request.json')
+    allowed |= name.startswith(('run/l1-reviews/', 'run/l1-review-inputs/', 'run/reports/',
+                                'run/triage-inputs/', 'input-rejections/'))
     if (not allowed or '\\' in name or ':' in name or relative.is_absolute() or '..' in relative.parts
             or relative.suffix not in ('.json', '.md', '.txt', '.jsonl', '.log')
             or not offset.isascii() or not offset.isdecimal()):
@@ -77,6 +79,9 @@ def compact(value):
     result['details'] = 'Use dot_read_record(path, offset="0") for complete task records; next_offset pages without replay.'
     # A controller-owned next action is preferable to reconstructing state from history.
     state = result['state']
+    if state == 'DECISION_PENDING' and result.get('decision') and 'next' not in result:
+        result['next'] = result['decision'].get('next',
+            'Read decision and run/decision-request.json. L2 investigates; L1 resolves evidence, authority and resources. Do not finalize solely for a missing diagnosis.')
     if 'next' not in result:
         result['next'] = {
             'REVIEW_PENDING': 'l1_approve kind=requirements', 'PLAN_PENDING': 'l1_approve kind=plan',

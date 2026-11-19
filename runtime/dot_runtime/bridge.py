@@ -117,8 +117,30 @@ class Bridge:
             'next_owner': 'user' if state['state'] == 'REPORT_PENDING' and (state['report'] or {}).get('l1_submitted') else 'L1'}
 
     def call(self, name, arguments):
+        from .input_material import InputRejected
         try:
             return self._call(name, arguments)
+        except InputRejected as exc:
+            with run_lock(self.root):
+                import uuid
+                record = 'input-rejections/' + uuid.uuid4().hex + '.json'
+                (self.root / 'input-rejections').mkdir(exist_ok=True)
+                atomic_json(self.root / record, {'operation': name, 'diagnostic': exc.diagnostic})
+                if name == 'dot_plan':
+                    planning.record_rejection(self.root, name, planning.PlanRejected(
+                        str(exc), code='API_INPUT_TOO_LARGE', details=exc.diagnostic))
+                if (self.run_dir / 'state.json').exists():
+                    with run_lock(self.run_dir):
+                        c = Controller(self.run_dir)
+                        if c.state['state'] in ('EXECUTING', 'VERIFYING') and not c.state['active_run'] and not c.state['report']:
+                            atomic_json(self.run_dir / 'decision-request.json', {
+                                'reason': str(exc), 'diagnostic': exc.diagnostic, 'record': record})
+                            c.transition('DECISION_PENDING', 'Unsent input refusal requires L1 material review')
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                        'reason': str(exc), 'input_rejection': exc.diagnostic, 'record': record,
+                        'next': 'L1 reorganizes oversized input and reads original evidence using dot_read_record; '
+                                'no API retry approval or final UNKNOWN is needed for this unsent request. '
+                                'Baseline changes still require independent review; retain prior usage.'}
         except ApprovalRejected as exc:
             with run_lock(self.root):
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',

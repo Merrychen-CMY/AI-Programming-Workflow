@@ -118,7 +118,8 @@ class CommunicationRuntimeTests(unittest.TestCase):
     def test_input_cap_counts_added_instructions_and_does_not_truncate(self):
         send = Mock()
         client = self.client(send)
-        with self.assertRaisesRegex(ValueError, '250 KB'):
+        from dot_runtime.input_material import InputRejected
+        with self.assertRaisesRegex(InputRejected, 'local limit is 250000'):
             client.request('x' * 249999)
         send.assert_not_called()
         self.assertFalse((client.root / 'ledger.json').exists())

@@ -40,7 +40,8 @@ reflow:
   direct_l4_l5_to_l3: false
   require_root_cause_record: true
   require_issue_before_retry: true
-  block_unknown_root_cause: true
+  route_undiagnosed_issue_to_l2: true
+  auto_finalize_undiagnosed_issue: false
   close_only_after_independent_reverification: true
   implementation_change_requires_new_candidate: true
   preserve_all_attempts: true

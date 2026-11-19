@@ -57,3 +57,6 @@ API额度在诊断前耗尽保留pending_triage，恢复先分析失败；诊断
 ## 正常审批前置拒绝（3.8.0）
 
 REVIEW_PENDING只接受需求审批；PLAN_PENDING只接受计划审批。DECISION_PENDING须先修订再重审。顺序错误不派审查员、不调用DOT、不改变批准或消耗，返回COMPLETED_REJECTED并保留原阶段；宿主移除本次已完成调用的占位，不删除旧中断。最新审查问题及next置于简短返回中，完整记录由dot_read_record分页读取。
+
+
+3.9.0调查规则：问题统一交L2调查；尚未查明原因不得自动结案。取消根因分类unknown，needs_analysis表示L2调查待办，缺资料、权限或资源交L1解决。L1在授权内推进，越界主动申请用户原生授权，有必要继续解决时保留任务；仅评估无可行方案、用户结束或无法调整的全任务限制才提交最终报告。材料超限返回NOT_SENT/COMPLETED_REJECTED，不产生本次API消耗或最终UNKNOWN；完整证据保留并分页读取，摘要明确标注。操作执行状态仍如实记录；只读调查不能清除未决产品操作或重放写入。详见[调查与材料处理](../guides/investigation.md)。

@@ -113,11 +113,11 @@
     {
       "id": "L4F-16",
       "observation": "多个根因或无法归因",
-      "l2_analysis_and_blocking": "拆关联子单或保持 BLOCKED；不盲目派修",
+      "l2_analysis_and_blocking": "保留L2调查待办并拆关联子单；缺资料、权限或资源交L1处理，不自动结案",
       "handler_after_l2_triage": "L2 协调诊断并按边界升级",
       "resume_or_close_conditions": "各根因有证据及处理结果；阻断子单均通过重验"
     }
   ],
   "usage_scope": "Internal responsibilities and detailed reference; DOT maps to L2 orchestration and L5 summary. See policy/simple-flow.json and docs/advanced-profile.md.",
-  "approval_profile": "3.0 default: intermediate baselines approved by delegated L1 after independent review; L1 submits final report for user review. No additional human checkpoint within the task; out-of-delegation issues produce a blocked final report."
+  "approval_profile": "3.0 default: intermediate baselines approved by delegated L1 after independent review; L1 submits final report for user review. No additional human checkpoint within the task; out-of-delegation issues go to L1 for native user authorization; no automatic final report solely for missing authority."
 }

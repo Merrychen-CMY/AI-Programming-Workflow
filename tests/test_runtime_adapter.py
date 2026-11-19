@@ -23,7 +23,7 @@ class AdapterTests(unittest.TestCase):
         self.command_output = "Ran 2 tests in 0.1s\nOK\n"
         self.report = {
             "status": "PASS", "summary": "Two required tests passed", "findings": [],
-            "root_cause": "unknown", "root_cause_key": "", "evidence": [{
+            "root_cause": "needs_analysis", "root_cause_key": "", "evidence": [{
                 "kind": "command", "description": "Required tests executed",
                 "command": self.command, "output": self.command_output,
                 "exit_code": 0, "test_count": 2,

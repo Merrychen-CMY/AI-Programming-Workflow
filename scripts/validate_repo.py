@@ -23,7 +23,7 @@ ROUTES = {
     'task_plan_or_design': 'L2', 'verification_plan_or_test': 'L1-V',
     'test_infrastructure': 'L4', 'evidence_collection': 'L4',
     'delivery_target_or_authorization': 'L5',
-    'security': 'authorized_security_owner', 'unknown': None, 'mixed': 'L2',
+    'security': 'authorized_security_owner', 'needs_analysis': 'L2', 'mixed': 'L2',
 }
 
 
@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -88,6 +88,21 @@ def validate_review_handoff_policy(value):
         return ['Review handoff policy differs from implemented scope']
     return ['Review handoff boundary drift: ' + key for key, wanted in expected.items()
             if type(value[key]) is not type(wanted) or value[key] != wanted]
+
+
+def validate_input_material_policy(value):
+    expected = {'schema_version': 1, 'api_input_limit_bytes': 250000,
+        'triage_view_target_bytes': 60000, 'local_rejection_outcome': 'NOT_SENT',
+        'local_rejection_operation_status': 'COMPLETED_REJECTED', 'investigation_owner': 'L2',
+        'escalation_owner': 'L1', 'unclassified_route': 'needs_analysis',
+        'auto_finalize_undiagnosed_cause': False, 'preserve_original_evidence': True,
+        'mark_excerpts_and_source_hash': True, 'local_rejection_consumes_api_attempt': False,
+        'clear_unresolved_product_operation': False, 'reopen_old_final_report': False,
+        'guide': 'docs/guides/investigation.md'}
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Input material policy fields differ from implemented scope']
+    return ['Input investigation policy drift: ' + k for k, v in expected.items()
+            if type(value[k]) is not type(v) or value[k] != v]
 
 
 def validate_api_recovery_policy(value):
@@ -595,6 +610,7 @@ def validate_repository(root):
     errors.extend(validate_initialization_recovery_policy(documents.get('policy/initialization-recovery.json')))
     errors.extend(validate_api_recovery_policy(documents.get('policy/api-recovery.json')))
     errors.extend(validate_review_handoff_policy(documents.get('policy/review-handoff.json')))
+    errors.extend(validate_input_material_policy(documents.get('policy/input-material.json')))
     if package.get('reqpilot', {}).get('bootstrap_abi') != 6:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):

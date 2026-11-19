@@ -435,10 +435,11 @@ class Controller:
         """Only a human who has checked processes/side effects may clear an UNKNOWN dispatch."""
         with run_lock(self.run_dir):
             self.state = read_json(self.state_path)
-            if self.state['state'] != 'BLOCKED' or not self.state['active_run']:
-                raise ValueError('Reconciliation requires an acknowledged UNKNOWN report and an unresolved dispatch')
+            if self.state['state'] not in ('BLOCKED', 'DECISION_PENDING') or not self.state['active_run']:
+                raise ValueError('Reconciliation requires a paused investigation or acknowledged report and an unresolved dispatch')
             path = self.run_dir / 'reconciliation-request.json'
             atomic_json(path, {'run_id': self.state['run_id'], 'active_run': self.state['active_run'],
+                              'analysis_activity': self.state.get('analysis_activity'),
                               'instruction': 'Verify all old worker processes stopped and reconcile workspace/side effects. '
                                              'Approve only after this is actually complete. Budgets are retained.'})
             sha = file_hash(path)
@@ -447,6 +448,7 @@ class Controller:
             self.state['history'].append({'at': now(), 'action': 'operator_reconciled_unknown',
                                           'operator': getpass.getuser(), 'request_sha256': sha})
             self.state['active_run'] = None
+            self.state['analysis_activity'] = None
             self.save()
             return self.state
 
@@ -503,7 +505,7 @@ class Controller:
         try:
             check = self.check_runner(plan['verification']['test_command'], working_copy, output, timeout)
         except Exception as exc:
-            return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
+            return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'needs_analysis'}
         check['candidate_id'] = self.state['candidate']['id']
         # Build logs/new temporary outputs live only in this disposable test copy.
         # The reviewed input files themselves must remain byte-for-byte unchanged.
@@ -521,7 +523,7 @@ class Controller:
         self.save()
         return {'status': 'PASS' if check['status'] == 'PASS' and count > 0 else (check['status'] if check['status'] != 'PASS' else 'ERROR'),
                 'summary': f'Approved test command: {check["status"]}, executed test count={count}',
-                'evidence': [check], 'root_cause': 'unknown'}
+                'evidence': [check], 'root_cause': 'needs_analysis'}
 
     def approved_documentation(self, workspace):
         """Run the pinned checker on a disposable candidate copy, before independent review."""
@@ -541,7 +543,7 @@ class Controller:
         try:
             process = self.check_runner(command, working_copy, output / 'process', timeout)
         except Exception as exc:
-            return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'unknown'}
+            return {'status': 'UNKNOWN', 'summary': str(exc), 'evidence': [], 'root_cause': 'needs_analysis'}
         report_path = output / 'artifacts/report.json'
         entry = {'candidate_id': self.state['candidate']['id'], 'process': process,
                  'status': process.get('status', 'ERROR'), 'report': None, 'evidence_files': []}
@@ -582,7 +584,7 @@ class Controller:
             self.state['active_run'] = None
         self.save()
         return {'status': entry['status'], 'summary': 'Doxygen documentation gate: ' + entry['status'] + '. ' + entry.get('error', ''),
-                'evidence': [entry], 'root_cause': 'unknown'}
+                'evidence': [entry], 'root_cause': 'needs_analysis'}
 
     def prompt(self, role, instruction):
         plan = self.state['approved_plan']
@@ -614,31 +616,54 @@ class Controller:
 
     def worker(self, role, instruction, workspace):
         from .api_recovery import ApiReview
+        from .input_material import InputRejected
         if self.adapter is None:
             raise ValueError('A Codex adapter is required')
         timeout = self.operation_timeout(resources.controller_limits(self.state)['timeout_seconds'])
         sequence = len(self.state['sessions']) + 1
         output = self.run_dir / 'sessions' / f'{sequence:04d}-{role}'
-        self.state['active_run'] = {'sequence': sequence, 'role': role, 'at': now(), 'output': str(output)}
+        # Read-only L2 analysis must never replace an unresolved product writer's guard.
+        protected_operation = self.state['active_run'] if role == 'triage' else None
+        activity = {'sequence': sequence, 'role': role, 'at': now(), 'output': str(output)}
+        if protected_operation:
+            self.state['analysis_activity'] = activity
+        else:
+            self.state['active_run'] = activity
         self.save()  # Crash after dispatch must never silently replay a worker.
         try:
             result = self.adapter.run(role, self.prompt(role, instruction), Path(workspace), output,
                                       timeout)
+        except InputRejected as exc:
+            if role != 'triage':
+                raise
+            self.state['active_run'] = protected_operation
+            self.state['analysis_activity'] = None
+            atomic_json(self.run_dir / 'decision-request.json', {
+                'reason': 'Local API input refused before sending; L1 must reorganize evidence',
+                'diagnostic': exc.diagnostic, 'pending_failure_record': 'run/state.json',
+                'source_record': (self.state.get('pending_triage') or {}).get('source_record'),
+                'source_sha256': (self.state.get('pending_triage') or {}).get('source_sha256'),
+                'next': 'Read triage input records; revise affected inputs within authority and re-review. '
+                        'Do not clear UNKNOWN or replay product workers.'})
+            self.transition('DECISION_PENDING', str(exc))
+            raise
         except resources.BudgetReview:
-            self.state['active_run'] = None
+            self.state['active_run'] = protected_operation
+            self.state['analysis_activity'] = None
             self.save()
             raise
         except ApiReview:
             # Only the GPT triage adapter can establish an API-only pause. Product workers stay UNKNOWN.
             if role != 'triage':
                 raise
-            self.state['active_run'] = None
+            self.state['active_run'] = protected_operation
+            self.state['analysis_activity'] = None
             self.state['history'].append({'action': 'api_review_pending', 'role': role, 'at': now()})
             self.save()
             raise
         except Exception as exc:
             result = {'status': 'UNKNOWN', 'session_id': '', 'summary': f'Adapter exception: {type(exc).__name__}: {exc}',
-                      'evidence': [], 'findings': [], 'root_cause': 'unknown'}
+                      'evidence': [], 'findings': [], 'root_cause': 'needs_analysis'}
         session_id = result.get('session_id')
         seen = {r['result'].get('session_id') for r in self.state['sessions']}
         if session_id and session_id in seen:
@@ -655,7 +680,11 @@ class Controller:
                     files.append({'path': path.relative_to(self.run_dir).as_posix(), 'sha256': file_hash(path)})
         self.state['sessions'].append({'role': role, 'at': now(), 'candidate_id': (self.state.get('candidate') or {}).get('id'),
                                        'result': result, 'evidence_files': files})
-        self.state['active_run'] = None if result.get('status') != 'UNKNOWN' else self.state['active_run']
+        if role == 'triage':
+            self.state['analysis_activity'] = None if result.get('status') != 'UNKNOWN' else activity
+            self.state['active_run'] = protected_operation or (activity if result.get('status') == 'UNKNOWN' else None)
+        else:
+            self.state['active_run'] = None if result.get('status') != 'UNKNOWN' else self.state['active_run']
         self.save()
         return result
 
@@ -709,32 +738,50 @@ class Controller:
 
     def triage(self, failure, workspace):
         if failure.get('status') == 'UNKNOWN':
-            self.report('UNKNOWN', 'Worker/process outcome unknown; reconcile side effects before any retry')
-            return 'stop'
+            self.state['active_run'] = self.state['active_run'] or {
+                'role': 'unresolved_product_operation', 'at': now(),
+                'reason': 'Worker result requires reconciliation; no product replay'}
         # Retain a diagnosed-work checkpoint even if the API budget pauses analysis.
         self.state['pending_triage'] = {'failure': failure, 'workspace': str(workspace)}
+        self.save()
+        from .input_material import triage_packet
+        packet = triage_packet(self.run_dir, failure, self.state['issues'])
+        self.state['pending_triage'].update(source_record=packet['source_record'], source_sha256=packet['source_sha256'])
         self.save()
         result = self.worker('triage', 'Act as DOT/L2. Analyze this failure with evidence. Classify root_cause; '
                              'use a stable concrete component-and-defect root_cause_key, reuse it for the same cause. '
                              'Compare previous issues and distinguish new defects. Explain root cause and proposed action. '
-                             'Do not fix files or relax requirements.\nPREVIOUS ISSUES:\n' + canonical(self.state['issues']) + '\nFAILURE:\n' + canonical(failure), workspace)
-        cause = result.get('root_cause', 'unknown')
+                             'Do not fix files or relax requirements.\nEVIDENCE PACKET:\n' + canonical(packet), workspace)
+        cause = result.get('root_cause', 'needs_analysis')
+        from .adapter import ROOT_CAUSES
+        if cause not in ROOT_CAUSES:
+            cause = 'needs_analysis'
         cause_key = result.get('root_cause_key', '').strip()
         if result.get('status') not in ('PASS', 'FAIL') or not result.get('evidence') or not cause_key:
-            cause = 'unknown'
+            cause = 'needs_analysis'
         self.state['issues'].append({'id': f'ISSUE-{len(self.state["issues"]) + 1:04d}', 'intake': 'L2',
                                     'failure': failure, 'analysis': result, 'root_cause': cause,
                                     'candidate_id': (self.state.get('candidate') or {}).get('id')})
         counts = self.state['root_cause_counts']
         key = cause + ':' + cause_key
-        counts[key] = counts.get(key, 0) + 1
+        if cause != 'needs_analysis':
+            counts[key] = counts.get(key, 0) + 1
         self.state['pending_triage'] = None
         self.save()
         budget = resources.controller_limits(self.state)
         original, root = resources.controller_context(self.state)
         adaptive = resources.enabled(original, root)
-        if cause == 'unknown' or self.state['active_run']:
-            self.report('UNKNOWN', 'L2 could not establish the root cause; no blind retry')
+        if cause == 'needs_analysis' or self.state['active_run'] or self.state.get('analysis_activity'):
+            atomic_json(self.run_dir / 'decision-request.json', {
+                'reason': 'L2 investigation remains open; L1 resolves evidence, permissions and resources',
+                'owner': 'L2', 'escalation_owner': 'L1', 'investigation_status': 'OPEN',
+                'unresolved_product_operation': self.state['active_run'],
+                'analysis': result, 'source_record': packet['source_record'],
+                'source_sha256': packet['source_sha256'],
+                'next': 'L1 evaluates further investigation and resolves missing evidence/permissions/resources. '
+                        'Request native user authorization for scope or ceiling changes. Do not finalize solely '
+                        'for an undiagnosed cause; reconcile any unresolved product operation before writes.'})
+            self.transition('DECISION_PENDING', 'L2 investigation requires L1 support; no automatic final report')
             return 'stop'
         if cause in ('product_requirement', 'task_plan_or_design', 'verification_plan_or_test',
                      'delivery_target_or_authorization', 'security', 'mixed'):
@@ -774,7 +821,7 @@ class Controller:
             self.state['infrastructure_retries'] += 1
             self.save()
             return 'reverify'
-        self.report('FAILED', 'Unsupported root-cause route')
+        self.transition('DECISION_PENDING', 'Routing requires L2 investigation and L1 coordination')
         return 'stop'
 
     def make_candidate(self):
@@ -881,7 +928,8 @@ class Controller:
             if self.state['state'] not in ('EXECUTING', 'VERIFYING'):
                 raise ValueError('Run requires approved requirements and plan, or a resumable verification state')
             if self.state['active_run']:
-                self.report('UNKNOWN', 'Previous dispatch did not finish recording; reconcile live process and side effects')
+                self.triage({'status': 'UNKNOWN', 'summary': 'Previous dispatch did not finish recording',
+                             'evidence': [], 'root_cause': 'needs_analysis'}, Path(self.state['project']))
                 return self.state
             try:
                 self.check_approvals()
@@ -982,7 +1030,7 @@ class Controller:
                             self.check_candidate()
                             if errors:
                                 failure = {'status': 'FAIL', 'summary': 'Huawei clause review did not pass: ' + '; '.join(errors),
-                                           'evidence': [self.state['compliance']], 'root_cause': 'unknown'}
+                                           'evidence': [self.state['compliance']], 'root_cause': 'needs_analysis'}
                                 if self.triage(failure, candidate_path) == 'stop':
                                     break
                                 continue

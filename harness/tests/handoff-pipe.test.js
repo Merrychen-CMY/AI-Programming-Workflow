@@ -41,6 +41,12 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   draft.topics = Object.fromEntries(Object.keys(draft.topics).map(k => [k, 'Local Python fixture; return 3; no network or hardware']));
   await invoke('workflow_inspect', {draft_json: JSON.stringify(draft)});
   await invoke('workflow_confirm_start');
+  const oversized = await invoke('dot_plan', {requirements: '中'.repeat(100000)});
+  assert.equal(oversized.operation_status, 'COMPLETED_REJECTED');
+  assert.equal(oversized.input_rejection.outcome, 'NOT_SENT');
+  const earlyTask = resolve(directory, 'tasks', createHash('sha256').update(exec.agent.id).digest('hex'));
+  await assert.rejects(readFile(resolve(earlyTask, 'interrupted.json')), /ENOENT/);
+  await assert.rejects(readFile(resolve(earlyTask, 'control/api/ledger.json')), /ENOENT/);
   await invoke('dot_plan', {requirements: draft.raw_input});
   assert.equal((await invoke('dot_initialize')).state, 'REVIEW_PENDING');
   const task = resolve(directory, 'tasks', createHash('sha256').update(exec.agent.id).digest('hex'));

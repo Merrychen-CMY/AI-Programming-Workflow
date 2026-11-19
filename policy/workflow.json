@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.8.0",
+  "policy_version": "3.9.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -86,13 +86,13 @@
         "owner": "authorized_security_owner",
         "action": "阻断并人工审查；L2协调，按根因另派修复"
       },
-      "unknown": {
-        "owner": null,
-        "action": "BLOCKED；L2登记诊断任务，不自动派修"
-      },
       "mixed": {
         "owner": "L2",
         "action": "拆关联子单；上游基线先决，分别分派并独立核验"
+      },
+      "needs_analysis": {
+        "owner": "L2",
+        "action": "保留调查待办；缺事实、权限或资源交L1协调；不得因尚未查明原因自动结案"
       }
     }
   },
@@ -174,5 +174,6 @@
   "task_upgrade_policy": "policy/task-upgrades.json",
   "initialization_recovery_policy": "policy/initialization-recovery.json",
   "api_recovery_policy": "policy/api-recovery.json",
-  "review_handoff_policy": "policy/review-handoff.json"
+  "review_handoff_policy": "policy/review-handoff.json",
+  "input_material_policy": "policy/input-material.json"
 }

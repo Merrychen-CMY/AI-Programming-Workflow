@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "api_input_limit_bytes": 250000,
+  "triage_view_target_bytes": 60000,
+  "local_rejection_outcome": "NOT_SENT",
+  "local_rejection_operation_status": "COMPLETED_REJECTED",
+  "investigation_owner": "L2",
+  "escalation_owner": "L1",
+  "unclassified_route": "needs_analysis",
+  "auto_finalize_undiagnosed_cause": false,
+  "preserve_original_evidence": true,
+  "mark_excerpts_and_source_hash": true,
+  "local_rejection_consumes_api_attempt": false,
+  "clear_unresolved_product_operation": false,
+  "reopen_old_final_report": false,
+  "guide": "docs/guides/investigation.md"
+}
