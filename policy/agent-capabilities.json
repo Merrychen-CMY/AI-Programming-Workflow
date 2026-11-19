@@ -44,5 +44,18 @@
     ],
     "revision_and_approval_owner": "L1",
     "questions_only_return_allowed": false
-  }
+  },
+  "l2_direct_tools": [
+    "local_read",
+    "local_list",
+    "local_write",
+    "local_edit",
+    "local_mkdir",
+    "local_command",
+    "web_fetch",
+    "web_search"
+  ],
+  "l2_direct_tool_evidence": "research/*/record.json",
+  "l2_direct_commands_os_sandbox": false,
+  "l2_web_search": "configured_model_hosted_web_search_accounted_request"
 }

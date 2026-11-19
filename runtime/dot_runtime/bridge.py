@@ -77,6 +77,8 @@ class Bridge:
         from .research import run as research_run
         client.research = lambda question: research_run(self.settings, self.workers, question,
             state=read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None)
+        from .local_tools import LocalTools
+        client.local_tools = LocalTools(self.settings, client, self.worker_environment)
         return client
 
     def status(self):

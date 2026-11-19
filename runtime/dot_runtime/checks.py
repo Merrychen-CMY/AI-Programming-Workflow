@@ -17,7 +17,8 @@ from .snapshot import _root
 
 
 def run_check(command: list[str], workspace: Path, output_dir: Path,
-              timeout_seconds: int, environment=None) -> dict:
+              timeout_seconds: int, environment=None, *, record_process=False, output_limit=None,
+              require_disjoint=True) -> dict:
     """Execute exactly one reviewed argv; never overwrite an earlier run.
 
     Invalid arguments/paths raise ValueError before dispatch. Operational
@@ -32,7 +33,7 @@ def run_check(command: list[str], workspace: Path, output_dir: Path,
         raise ValueError("timeout_seconds must be a positive integer")
     workspace = _root(Path(workspace), exists=True)
     output_dir = _root(Path(output_dir), exists=False)
-    if output_dir.is_relative_to(workspace) or workspace.is_relative_to(output_dir):
+    if require_disjoint and (output_dir.is_relative_to(workspace) or workspace.is_relative_to(output_dir)):
         raise ValueError("Test evidence and workspace must be disjoint")
     if output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir())):
         raise ValueError("Test output directory must be new or empty")
@@ -42,12 +43,22 @@ def run_check(command: list[str], workspace: Path, output_dir: Path,
               "output": "", "log_path": str(log_path)}
     options = {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)} if os.name == "nt" else {"start_new_session": True}
     process = None
+    process_record = None
+    if record_process:
+        from .controller import atomic_json, now
+        from .operation_recovery import boot_identity
+        process_record = {'started_at': now(), 'boot_id': boot_identity(), 'status': 'STARTING',
+                          'process_tree_status': 'UNKNOWN', 'command': list(command), 'cwd': str(workspace)}
+        atomic_json(output_dir / 'process-record.json', process_record)
     with log_path.open("xb") as log:
         try:
             process = subprocess.Popen(
                 command, shell=False, stdin=subprocess.DEVNULL,
                 stdout=log, stderr=subprocess.STDOUT, cwd=workspace, env=environment, **options)
             result["process_id"] = process.pid
+            if process_record is not None:
+                process_record.update(pid=process.pid, status='RUNNING')
+                atomic_json(output_dir / 'process-record.json', process_record)
             try:
                 process.wait(timeout=timeout_seconds)
                 result["status"] = "PASS" if process.returncode == 0 else "FAIL"
@@ -60,5 +71,14 @@ def run_check(command: list[str], workspace: Path, output_dir: Path,
                 if process.poll() is None:
                     result["status"] = "ERROR" if _terminate_tree(process, output_dir) else "UNKNOWN"
                 result["exit_code"] = process.returncode
-    result["output"] = log_path.read_bytes().decode("utf-8", errors="replace")
+    if process_record is not None:
+        process_record.update(status='UNKNOWN' if result['status'] == 'UNKNOWN' else 'EXITED', ended_at=now(),
+                              exit_code=result['exit_code'],
+                              process_tree_status='STOPPED' if result['status'] == 'TIMEOUT' else 'UNKNOWN')
+        atomic_json(output_dir / 'process-record.json', process_record)
+    with log_path.open('rb') as log:
+        data = log.read() if output_limit is None else log.read(output_limit + 1)
+    result["output"] = (data if output_limit is None else data[:output_limit]).decode("utf-8", errors="replace")
+    if output_limit is not None:
+        result['truncated'] = len(data) > output_limit
     return result

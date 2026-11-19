@@ -6,7 +6,7 @@
 
 ## 已有能力及插件边界
 
-本仓库提供 `scripts/l1_bridge.py`，是本机MCP stdio服务，使用Python标准库。L1通过它调用OpenAI Responses API，GPT/DOT生成计划、提出调度及根因判断；本机控制器执行固定门禁和独立Codex会话。GPT没有任意shell、审批或发布工具。DOT调用一次受控执行工具后，结果以控制器记录为准。
+本仓库提供 `scripts/l1_bridge.py`，是本机MCP stdio服务，使用Python标准库。L1通过它调用OpenAI Responses API，GPT/DOT生成计划、提出调度及根因判断；本机控制器执行固定门禁和独立Codex会话。3.16.0起DOT可直接使用文件、目录、命令、网页抓取与搜索工具，也可委派调查；需求批准和最终用户确认不向GPT开放。直接命令使用当前用户权限，并非OS沙箱，仍须遵守职责和已授权范围。DOT选择受控产品执行工具后，结果以控制器记录为准。详见[能力指南](agent-capabilities.md)。
 
 [dsh-spec-collab 0.4.1](https://github.com/zx490336534/dsh-spec-collab)仍要求其自己的人工版本确认，AI不能把需求标为Ready。本仓库没有修改该插件，也没有把自动批准伪装成人工确认。手动MCP集成时在DeepSeek Harness的L1专用AgentPreset挂载本工具桥和本文档，以本仓库的代理批准记录作为执行基线；插件可用作草稿协作，但不要依赖其人工Ready按钮触发自动执行。若必须沿用原Ready状态，需另行扩展插件的身份/状态规则，当前未实现。
 

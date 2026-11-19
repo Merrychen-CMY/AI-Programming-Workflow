@@ -48,7 +48,8 @@ def bridge(settings):
                 marker.write_text('fixture-only')
                 return delegated.call_response('stop', {'reason': 'Fixture: consider authorized alternative, submit permission gap to L1'})
             if any(t.get('name') == 'propose_plan' for t in payload.get('tools', [])):
-                text = payload['input'][-1]['content']
+                text = '\n'.join(item.get('content', '') or item.get('output', '')
+                                 for item in payload['input'] if isinstance(item.get('content', item.get('output', '')), str))
                 # Unlike a blind PASS stub, reject a missing/currently unapproved
                 # handoff so the real host lifecycle exercises the contract.
                 marker = 'CURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n'
@@ -60,6 +61,11 @@ def bridge(settings):
                         return delegated.call_response('request_investigation', {'question': 'Read actual Python path and version'})
                     if 'Observed installed Python:' not in text:
                         raise ValueError('Fixture DOT did not receive the actual investigation observation')
+                if 'Fixture direct tools before planning' in text:
+                    if 'DIRECT_PYTHON_OBSERVED:' not in text:
+                        return delegated.call_response('local_command', {
+                            'argv': [sys.executable, '-c', 'import sys; print("DIRECT_PYTHON_OBSERVED:"+sys.version)'],
+                            'cwd': settings['project'], 'timeout_seconds': 10})
                 return delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})
             return delegated.call_response('run_approved_workflow')
         class FixtureClient(ResponsesClient):

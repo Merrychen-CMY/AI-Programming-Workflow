@@ -32,7 +32,7 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   const invoke = (name, args = {}) => flow.invoke(name, args, exec);
   assert.equal((await invoke('workflow_check_environment')).ready, true);
   const draft = JSON.parse(await readFile(resolve(root, 'templates/harness-start.example.json'), 'utf8'));
-  draft.project = project; draft.raw_input = 'Fixture research before planning: Return 3 from value(). Python-only. No external actions.';
+  draft.project = project; draft.raw_input = 'Fixture research before planning. Fixture direct tools before planning: Return 3 from value(). Python-only. No external actions.';
   draft.hard_constraints = ['Only modify value.py; tests must independently pass'];
   draft.allowed_paths = ['value.py']; draft.environment_checks = [{name: 'independent test entry', kind: 'file',
     path: resolve(project, 'test_value.py'), required: true, evidence: 'Fixture test entry exists; execution remains pending'}];
@@ -78,6 +78,9 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   await invoke('l1_prepare_requirements', {requirements: draft.raw_input});
   await invoke('l1_approve', {kind: 'requirements'});
   await invoke('dot_plan', {requirements: draft.raw_input});
+  const observed = await invoke('dot_status');
+  assert.ok(observed.research.some(x => x.question === 'local_command' && x.summary.includes('DIRECT_PYTHON_OBSERVED:')),
+    'DOT receives a real direct command result before planning; no extra Codex worker required');
   assert.equal((await invoke('dot_initialize')).state, 'PLAN_PENDING');
   const task = resolve(directory, 'tasks', createHash('sha256').update(exec.agent.id).digest('hex'));
   const rejected = await invoke('l1_approve', {kind: 'requirements'});

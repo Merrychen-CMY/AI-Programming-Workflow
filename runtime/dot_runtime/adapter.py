@@ -184,7 +184,7 @@ def _terminate_tree(process: subprocess.Popen, output_dir: Path) -> bool:
         if os.name == "nt":
             result = subprocess.run(
                 ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                capture_output=True, text=True, timeout=15,
+                capture_output=True, text=True, encoding='oem', errors='replace', timeout=15,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
             (output_dir / "termination.log").write_text(
