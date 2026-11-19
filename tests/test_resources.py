@@ -238,6 +238,33 @@ class ResourceTests(unittest.TestCase):
         self.assertFalse((c.run_dir / 'l1-review-inputs/3').exists())
         self.assertEqual(len(c.state['l1_reviews']), 2)
 
+    def test_allocation_change_between_planning_initialization_and_approval_is_not_scope_drift(self):
+        b = self.bridge([delegated.call_response('propose_plan', {'plan_json': json.dumps(fixtures.fixture_plan())})])
+        self.allocate(b)
+        b.call('dot_plan', {'requirements': 'one implementation task'})
+        self.allocate(b, implementation_attempts=2, timeout_seconds=5, infrastructure_retries=0)
+        b.call('dot_initialize', {})
+        b.call('l1_approve', {'kind': 'requirements', 'l1_session_id': 'host'})
+        self.allocate(b, implementation_attempts=1, timeout_seconds=4, infrastructure_retries=0)
+        b.call('l1_approve', {'kind': 'plan', 'l1_session_id': 'host'})
+        c = Controller(b.run_dir); c.check_approvals()
+        self.assertEqual(c.state['state'], 'EXECUTING')
+        self.assertEqual(c.state['approved_plan']['budgets']['implementation_attempts'], 3)
+        self.assertEqual(resources.controller_limits(c.state)['implementation_attempts'], 1)
+        self.assertEqual(read_json(b.run_dir / 'l1-review-inputs/2/current-resource-allocation.json')['implementation_attempts'], 1)
+
+    def test_initialization_budget_pause_does_not_leave_an_unbound_partial_run(self):
+        plan = fixtures.fixture_plan()
+        plan['tasks'].append(dict(id='second', instruction='Complete second unit', depends_on=['build']))
+        b = self.bridge([delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})])
+        self.allocate(b); b.call('dot_plan', {'requirements': 'two implementation units'})
+        self.allocate(b, implementation_attempts=1)
+        self.assertEqual(b.call('dot_initialize', {})['state'], 'BUDGET_REVIEW_PENDING')
+        self.assertFalse((b.run_dir / 'state.json').exists())
+        self.allocate(b, implementation_attempts=2)
+        self.assertEqual(b.call('dot_initialize', {})['state'], 'REVIEW_PENDING')
+        self.assertTrue(Controller(b.run_dir).state['delegation'])
+
     def test_facts_revision_pause_preserves_previous_facts(self):
         b = self.bridge([])
         self.allocate(b, revisions=0)

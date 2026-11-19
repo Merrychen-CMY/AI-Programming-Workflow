@@ -266,6 +266,9 @@ class Bridge:
                         or planned['plan_sha256'] != digest(read_json(self.root / 'plan.json'))
                         or planned['requirements_sha256'] != digest((self.root / 'requirements.md').read_text(encoding='utf-8'))):
                     raise ValueError('Plan is missing or stale after clarification; replan before initialization')
+                if adaptive:
+                    resources.require(original, self.root, 'implementation_attempts', 0,
+                                      len(read_json(self.root / 'plan.json')['tasks']))
                 initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
                 c = Controller(self.run_dir)
                 c.state['clarification_root'] = str(self.root)
