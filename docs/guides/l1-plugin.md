@@ -4,7 +4,7 @@
 
 ## 安装和首次使用
 
-1. 获取本仓库 3.1.2 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
+1. 获取本仓库 3.2.0 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
 2. 在 DeepSeek Harness 的插件管理中添加本地插件包/目录。也可让 Harness 自身有插件管理能力的 Agent 使用 `plugin_manager install_bundle` 安装本地来源；实际参数以宿主工具声明为准。本仓库不直接修改你的 Harness 配置文件。
 3. 创建新会话，选择 **AI 编程 L1**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。旧会话可能仍保留旧 preset，不能用来判断新插件是否生效。
 4. 对 L1 说：**“开始一个项目，请按配置模型和密钥、检查环境、沟通需求的顺序引导我，再集中确认开工。”** L1 会提供本机配置页链接。在页面填写 GPT API 模型 ID、密钥及 Python/Codex 可执行文件路径。这里的 GPT 就是 DOT，不是另一个人工操作入口；L1 自己的模型仍由 Harness 设置。
@@ -26,7 +26,7 @@
 
 ### 配置或API测试失败
 
-3.1.2配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
+3.2.0配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
 
 | 错误编号 | 含义与处理 |
 | --- | --- |
@@ -65,7 +65,7 @@ flowchart TD
 
 配置、基础环境、需求沟通及准备/确认阶段属于开工引导，不替代既有 REVIEW_PENDING、PLAN_PENDING、EXECUTING、VERIFYING 等运行状态。每个 Harness 会话固定一个任务。记录在用户目录 `.ai-programming-workflow/tasks/<会话摘要>/`，与产品和插件代码分离；重启会话沿用记录，不能重置累计消耗。新目标应开启新会话、再次集中确认，并在基线字段关联旧报告，不能通过换会话绕过失败或预算。
 
-工具在可能修改状态的操作之前记录 UNKNOWN 标记，收到完整结果才清除。宿主退出、取消、进程失败或结果不明会保留标记；只能查状态或提交停止/最终报告，不自动重放。终止桥进程不证明其所有后代进程已终止，需要核实旧进程和证据。保守拒绝也可能要求结束本任务，再以明确关联旧记录的新任务处理；没有自动“清除失败”按钮。
+工具在可能修改状态的操作之前记录 UNKNOWN 标记，收到完整结果才清除。宿主退出、取消、进程失败或结果不明会保留标记；只能查状态或提交停止/最终报告，不自动重放。终止桥进程不证明其所有后代进程已终止，需要核实旧进程和证据。DOT完整返回request_clarification会记录NEEDS_INFO并正常结束这次工具调用，清除本次在途标记；它允许同任务补事实并重新规划。真正中断、畸形响应或明确最终报告不因此解锁。详见[事实补充与恢复](clarifications.md)。
 
 开工后不能静默切换模型、Python/Codex 路径、范围或预算。可以在原模型下更换凭据并重新测试 API。用户数据和项目文件变化须按基线规则处理。配置页是会话内临时本机服务，关闭或卸载插件使链接失效；不用于远程服务器上的浏览器配置。
 
@@ -85,4 +85,8 @@ flowchart TD
 
 插件入口为 `harness/index.js`，打包根为仓库根。`harness/cordis.patch.yml` 声明专用 L1 preset。`workflow_reference` 提供受限只读规则读取；内部 Python 管道不直接暴露给模型。开工和最终确认来自 `ctx.userQuestions` 的原生人类答复，模型无法传入 `confirmed=true`。
 
-运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/ai-programming-workflow-3.1.2.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.1.2验证记录](../reports/3.1.2-validation.md)。
+运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/ai-programming-workflow-3.2.0.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.2.0验证记录](../reports/3.2.0-validation.md)。
+
+## 开工后发现资料缺口
+
+读取[同任务事实补充与恢复](clarifications.md)。3.2.0的dot_plan可返回NEEDS_INFO；L1追加事实后继续原任务，无需重复开工确认。资料、审查、API及时间预算均保留，候选和旧批准按修订失效。3.1.x已锁定任务没有自动迁移，不删除旧记录或中断标记。

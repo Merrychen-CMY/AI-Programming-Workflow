@@ -14,6 +14,7 @@ from .bridge import Bridge
 from .controller import Controller, atomic_json, digest, file_hash, read_json, run_lock
 from .delegation import validate_delegation
 from .snapshot import _root, _inventory, _modes, _manifest
+from .clarifications import UNRESOLVED
 
 TOPICS = ('requirements', 'baseline', 'scope', 'functions', 'acceptance',
           'test_environment', 'test_plan', 'delivery', 'safety')
@@ -37,6 +38,7 @@ def validate_draft(draft, task):
         raise ValueError('Original user input is required')
     if set(draft['topics']) != set(TOPICS) or any(
             not isinstance(draft['topics'][key], str) or not draft['topics'][key].strip()
+            or UNRESOLVED.fullmatch(draft['topics'][key].strip())
             for key in TOPICS):
         raise ValueError('All nine discovery topics require explicit answers; unresolved facts cannot pass')
     text = json.dumps(draft, ensure_ascii=False)
@@ -111,7 +113,7 @@ def inspect(draft, task, settings):
     checks = check_environment(settings)['checks']
     for item in draft['environment_checks']:
         if item['kind'] == 'manual':
-            status = 'USER_ATTESTED' if item['evidence'].strip() else 'UNKNOWN'
+            status = 'USER_ATTESTED' if item['evidence'].strip() and not UNRESOLVED.search(item['evidence']) else 'UNKNOWN'
         else:
             p = Path(item['path'])
             status = 'PASS' if (p.is_file() if item['kind'] == 'file' else p.is_dir()) else 'FAIL'
@@ -199,7 +201,7 @@ def dispatch(request):
         if action != 'bridge':
             raise ValueError('Unknown private operation')
         name, arguments = request['name'], request['arguments']
-        if name in ('l1_approve', 'l1_submit_report'):
+        if name in ('l1_approve', 'l1_submit_report', 'l1_add_facts'):
             if 'l1_session_id' in arguments:
                 raise ValueError('L1 session identity comes from the host, not model arguments')
             arguments = {**arguments, 'l1_session_id': request['session']}

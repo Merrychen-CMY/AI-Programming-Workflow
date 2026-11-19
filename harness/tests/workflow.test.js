@@ -33,6 +33,8 @@ async function fixture(t, answer='approve') {
     if(request.action==='inspect')return{inspection:{ready:true,baseline:{id:'baseline'},checks:[],limits:'fixture only'},digest:'a'.repeat(64)};
     if(request.action==='confirm')await writeFile(resolve(task,'confirmation.json'),JSON.stringify({settings}));
     if(request.action==='report_preview')return{sha256:'b'.repeat(64),report:{outcome:'FAILED',evidence:['original']}};
+    if(request.action==='bridge' && controls.bridgeError)throw new Error(controls.bridgeError);
+    if(request.action==='bridge' && controls.bridgeReply)return controls.bridgeReply;
     return {state:request.action==='confirm'?'START_CONFIRMED':'FIXTURE'};
   };
   const flow=createWorkflow({ctx,root,directory,keyRef:'FIXTURE_KEY',runner}); t.after(()=>flow.dispose());
@@ -115,6 +117,30 @@ test('completed stop has no spurious UNKNOWN, prior interrupted stop keeps UNKNO
   await writeFile(resolve(f.task,'interrupted.json'),'{}');
   await f.flow.invoke('l1_stop',{reason:'Cannot reconcile old process'},f.exec);
   assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),'{}');
+});
+
+test('completed NEEDS_INFO clears in-flight marker and allows sourced facts without new user approval',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  f.controls.bridgeReply={state:'NEEDS_INFO',accepted:false,planning:{gaps:[{name:'compiler',stage:'planning'}]}};
+  const result=await f.flow.invoke('dot_plan',{requirements:'requirements'},f.exec);
+  assert.equal(result.state,'NEEDS_INFO');
+  await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+  f.controls.bridgeReply={state:'NEEDS_INFO',accepted:true};
+  await f.flow.invoke('l1_add_facts',{facts_json:'{"reason":"supplement","facts":[]}'},f.exec);
+  assert.equal(f.calls.at(-1).options.key,undefined);
+  assert.equal(f.calls.at(-1).request.name,'l1_add_facts');
+  assert.equal(f.questions.length,0);
+});
+
+test('unknown transport failure still blocks facts and repeated planning',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  f.controls.bridgeError='UNKNOWN: lost result';
+  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'requirements'},f.exec),/UNKNOWN/);
+  assert.ok(await readFile(resolve(f.task,'interrupted.json')));
+  const count=f.calls.length;
+  await assert.rejects(f.flow.invoke('l1_add_facts',{facts_json:'{}'},f.exec),/UNKNOWN/);
+  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'new requirements'},f.exec),/UNKNOWN/);
+  assert.equal(f.calls.length,count);
 });
 test('credential provider errors do not expose provider details',async t=>{
   const f=await fixture(t);f.ctx.credentials.resolve=async()=>{throw new Error(secret);};

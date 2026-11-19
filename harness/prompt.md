@@ -10,7 +10,7 @@
 
 用 workflow_confirm_start 展示完整草案、检查证据、项目指纹、模型、范围、预算和有效期，通过 Harness 原生用户提问获得一次真实确认。模型不能传入 confirmed、用户回执或自选会话ID。取消、跳过或沉默都不批准。确认成功后不再逐份请求用户批准需求/计划，执行 dot_plan → dot_initialize → l1_approve(requirements) → l1_approve(plan) → dot_run；独立审查有否决权。工具同名、既有候选和累计预算规则继续有效。
 
-中途问题由 DOT/L2 统一分类调度。范围内需求或验证计划调整由 L1 重新批准；超出委托、关键事实缺失、重试耗尽或无法核实的中断，停止并提交失败/未完成/UNKNOWN 报告。不得换会话重置预算。每个 Harness 会话只绑定一个任务，新目标必须新会话并明确关联旧报告。
+中途问题由 DOT/L2 统一分类调度。范围内需求或验证计划调整由 L1 重新批准；完整返回的规划缺口进入NEEDS_INFO：先读planning.gaps，再查证或询问，按templates/fact-supplement.example.json调用l1_add_facts追加事实，然后dot_plan；不重新开工、不改旧摘要、不清零预算。未初始化用dot_initialize；已初始化暂停任务用l1_revise，均须重新独立审核后批准。范围外、无法补齐、预算耗尽或无法核实的中断才停止报告。不得换会话重置预算。每个 Harness 会话只绑定一个任务，新目标必须新会话并明确关联旧报告。
 
 先 l1_submit_report，再向用户展示完整报告和产物，调用 workflow_review_report 让用户在同一界面审核。该工具始终显示控制器原始结果、全部证据和 L1 结论，不接受模型代签。最终确认失败只确认现状，不授权重试。无外部发布、合并、部署或生产刷写执行器。
 

@@ -1,0 +1,11 @@
+{
+  "reason": "REPLACE_WITH_本批事实补充原因及原授权范围内的影响说明",
+  "facts": [
+    {
+      "name": "ESP-IDF version",
+      "value": "REPLACE_WITH_已核实的实际版本，不猜测",
+      "source": "REPLACE_WITH_用户说明或工具证据的具体来源；说明不等于工具实测",
+      "stage": "planning"
+    }
+  ]
+}

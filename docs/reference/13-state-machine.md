@@ -31,3 +31,5 @@
 ---
 
 [返回阅读导航](../../START_HERE.md) · [核心规则](../core-rules.md)
+
+默认原生插件补充：规划缺资料使用NEEDS_INFO子状态，不直接终结任务。未初始化显示NEEDS_INFO；初始化后附在PLAN_PENDING/DECISION_PENDING。完整request_clarification回执允许L1追加事实后重新规划，预算和授权不重置；UNKNOWN、明确终止和最终报告保持原限制。状态及恢复入口见[同任务澄清指南](../guides/clarifications.md)。

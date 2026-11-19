@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.1.2",
+  "workflow_version": "3.2.0",
   "language": "zh-CN",
   "entrypoint": "AGENTS.md",
   "always_read": [
@@ -151,7 +151,9 @@
     "plugin_onboarding": [
       "docs/guides/l1-plugin.md",
       "policy/onboarding.json",
-      "templates/harness-start.example.json"
+      "templates/harness-start.example.json",
+      "docs/guides/clarifications.md",
+      "templates/fact-supplement.example.json"
     ]
   },
   "full_reference": [
@@ -323,7 +325,7 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.1.2-validation.md",
+    "validation_record": "docs/reports/3.2.0-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false,

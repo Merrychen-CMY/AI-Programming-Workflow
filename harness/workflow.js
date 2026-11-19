@@ -12,6 +12,7 @@ const save = (path, value) => writeFile(path, JSON.stringify(value, null, 2), { 
 const modelTools = {
   dot_plan: ['requirements'], dot_initialize: [], l1_approve: ['kind'], dot_run: [], dot_status: [],
   l1_revise: ['requirements', 'plan_json'], l1_submit_report: ['summary'], l1_stop: ['reason'],
+  l1_add_facts: ['facts_json'],
 };
 const labels = { requirements: '需求目标', baseline: '现有基线', scope: '范围与不做项', functions: '功能与异常',
   acceptance: '验收标准', test_environment: '测试环境', test_plan: '测试方案', delivery: '交付要求', safety: '安全与数据边界' };
@@ -106,7 +107,7 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       }
       if (name === 'workflow_inspect') {
         if (Object.keys(args).join() !== 'draft_json' || typeof args.draft_json !== 'string') throw new Error('draft_json required');
-        if (await exists(`${task}/confirmation.json`)) throw new Error('任务已确认；不能重置委托或预算');
+        if (await exists(`${task}/confirmation.json`)) throw new Error('任务已确认；用 l1_add_facts 追加范围内事实，不能重置委托或预算');
         const { settings } = await configured();
         await environmentReady(task, settings);
         const draft = JSON.parse(args.draft_json);
@@ -192,6 +193,8 @@ export const descriptions = {
   dot_run: 'Run approved bounded GPT/DOT workflow with independent Codex sessions; may take minutes.',
   dot_status: 'Read current DOT state and original report.',
   l1_revise: 'Revise within original user scope/budget; retain all attempts and invalidate old approvals.',
+  l1_add_facts: 'Append sourced facts in the same paused task. Read templates/fact-supplement.example.json. '
+    + 'Retain original confirmation, authority, counters and expiry; independent baseline review still required.',
   l1_submit_report: 'Submit L1 assessment while preserving DOT outcome/evidence, then request user report review.',
   l1_stop: 'Produce failure/unknown report; does not kill/replay unverified old processes or expand authorization.',
 };

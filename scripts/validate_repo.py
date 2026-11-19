@@ -115,6 +115,18 @@ SIMPLE_FLOW_TRANSITIONS = {
 }
 
 
+def validate_clarification_policy(value):
+    expected = {'state': 'NEEDS_INFO', 'append_tool': 'l1_add_facts',
+                'original_confirmation_immutable': True, 'same_task_supplements_allowed': True,
+                'budget_reset_allowed': False, 'expiry_extension_allowed': False,
+                'requires_independent_baseline_review': True, 'unknown_or_final_report_auto_resume': False,
+                'guide': 'docs/guides/clarifications.md'}
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Clarification policy fields differ from implemented scope']
+    return ['Clarification boundary drift: ' + key for key, wanted in expected.items()
+            if type(value[key]) is not type(wanted) or value[key] != wanted]
+
+
 def validate_simple_flow(flow):
     """Validate policy invariants and exact allowed edges; not a runtime approval."""
     errors = []
@@ -456,6 +468,10 @@ def validate_repository(root):
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):
         if documents[key].get('onboarding_policy') != 'policy/onboarding.json':
             errors.append('Workflow must reference onboarding policy')
+    for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json'):
+        errors.extend(validate_clarification_policy(documents[key].get('clarification_policy')))
+    if onboarding.get('states_before_runtime') != ['DISCOVERY', 'PREPARED', 'START_CONFIRMED', 'NEEDS_INFO']:
+        errors.append('Onboarding must distinguish recoverable NEEDS_INFO from UNKNOWN/final reports')
     if simple.get('startup_confirmation_required') is not True:
         errors.append('Consolidated startup confirmation is required')
     if simple.get('communication_policy') != 'policy/communication.json' or policy.get('communication_policy') != 'policy/communication.json':

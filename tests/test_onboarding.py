@@ -83,6 +83,43 @@ class OnboardingTests(unittest.TestCase):
         self.assertFalse(prepared['inspection']['ready'])
         with self.assertRaises(ValueError): self.confirm(prepared)
 
+    def test_unknown_text_is_not_manual_evidence(self):
+        for evidence in ['UNKNOWN', 'ESP-IDF version: UNKNOWN', '串口待确认', 'Doxygen 未提供']:
+            self.draft['environment_checks'] = [{'name': 'toolchain', 'kind': 'manual', 'path': '',
+                                                 'required': True, 'evidence': evidence}]
+            self.assertFalse(self.prepare()['inspection']['ready'])
+
+    def test_unknown_only_discovery_topic_cannot_pass(self):
+        self.draft['topics']['test_environment'] = 'UNKNOWN'
+        with self.assertRaisesRegex(ValueError, 'unresolved facts'):
+            self.prepare()
+
+    def test_facts_tool_uses_host_identity_and_preserves_start_confirmation(self):
+        from dot_runtime.bridge import Bridge
+        from dot_runtime.gpt_dot import ResponsesClient
+        from test_delegated_l1 import call_response
+        from test_clarifications import supplement, needs_info
+        from test_runtime_controller import fixture_plan, FakeAdapter
+        self.confirm()
+        original = {name: (self.task / name).read_bytes() for name in
+                    ('raw-input.md', 'draft.json', 'bridge.json', 'delegation.json', 'confirmation.json')}
+        replies = [needs_info(), call_response('propose_plan', {'plan_json': json.dumps(fixture_plan())})]
+        def bridge_factory(settings):
+            return Bridge(settings, workers=FakeAdapter(), client_factory=lambda m, p, d:
+                          ResponsesClient(m, p, d, send=lambda *_: replies.pop(0)))
+        with patch.object(o, 'Bridge', side_effect=bridge_factory):
+            result = self.request('bridge', name='dot_plan', arguments={'requirements': 'input parsing'})
+            self.assertEqual(result['state'], 'NEEDS_INFO')
+            with self.assertRaisesRegex(ValueError, 'identity comes from the host'):
+                self.request('bridge', name='l1_add_facts', arguments={
+                    'facts_json': json.dumps(supplement()), 'l1_session_id': 'forged'})
+            self.request('bridge', name='l1_add_facts', arguments={'facts_json': json.dumps(supplement())})
+            result = self.request('bridge', name='dot_plan', arguments={'requirements': 'input parsing'})
+            self.assertTrue(result['plan'])
+        from dot_runtime.clarifications import records
+        self.assertEqual(records(self.task / 'control')[0]['l1_session_id'], 'native-session')
+        self.assertEqual(original, {name: (self.task / name).read_bytes() for name in original})
+
     def test_manual_evidence_never_becomes_tool_pass(self):
         self.draft['environment_checks']=[{'name':'device','kind':'manual','path':'','required':True,'evidence':'User says device is connected'}]
         self.assertEqual(self.prepare()['inspection']['checks'][-1]['status'],'USER_ATTESTED')

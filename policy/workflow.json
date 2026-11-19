@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.1.2",
+  "policy_version": "3.2.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -154,5 +154,16 @@
     "policy/embedded-c.json"
   ],
   "communication_policy": "policy/communication.json",
-  "onboarding_policy": "policy/onboarding.json"
+  "onboarding_policy": "policy/onboarding.json",
+  "clarification_policy": {
+    "state": "NEEDS_INFO",
+    "append_tool": "l1_add_facts",
+    "original_confirmation_immutable": true,
+    "same_task_supplements_allowed": true,
+    "budget_reset_allowed": false,
+    "expiry_extension_allowed": false,
+    "requires_independent_baseline_review": true,
+    "unknown_or_final_report_auto_resume": false,
+    "guide": "docs/guides/clarifications.md"
+  }
 }

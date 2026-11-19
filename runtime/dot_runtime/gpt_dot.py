@@ -17,6 +17,7 @@ from .controller import atomic_json, read_json, digest, validate_plan
 from .delegation import validate_delegation, check_plan_bounds
 from .project_constraints import prompt as constraints_prompt
 from .communication import prompt as communication_prompt
+from .clarifications import PlanningNeedsInfo, STAGES
 
 
 def function(name, properties):
@@ -107,14 +108,37 @@ def one_call(response, names):
 def propose_plan(client, requirements, example, context):
     response = client.request('Draft an execution plan JSON for L1 review, not approval. '
         'Use the supplied schema/example shape, replace all placeholders, preserve independent tests/review. '
-        'Use exact known commands/tool paths from environment context; missing critical facts must cause stop. '
+        'Use exact known commands/tool paths from environment context. If facts needed for planning are missing, '
+        'call request_clarification with concrete gaps; do not call stop merely because facts can be clarified. '
+        'Distinguish planning prerequisites from later build/test/documentation prerequisites. A serial port '
+        'needed only for device testing need not block software planning: record a prerequisite and block '
+        'the dependent operation until verified. If the existing plan schema cannot enforce that prerequisite, '
+        'request clarification before producing an executable plan; never invent gating fields or values. stop means an unrecoverable '
+        'or out-of-authority problem, not a request for information. '
+        'Append-only fact revisions can resolve earlier UNKNOWN entries. Use the latest applicable sourced '
+        'facts without changing original explicit constraints; unresolved conflicts require clarification. '
         'For C keep Huawei and Doxygen. No product commands execute here.\nREQUIREMENTS:\n' + requirements
         + '\nDELEGATION:\n' + json.dumps(client.delegation, ensure_ascii=False)
         + '\nKNOWN ENVIRONMENT:\n' + context + '\nEXAMPLE SHAPE:\n' + json.dumps(example, ensure_ascii=False)
         + constraints_prompt(),
         tools=[function('propose_plan', {'plan_json': {'type': 'string'}}),
+               function('request_clarification', {'reason': {'type': 'string'}, 'gaps': {
+                   'type': 'array', 'minItems': 1, 'maxItems': 50, 'items': {
+                       'type': 'object', 'additionalProperties': False,
+                       'properties': {'name': {'type': 'string'}, 'reason': {'type': 'string'},
+                                      'stage': {'type': 'string', 'enum': list(STAGES)}},
+                       'required': ['name', 'reason', 'stage']}}}),
                function('stop', {'reason': {'type': 'string'}})])
-    call, arguments = one_call(response, {'propose_plan', 'stop'})
+    call, arguments = one_call(response, {'propose_plan', 'stop', 'request_clarification'})
+    if call['name'] == 'request_clarification':
+        gaps = arguments.get('gaps')
+        if (set(arguments) != {'reason', 'gaps'} or not isinstance(arguments['reason'], str)
+                or not arguments['reason'].strip() or not isinstance(gaps, list) or not 1 <= len(gaps) <= 50
+                or any(not isinstance(g, dict) or set(g) != {'name', 'reason', 'stage'}
+                       or any(not isinstance(v, str) or not v.strip() for v in g.values())
+                       or g['stage'] not in STAGES for g in gaps)):
+            raise ValueError('Malformed clarification response')
+        raise PlanningNeedsInfo(arguments['reason'], gaps, response['id'])
     if call['name'] == 'stop':
         raise ValueError('DOT planning blocked: ' + arguments.get('reason', 'missing facts'))
     plan = json.loads(arguments['plan_json'])

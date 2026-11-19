@@ -8,6 +8,7 @@ from .controller import Controller, ROOT, atomic_json, digest, file_hash, initia
 from .delegation import attach_delegation, approve_l1, submit_l1_report, validate_delegation
 from .gpt_dot import ResponsesClient, DotAdapter, execute, propose_plan
 from .checks import run_check
+from . import clarifications
 
 
 TOOLS = {
@@ -17,6 +18,8 @@ TOOLS = {
                    {'kind': 'string', 'l1_session_id': 'string'}),
     'dot_run': ('Ask GPT/DOT to dispatch the approved local workflow. May take several minutes.', {}),
     'dot_status': ('Read status, decisions and final report. Does not dispatch.', {}),
+    'l1_add_facts': ('Append sourced facts within the original delegation; no approval or reset. '
+                     'Independent baseline review remains required.', {'facts_json': 'string', 'l1_session_id': 'string'}),
     'l1_revise': ('L1 stages revised requirements and a GPT plan within existing delegation and counters.',
                   {'requirements': 'string', 'plan_json': 'string'}),
     'l1_submit_report': ('L1 submits its final assessment; cannot approve the human final report.',
@@ -56,11 +59,16 @@ class Bridge:
         return self.client_factory(self.settings['model'], self.root / 'api', delegation)
 
     def status(self):
+        planning = read_json(self.root / 'planning-status.json') if (self.root / 'planning-status.json').exists() else None
+        facts = clarifications.records(self.root)
+        common = {'planning': planning, 'facts_revision': len(facts),
+                  'facts_sha256': clarifications.signature(self.root)}
         if not (self.run_dir / 'state.json').exists():
-            return {'state': 'DISCOVERY', 'plan_ready': (self.root / 'plan.json').exists(),
+            return {**common, 'state': 'NEEDS_INFO' if planning and planning['status'] == 'NEEDS_INFO' else 'DISCOVERY',
+                    'plan_ready': (self.root / 'plan.json').exists() and not (planning and planning['status'] != 'PLAN_READY'),
                     'preflight_report': read_json(self.root / 'preflight-report.json') if (self.root / 'preflight-report.json').exists() else None}
         state = read_json(self.run_dir / 'state.json')
-        return {'state': state['state'], 'run_id': state['run_id'], 'implementation_attempts': state['implementation_attempts'],
+        return {**common, 'state': state['state'], 'run_id': state['run_id'], 'implementation_attempts': state['implementation_attempts'],
             'revision_count': state.get('revision_count', 0), 'report': state['report'],
             'final_report': read_json(self.run_dir / 'final-report.json') if state['report'] else None,
             'decision': read_json(self.run_dir / 'decision-request.json') if state['state'] == 'DECISION_PENDING'
@@ -98,14 +106,59 @@ class Bridge:
                 raise ValueError('Preflight has ended with a final failure report; no automatic resumption')
             # Read-only report access and failure submission remain possible after expiry/API failure.
             client = self.client()
+            planning_path = self.root / 'planning-status.json'
+            pending = read_json(planning_path) if planning_path.exists() else {}
+            if pending.get('status') == 'NEEDS_INFO' and name in ('dot_initialize', 'l1_approve', 'l1_revise', 'dot_run'):
+                return {**self.status(), 'accepted': False,
+                        'reason': 'Resolve NEEDS_INFO and obtain a new plan before initialization, revision, approval or execution'}
+            if c and c.state.get('pending_clarification_revision') and name in ('l1_approve', 'dot_run'):
+                return {**self.status(), 'accepted': False, 'reason': 'Call l1_revise to incorporate facts before approval'}
+            if name == 'l1_add_facts':
+                # All rejection checks precede mutations. A completed local rejection is not UNKNOWN.
+                try:
+                    supplement = clarifications.validate_facts(json.loads(arguments['facts_json']))
+                    clarifications.check_remaining_time(self.root, client.delegation)
+                    prior_facts = clarifications.records(self.root)
+                    if prior_facts and prior_facts[-1]['supplement'] == supplement:
+                        raise ValueError('Identical fact supplement already recorded; no new revision consumed')
+                    count = c.state.get('revision_count', 0) if c else len(prior_facts)
+                    if count >= client.delegation['limits']['revisions']:
+                        raise ValueError('L1 revision budget exhausted; no new facts revision')
+                    if c and (c.state['state'] not in ('PLAN_PENDING', 'DECISION_PENDING')
+                              or c.state['active_run'] or c.state.get('report')):
+                        raise ValueError('Facts require a paused planning decision with no unresolved process or final report')
+                    ledger_path = self.root / 'api/ledger.json'
+                    if ledger_path.exists() and any(a['status'] != 'COMPLETED' for a in read_json(ledger_path)['attempts']):
+                        raise ValueError('Unresolved API attempt: reconcile before adding facts')
+                except (ValueError, TypeError) as exc:
+                    return {**self.status(), 'accepted': False, 'reason': str(exc)}
+                record = clarifications.append(self.root, supplement, arguments['l1_session_id'], client.delegation, c)
+                if c:
+                    c.state['clarification_root'] = str(self.root)
+                    c.save()
+                atomic_json(self.root / 'planning-status.json', {'status': 'NEEDS_INFO',
+                    'reason': 'Supplement recorded; a new plan and independent baseline review are required',
+                    'gaps': [], 'facts_revision': record['revision']})
+                return {**self.status(), 'accepted': True, 'next': 'dot_plan with updated requirements; no new startup confirmation'}
             if name == 'dot_plan':
                 if c and c.state['state'] not in ('DECISION_PENDING', 'PLAN_PENDING'):
                     raise ValueError('Planning cannot overwrite an active/final baseline')
                 if c and c.state['active_run']:
                     raise ValueError('Unresolved process forbids new planning')
+                previous = read_json(planning_path) if planning_path.exists() else {}
+                facts_sha = clarifications.signature(self.root)
+                request_sha = digest({'requirements': arguments['requirements'], 'facts': facts_sha})
+                if previous.get('status') == 'NEEDS_INFO' and previous.get('request_sha256') == request_sha:
+                    return {**self.status(), 'accepted': False, 'reason': 'Unchanged clarification input; no API retry performed'}
+                context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
                 try:
                     plan = propose_plan(client, arguments['requirements'],
-                        read_json(ROOT / 'templates/local-execution-plan.example.json'), self.settings['environment_context'])
+                        read_json(ROOT / 'templates/local-execution-plan.example.json'), context)
+                except clarifications.PlanningNeedsInfo as exc:
+                    atomic_json(planning_path, {'status': 'NEEDS_INFO', 'reason': exc.reason,
+                        'gaps': exc.gaps, 'response_id': exc.response_id, 'request_sha256': request_sha})
+                    return {**self.status(), 'accepted': False,
+                            'next': 'L1 gathers facts, calls l1_add_facts, then dot_plan within the same remaining budget'}
                 except (ValueError, OSError, KeyError) as exc:
                     if c:
                         c.stop_with_report(str(exc))
@@ -113,6 +166,8 @@ class Bridge:
                         atomic_json(self.root / 'preflight-report.json', {'outcome': 'FAILED', 'reason': str(exc),
                             'execution_started': False, 'owner': 'L1', 'user_review_required': True})
                     raise
+                atomic_json(planning_path, {'status': 'PLAN_READY', 'facts_sha256': facts_sha,
+                    'plan_sha256': digest(plan), 'requirements_sha256': digest(arguments['requirements'])})
                 if c:
                     return {'plan': plan, 'next': 'L1 inspects the proposal then calls l1_revise; approvals are not copied'}
                 (self.root / 'requirements.md').write_text(arguments['requirements'], encoding='utf-8', newline='\n')
@@ -121,10 +176,17 @@ class Bridge:
             if name == 'dot_initialize':
                 if c:
                     raise ValueError('Task already initialized; do not reset attempts')
+                planned = read_json(self.root / 'planning-status.json')
+                if (planned['status'] != 'PLAN_READY' or planned['facts_sha256'] != clarifications.signature(self.root)
+                        or planned['plan_sha256'] != digest(read_json(self.root / 'plan.json'))
+                        or planned['requirements_sha256'] != digest((self.root / 'requirements.md').read_text(encoding='utf-8'))):
+                    raise ValueError('Plan is missing or stale after clarification; replan before initialization')
                 initialize(self.project, self.root / 'requirements.md', self.root / 'plan.json', self.run_dir)
                 c = Controller(self.run_dir)
                 attach_delegation(c, self.settings['delegation'], self.settings['raw_input'])
                 c.state['delegated_started_at'] = read_json(self.root / 'api/ledger.json')['started_at']
+                c.state['clarification_root'] = str(self.root)
+                c.state['revision_count'] = len(clarifications.records(self.root))
                 c.save()
             elif c is None:
                 raise ValueError('Initialize the task first')

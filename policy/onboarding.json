@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.1.2",
+  "workflow_version": "3.2.0",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -36,7 +36,8 @@
   "states_before_runtime": [
     "DISCOVERY",
     "PREPARED",
-    "START_CONFIRMED"
+    "START_CONFIRMED",
+    "NEEDS_INFO"
   ],
   "invalidation": [
     "draft_change",
@@ -55,5 +56,16 @@
     "l1_autonomous_execution",
     "user_final_report_review"
   ],
-  "setup_diagnostics": "allowlisted_code_stage_http_status_no_raw_errors"
+  "setup_diagnostics": "allowlisted_code_stage_http_status_no_raw_errors",
+  "clarification_policy": {
+    "state": "NEEDS_INFO",
+    "append_tool": "l1_add_facts",
+    "original_confirmation_immutable": true,
+    "same_task_supplements_allowed": true,
+    "budget_reset_allowed": false,
+    "expiry_extension_allowed": false,
+    "requires_independent_baseline_review": true,
+    "unknown_or_final_report_auto_resume": false,
+    "guide": "docs/guides/clarifications.md"
+  }
 }

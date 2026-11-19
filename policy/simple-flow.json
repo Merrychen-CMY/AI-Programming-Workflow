@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.1.2",
+  "workflow_version": "3.2.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -195,5 +195,16 @@
   },
   "communication_policy": "policy/communication.json",
   "startup_confirmation_required": true,
-  "onboarding_policy": "policy/onboarding.json"
+  "onboarding_policy": "policy/onboarding.json",
+  "clarification_policy": {
+    "state": "NEEDS_INFO",
+    "append_tool": "l1_add_facts",
+    "original_confirmation_immutable": true,
+    "same_task_supplements_allowed": true,
+    "budget_reset_allowed": false,
+    "expiry_extension_allowed": false,
+    "requires_independent_baseline_review": true,
+    "unknown_or_final_report_auto_resume": false,
+    "guide": "docs/guides/clarifications.md"
+  }
 }

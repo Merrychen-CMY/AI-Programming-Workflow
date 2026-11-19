@@ -242,9 +242,14 @@ class Controller:
             # Reviewing completed evidence does not consume execution time or grant a new run.
             check_binding(self.state, enforce_time=self.state['state'] not in ('REPORT_PENDING', 'DELIVERY_READY'))
             value['delegation'] = self.state['delegation']['sha256']
+        if self.state.get('clarification_root'):
+            from .clarifications import signature
+            value['clarifications'] = signature(self.state['clarification_root'])
         return value
 
     def check_approvals(self):
+        if self.state.get('pending_clarification_revision'):
+            raise ValueError('New facts require revised baselines and independent approvals')
         current = self.baseline()
         delegated = bool(self.state.get('delegation'))
         for kind in ('requirements', 'plan'):
@@ -362,10 +367,13 @@ class Controller:
                 check_plan_bounds(read_json(plan), delegation)
                 if self.state.get('report') and self.state['state'] == 'BLOCKED':
                     raise ValueError('Closed/rejected final report cannot auto-resume; start a newly assigned task')
-                if self.state['revision_count'] >= delegation['limits']['revisions']:
+                prepaid = self.state.get('pending_clarification_revision', False)
+                if not prepaid and self.state['revision_count'] >= delegation['limits']['revisions']:
                     self.report('FAILED', 'L1 revision budget exhausted')
                     return self.state
-                self.state['revision_count'] += 1
+                if not prepaid:
+                    self.state['revision_count'] += 1
+                self.state['pending_clarification_revision'] = False
             self.state['requirements'], self.state['plan'] = str(Path(requirements).resolve()), str(Path(plan).resolve())
             self.state['approvals'] = {}
             self.state['completed_tasks'] = []
@@ -542,6 +550,9 @@ class Controller:
                 'Do not infer PASS from an exit code alone. Return evidence of actual checks and their limitations.\n')
         text += 'ROLE: ' + role + '\nAPPROVED REQUIREMENTS:\n' + Path(self.state['requirements']).read_text(encoding='utf-8-sig')
         text += '\nAPPROVED EXECUTION PLAN:\n' + canonical(plan)
+        if self.state.get('clarification_root'):
+            from .clarifications import context
+            text += '\nBASELINE FACT SUPPLEMENTS (not additional authority):\n' + context(self.state['clarification_root'])
         if self.state.get('candidate'):
             text += '\nCANDIDATE: ' + self.state['candidate']['id']
         if plan['coding_standard'] == 'huawei-c':
@@ -602,6 +613,10 @@ class Controller:
                   'delivery_executed': False,
                   'approval_service': 'local_delegated_l1_and_final_human' if self.state.get('delegation') else 'local_operator_receipt_only',
                   'delegation': self.state.get('delegation'), 'l1_reviews': self.state.get('l1_reviews', [])}
+        if self.state.get('clarification_root'):
+            from .clarifications import records
+            record['fact_supplements'] = records(self.state['clarification_root'])
+            record['revision_count'] = self.state.get('revision_count', 0)
         archive = self.run_dir / 'reports'
         archive.mkdir(exist_ok=True)
         path = archive / (now().replace(':', '-') + '.json')
