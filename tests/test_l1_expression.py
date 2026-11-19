@@ -89,6 +89,51 @@ class L1ExpressionPolicyTests(unittest.TestCase):
                          communication.L1_SOURCE['skill_sha256']):
             self.assertNotIn(metadata, prompt)
 
+    def test_progress_format_rejects_missing_reordered_or_merged_headings(self):
+        for invalid in (None, {}, [],
+                        dict(communication.PROGRESS_FORMAT, headings=list(reversed(communication.PROGRESS_FORMAT['headings']))),
+                        dict(communication.PROGRESS_FORMAT, headings=['【类型】【时间】', '【进度】'])):
+            changed = copy.deepcopy(self.value)
+            changed['l1_user_expression']['progress_report'] = invalid
+            with self.subTest(progress=invalid):
+                self.assertTrue(communication.validate_communication_policy(changed))
+
+    def test_progress_format_cannot_grant_authority_or_hide_required_fields(self):
+        for key, invalid in [('silence_is_approval', True), ('new_execution_gate', True),
+                             ('all_fields_required', False), ('headings_on_separate_lines', False),
+                             ('timestamp_source', 'example_time'), ('next_step_field', '需要你'),
+                             ('scope', 'all_agent_messages'), ('instructions', [])]:
+            changed = copy.deepcopy(self.value)
+            changed['l1_user_expression']['progress_report'][key] = invalid
+            with self.subTest(field=key):
+                self.assertTrue(communication.validate_communication_policy(changed))
+
+    def test_progress_format_reaches_l1_and_template_but_not_dot(self):
+        prompt = communication.l1_prompt()
+        headings = communication.PROGRESS_FORMAT['headings']
+        self.assertIn('\n'.join(headings), prompt)
+        template = (ROOT / 'templates/l1-progress.md').read_text(encoding='utf-8')
+        block = template.split('```text\n', 1)[1].split('```', 1)[0]
+        actual = [line for line in block.splitlines() if line.startswith('【')]
+        self.assertEqual(actual, headings)
+        for instruction in self.value['l1_user_expression']['progress_report']['instructions']:
+            self.assertIn(instruction, prompt)
+            self.assertNotIn(instruction, communication.prompt())
+        for path in ['AGENTS.md', 'L1.md', 'harness/prompt.md']:
+            content = (ROOT / path).read_text(encoding='utf-8')
+            self.assertIn('templates/l1-progress.md', content)
+            for heading in headings:
+                self.assertIn(heading, content)
+        index = read_json(ROOT / 'INDEX.json')
+        self.assertIn('templates/l1-progress.md', index['role_reading']['L1'])
+
+    def test_progress_examples_do_not_claim_user_example_as_executed_evidence(self):
+        prompt = communication.l1_prompt()
+        template = (ROOT / 'templates/l1-progress.md').read_text(encoding='utf-8')
+        for sample in ['202611191419', '四组host 基线测试已全部通过', 'obj/_rt_entry.S']:
+            self.assertNotIn(sample, prompt)
+            self.assertNotIn(sample, template)
+
 
 class L1ExpressionRuntimeTests(unittest.TestCase):
     setUp = delegated.DelegatedTests.setUp

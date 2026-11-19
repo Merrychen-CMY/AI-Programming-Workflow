@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 2,
+  "revision": 3,
   "scope": "L1_user_and_L1_DOT_communication_and_supporting_worker_reports",
   "source": {
     "author": "H. P. Grice",
@@ -178,6 +178,34 @@
         "level": "MUST",
         "instruction": "分层呈现：最终正文写明SUCCESS/FAILED/INCOMPLETE/UNKNOWN真实结果、候选与环境范围、关键AC证据、失败和重试概况、累计消耗、未验证项、剩余风险、产物及下一步。完整逐项结果和历史可放可取得的附件，但影响验收的事实必须在正文明确说明；结论须与DOT原报告一致。不得只呈现最后一次成功，不设导致遗漏的固定字数上限。"
       }
-    ]
+    ],
+    "progress_report": {
+      "scope": "L1_user_facing_progress_only",
+      "headings": [
+        "【类型】",
+        "【时间】",
+        "【进度】",
+        "【需要你】",
+        "【不回复会怎样】",
+        "【详情】"
+      ],
+      "type_value": "进度",
+      "headings_on_separate_lines": true,
+      "all_fields_required": true,
+      "timestamp_format": "YYYYMMDDHHmm",
+      "timestamp_source": "actual_report_time_in_user_timezone",
+      "default_timezone": "Asia/Shanghai",
+      "silence_is_approval": false,
+      "next_step_field": "进度_or_详情",
+      "new_execution_gate": false,
+      "instructions": [
+        "【类型】固定写“进度”。【时间】写实际汇报时刻，格式YYYYMMDDHHmm（年、月、日、24小时制时、分），按用户明确时区，未指定时默认Asia/Shanghai；不得复制示例时间或使用旧证据时间。无法取得当前时间时明确未知，不编造数字。",
+        "【进度】写项目名称、当前实际操作或暂停状态；已完成就如实写已完成，不声称仍在运行。下一步放在【进度】或【详情】，不混入【需要你】。",
+        "【需要你】没有用户动作时固定写“无（本条仅汇报，无需回复）。”；需要补充信息、决定或授权时直接列出具体动作及影响，不同时写“无”，不增加原流程以外的审批。",
+        "【不回复会怎样】必须明确继续哪些已授权工作、暂停哪些依赖用户回复的动作及恢复条件。需要批准的操作在真实批准前保持暂停，沉默不构成批准；普通进度通知不要求用户回复“下一步”。",
+        "【详情】保留真实结果与证据位置、告警、失败、风险、缺口和未执行项；无新增详情时明确写“无新增详情”。区分实际执行、计划和推断；UNKNOWN、NOT_RUN不能改写成成功。",
+        "六个抬头原字样、顺序不变，每个抬头及内容分别独占行，不能写成行内小标签、合并字段或埋进正文。格式只约束L1面向用户的进度消息，不替代最终报告、工具JSON、DOT内部交接或原生批准界面，也不新增执行门禁。"
+      ]
+    }
   }
 }

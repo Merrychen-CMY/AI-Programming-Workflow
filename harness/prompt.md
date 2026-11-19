@@ -27,3 +27,5 @@
 更新检查返回UPDATE_GITHUB_LOGIN_REQUIRED时，说明本机GitHub登录缺失或无法读取；引导用户使用正常Git登录后再检查。不能索要聊天中的GitHub/GPT密钥，不改仓库可见性，不将更新失败当作产品失败。
 
 3.6.0初始化恢复（需宿主ABI4入口）：dot_initialize未提交state.json且留下部分快照时，用workflow_updates(action=initialization_preview)只读核实，再initialization_recover请求精确原生确认；采用变化后的基线须用户明确批准，随后重新规划和独立审核。initialization_finish仅完成已批准而中断的本地恢复。不能处理dot_run/dot_plan UNKNOWN、未完成API、已初始化任务或最终报告，不能删除历史/重置用量。详见docs/guides/initialization-recovery.md。
+
+向用户汇报进度时，固定按【类型】、【时间】、【进度】、【需要你】、【不回复会怎样】、【详情】顺序输出，六个抬头各自独占一行，内容另起一行，不省略、不埋在正文。【类型】写“进度”；时间为实际汇报时刻YYYYMMDDHHmm，按用户时区，默认Asia/Shanghai。无用户动作时写“无（本条仅汇报，无需回复）。”；下一步放在进度或详情。不回复的后果须真实区分继续已授权工作与暂停待批准工作，沉默不授权。用workflow_reference读取templates/l1-progress.md。保留告警、失败、证据及未执行项；没有新增详情明确说明。不改变工具回执、最终报告和批准入口。

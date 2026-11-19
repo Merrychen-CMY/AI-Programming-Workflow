@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.6.0",
+  "workflow_version": "3.6.1",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -26,7 +26,8 @@
       "policy/onboarding.json",
       "templates/harness-start.example.json",
       "docs/guides/automatic-updates.md",
-      "docs/guides/task-upgrades.md"
+      "docs/guides/task-upgrades.md",
+      "templates/l1-progress.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -163,7 +164,8 @@
       "docs/guides/l1-user-expression.md",
       "policy/communication.json",
       "templates/requirements.md",
-      "templates/final-report.md"
+      "templates/final-report.md",
+      "templates/l1-progress.md"
     ],
     "plugin_onboarding": [
       "docs/guides/l1-plugin.md",

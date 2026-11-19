@@ -43,6 +43,19 @@ L1_BOUNDARIES = {
     'extra_user_approval_or_model_call_required': False,
     'measured_effectiveness_claimed': False,
 }
+PROGRESS_FORMAT = {
+    'scope': 'L1_user_facing_progress_only',
+    'headings': ['【类型】', '【时间】', '【进度】', '【需要你】', '【不回复会怎样】', '【详情】'],
+    'type_value': '进度',
+    'headings_on_separate_lines': True,
+    'all_fields_required': True,
+    'timestamp_format': 'YYYYMMDDHHmm',
+    'timestamp_source': 'actual_report_time_in_user_timezone',
+    'default_timezone': 'Asia/Shanghai',
+    'silence_is_approval': False,
+    'next_step_field': '进度_or_详情',
+    'new_execution_gate': False,
+}
 
 
 def validate_communication_policy(value):
@@ -50,7 +63,7 @@ def validate_communication_policy(value):
     if not isinstance(value, dict):
         return ['Communication policy must be an object']
     errors = []
-    for name, expected in [('schema_version', 1), ('revision', 2),
+    for name, expected in [('schema_version', 1), ('revision', 3),
                            ('scope', 'L1_user_and_L1_DOT_communication_and_supporting_worker_reports')]:
         if type(value.get(name)) is not type(expected) or value.get(name) != expected:
             errors.append('Communication policy identity mismatch: ' + name)
@@ -126,6 +139,15 @@ def _validate_l1_expression(profile):
             errors.append('L1 expression rule identity or strength changed')
         if not isinstance(row.get('instruction'), str) or not row['instruction'].strip():
             errors.append('L1 expression rule lacks its instruction')
+    progress = profile.get('progress_report')
+    if not isinstance(progress, dict):
+        errors.append('L1 progress report format is missing')
+    else:
+        for key, expected in PROGRESS_FORMAT.items():
+            if type(progress.get(key)) is not type(expected) or progress.get(key) != expected:
+                errors.append('L1 progress report format changed: ' + key)
+        if not _text_list(progress.get('instructions')):
+            errors.append('L1 progress report instructions are missing')
     return errors
 
 
@@ -174,4 +196,8 @@ def l1_prompt():
              '独立审查据此核对完整性，不为作者辩护。原始需求、授权、验收、证据和华为/Doxygen规范优先。'
              '不改变工具字段、原始回执、状态机或批准，不增加模型调用和用户审批。']
     lines.extend(row['id'] + ' ' + row['instruction'] for row in value['l1_user_expression']['rules'])
+    progress = value['l1_user_expression']['progress_report']
+    lines.append('L1 PROGRESS REPORT — 每次向用户汇报进度，必须按以下顺序输出六个独立行抬头，内容另起一行；不得埋在正文或省略字段。')
+    lines.append('\n'.join(progress['headings']))
+    lines.extend(progress['instructions'])
     return '\n'.join(lines)
