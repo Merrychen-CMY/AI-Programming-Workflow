@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -88,6 +88,15 @@ def validate_review_handoff_policy(value):
         return ['Review handoff policy differs from implemented scope']
     return ['Review handoff boundary drift: ' + key for key, wanted in expected.items()
             if type(value[key]) is not type(wanted) or value[key] != wanted]
+
+
+def validate_closure_policy(value):
+    expected = {'schema_version': 1, 'non_success_requires_explicit_l1_assessment': True,
+        'l2_may_finalize_failure': False, 'l2_first_considers_in_scope_solutions': True,
+        'insufficient_evidence_is_terminal': False, 'out_of_scope_proposal_owner': 'L1',
+        'automatic_non_success_route': 'L1_assessment',
+        'assessment_template': 'templates/l1-closure.example.json', 'guide': 'docs/guides/l1-closure.md'}
+    return [] if value == expected else ['Invalid L1 closure governance']
 
 
 def validate_input_material_policy(value):
@@ -206,7 +215,7 @@ SIMPLE_FLOW_TRANSITIONS = {
     'PLAN_PENDING': {'REVIEW_PENDING', 'EXECUTING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
     'EXECUTING': {'VERIFYING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
     'VERIFYING': {'EXECUTING', 'DECISION_PENDING', 'REPORT_PENDING', 'BLOCKED'},
-    'DECISION_PENDING': {'REVIEW_PENDING', 'PLAN_PENDING', 'EXECUTING', 'VERIFYING', 'REPORT_PENDING', 'BLOCKED'},
+    'DECISION_PENDING': {'DECISION_PENDING', 'REVIEW_PENDING', 'PLAN_PENDING', 'EXECUTING', 'VERIFYING', 'REPORT_PENDING', 'BLOCKED'},
     'BLOCKED': {'REVIEW_PENDING', 'PLAN_PENDING', 'REPORT_PENDING'},
     'REPORT_PENDING': {'DELIVERY_READY', 'BLOCKED'},
     'DELIVERY_READY': {'DELIVERED', 'DECISION_PENDING', 'BLOCKED'},
@@ -611,6 +620,9 @@ def validate_repository(root):
     errors.extend(validate_api_recovery_policy(documents.get('policy/api-recovery.json')))
     errors.extend(validate_review_handoff_policy(documents.get('policy/review-handoff.json')))
     errors.extend(validate_input_material_policy(documents.get('policy/input-material.json')))
+    errors.extend(validate_closure_policy(documents.get('policy/closure.json')))
+    for key in ('policy/simple-flow.json', 'policy/workflow.json'):
+        errors.extend(validate_closure_policy(documents[key].get('non_success_closure')))
     if package.get('reqpilot', {}).get('bootstrap_abi') != 6:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):

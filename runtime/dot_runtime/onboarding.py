@@ -283,7 +283,8 @@ def dispatch(request):
             state = read_json(bridge.run_dir / 'state.json')
             if state['initial_snapshot']['id'] != current_baseline['id']:
                 Controller(bridge.run_dir).stop_with_report('Initial snapshot differs from startup baseline')
-                raise ValueError('Initial snapshot differs from confirmed baseline')
+                return {**bridge.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                        'reason': 'Initial snapshot differs from confirmed baseline; L2 investigates, L1 reviews baseline'}
             from .upgrades import records_for_control
             upgrades = records_for_control(bridge.root)
             if upgrades and not state.get('runtime_upgrade'):

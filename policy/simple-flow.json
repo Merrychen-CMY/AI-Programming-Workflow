@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.9.1",
+  "workflow_version": "3.10.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -87,7 +87,7 @@
         "DECISION_PENDING",
         "REPORT_PENDING"
       ],
-      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure reflows to L1 or final report"
+      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure pauses for L2 solution analysis and L1 assessment; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
     },
     {
       "id": "PLAN_PENDING",
@@ -98,7 +98,7 @@
         "DECISION_PENDING",
         "REPORT_PENDING"
       ],
-      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure reflows to L1 or final report"
+      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure pauses for L2 solution analysis and L1 assessment; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
     },
     {
       "id": "EXECUTING",
@@ -108,7 +108,7 @@
         "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "Approved baselines, bounded dispatch and cumulative usage; adaptive allocation exhaustion pauses for L1 evaluation before any new dispatch"
+      "guard": "Approved baselines, bounded dispatch and cumulative usage; adaptive allocation exhaustion pauses for L1 evaluation before any new dispatch; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
     },
     {
       "id": "VERIFYING",
@@ -118,7 +118,7 @@
         "REPORT_PENDING",
         "BLOCKED"
       ],
-      "guard": "Distinct developer tester reviewer sessions; immutable candidate and all required evidence; failures return DOT triage before bounded repair"
+      "guard": "Distinct developer tester reviewer sessions; immutable candidate and all required evidence; failures return DOT triage before bounded repair; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
     },
     {
       "id": "DECISION_PENDING",
@@ -128,9 +128,10 @@
         "EXECUTING",
         "VERIFYING",
         "REPORT_PENDING",
-        "BLOCKED"
+        "BLOCKED",
+        "DECISION_PENDING"
       ],
-      "guard": "L1 revises within current user authority; changes beyond authority require native user approval; reapprove affected baselines and preserve all counters"
+      "guard": "L1 revises within current user authority; changes beyond authority require native user approval; reapprove affected baselines and preserve all counters; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
     },
     {
       "id": "BLOCKED",
@@ -147,7 +148,7 @@
         "DELIVERY_READY",
         "BLOCKED"
       ],
-      "guard": "L1 submits exact DOT outcome/evidence and its assessment; only human approves final report; failed/unknown remains BLOCKED and never authorizes retries"
+      "guard": "L1 submits exact DOT outcome/evidence and its assessment; only human approves final report; failed/unknown remains BLOCKED and never authorizes retries; every non-success report carries l1_closure_assessment recorded before finalization"
     },
     {
       "id": "DELIVERY_READY",
@@ -224,5 +225,16 @@
   },
   "initialization_recovery_policy": "policy/initialization-recovery.json",
   "api_recovery_policy": "policy/api-recovery.json",
-  "review_handoff_policy": "policy/review-handoff.json"
+  "review_handoff_policy": "policy/review-handoff.json",
+  "non_success_closure": {
+    "schema_version": 1,
+    "non_success_requires_explicit_l1_assessment": true,
+    "l2_may_finalize_failure": false,
+    "l2_first_considers_in_scope_solutions": true,
+    "insufficient_evidence_is_terminal": false,
+    "out_of_scope_proposal_owner": "L1",
+    "automatic_non_success_route": "L1_assessment",
+    "assessment_template": "templates/l1-closure.example.json",
+    "guide": "docs/guides/l1-closure.md"
+  }
 }

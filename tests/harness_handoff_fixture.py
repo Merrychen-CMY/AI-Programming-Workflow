@@ -37,6 +37,10 @@ def bridge(settings):
     def factory(model, path, envelope):
         def send(payload, timeout):
             # Both paths are intentionally deterministic fixture model responses.
+            marker = path / 'fixture-stop-returned'
+            if 'Fixture request L2 assessment' in json.dumps(payload.get('input', [])) and not marker.exists():
+                marker.write_text('fixture-only')
+                return delegated.call_response('stop', {'reason': 'Fixture: consider authorized alternative, submit permission gap to L1'})
             if any(t.get('name') == 'propose_plan' for t in payload.get('tools', [])):
                 return delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})
             return delegated.call_response('run_approved_workflow')

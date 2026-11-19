@@ -1,4 +1,5 @@
 """Same-task recovery with real ledgers and mock models; no live API/firmware claims."""
+from closure_fixtures import assessment, reason as closure_reason
 import copy
 import json
 import time
@@ -166,8 +167,9 @@ class ClarificationTests(unittest.TestCase):
 
     def test_final_stop_remains_final(self):
         bridge = self.bridge([delegated.call_response('stop', {'reason': 'Outside authority'})])
-        with self.assertRaises(ValueError):
-            bridge.call('dot_plan', {'requirements': 'x'})
+        paused = bridge.call('dot_plan', {'requirements': 'x'})
+        self.assertIsNone(paused['preflight_report'])
+        bridge.call('l1_stop', {'reason': closure_reason()})
         with self.assertRaisesRegex(ValueError, 'no automatic resumption'):
             self.add(bridge)
 

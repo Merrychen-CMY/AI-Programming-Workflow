@@ -26,6 +26,7 @@ from .planning import PlanRejected, validate_proposal
 from . import resources
 from . import api_recovery
 from .input_material import InputRejected
+from .closure import L2_GUIDANCE
 
 
 def function(name, properties):
@@ -177,7 +178,7 @@ def one_call(response, names):
 def propose_plan(client, requirements, example, context, implementation_used=0):
     operating = resources.effective(client.delegation, getattr(client, 'governance_root', None))
     context += '\nCURRENT OPERATING ALLOCATION AND AUTHORIZED SCOPE:\n' + json.dumps(operating, ensure_ascii=False)
-    response = client.request('Draft an execution plan JSON for L1 review, not approval. '
+    response = client.request(L2_GUIDANCE + 'Draft an execution plan JSON for L1 review, not approval. '
         'Use the supplied schema/example shape, replace all placeholders, preserve independent tests/review. '
         'tasks is ONLY the list of L3 implementation dispatches, each with role=implementation. '
         'implementation_attempts is a GLOBAL dispatch cap including initial implementation and repairs, '
@@ -193,8 +194,8 @@ def propose_plan(client, requirements, example, context, implementation_used=0):
         'Distinguish planning prerequisites from later build/test/documentation prerequisites. A serial port '
         'needed only for device testing need not block software planning: record a prerequisite and block '
         'the dependent operation until verified. If the existing plan schema cannot enforce that prerequisite, '
-        'request clarification before producing an executable plan; never invent gating fields or values. stop means an unrecoverable '
-        'or out-of-authority problem, not a request for information. '
+        'request clarification before producing an executable plan; never invent gating fields or values. stop is only a pause '
+        'and a proposal to L1: include solutions considered and missing authority, never a final verdict. '
         'Append-only fact revisions can resolve earlier UNKNOWN entries. Use the latest applicable sourced '
         'facts without changing original explicit constraints; unresolved conflicts require clarification. '
         'For C keep Huawei and Doxygen. No product commands execute here.\nREQUIREMENTS:\n' + requirements
@@ -247,7 +248,7 @@ class DotAdapter:
         if role != 'triage':
             return self.workers.run(role, prompt, workspace, output_dir, timeout_seconds)
         try:
-            response = self.client.request(prompt + '\nClassify only from recorded evidence. '
+            response = self.client.request(L2_GUIDANCE + prompt + '\nClassify only from recorded evidence. '
                 'No filesystem/tools are available in this triage call. If evidence is insufficient, use '
                 'root_cause=needs_analysis and state the missing facts, requested permissions and next '
                 'investigation steps for L1. Never use lack of diagnosis as a reason to finalize the task.', schema=RESULT_SCHEMA)
@@ -274,7 +275,7 @@ class DotAdapter:
 
 def execute(client, controller):
     controller.check_approvals()
-    response = client.request('Choose run_approved_workflow to execute only the already approved local plan, '
+    response = client.request(L2_GUIDANCE + 'Choose run_approved_workflow to execute only the already approved local plan, '
         'or stop with a concrete reason. The deterministic controller enforces all gates, sessions and retries. '
         'You have no approval, filesystem or delivery tools.\nAPPROVED REQUIREMENTS:\n'
         + Path(controller.state['requirements']).read_text(encoding='utf-8')

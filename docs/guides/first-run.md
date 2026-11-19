@@ -30,3 +30,7 @@ python -m unittest discover -s tests -v
 已开工任务需要升级时，使用[原对话任务升级](task-upgrades.md)：upgrade_preview预检→upgrade原生确认→重新独立审核→DOT继续与完整验证。不得改写原开工确认或清零历史。
 
 初始化失败且没有state.json时，不反复调用dot_initialize；按[初始化恢复](initialization-recovery.md)先预览、原生批准，再继续。拒绝/跳过/确认期间变化不得清除标记；部分文件和已用额度保持。
+
+非成功结案必须先有 L1 明确评估。L2 先考虑权限内方案，越界提交方案；自动异常只暂停。见[结案规则](../guides/l1-closure.md)。
+
+新增拒绝测试：让DOT规划/执行建议停止，确认只暂停；以裸理由调用l1_stop，确认COMPLETED_REJECTED且没有最终报告；提交完整L1评估后才生成非成功报告；核对未决操作及累计消耗不被清除。

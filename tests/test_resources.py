@@ -1,4 +1,5 @@
 """Adaptive budgets: real local state/ledgers, deterministic model and worker fixtures."""
+from closure_fixtures import assessment, reason as closure_reason
 import copy
 from datetime import datetime, timedelta, timezone
 import json
@@ -334,7 +335,7 @@ class ResourceTests(unittest.TestCase):
         b, c = self.prepared()
         c.state['active_run'] = {'role': 'unknown'}; c.save()
         self.assertFalse(self.allocate(b)['accepted'])
-        c.stop_with_report('Unknown process fixture')
+        c.stop_with_report('Unknown process fixture', l1_assessment=assessment())
         self.assertFalse(self.allocate(b)['accepted'])
         self.assertEqual(c.state['report']['outcome'], 'UNKNOWN')
 
@@ -354,7 +355,7 @@ class ResourceTests(unittest.TestCase):
 
     def test_preflight_final_includes_all_allocations_and_usage(self):
         b = self.bridge([]); self.allocate(b)
-        result = b.call('l1_stop', {'reason': 'No feasible remaining plan'})
+        result = b.call('l1_stop', {'reason': closure_reason('No feasible remaining plan')})
         report = result['preflight_report']['resource_governance']
         self.assertEqual(report['actual_usage']['api_calls'], 0)
         self.assertEqual(len(report['history']), 1)

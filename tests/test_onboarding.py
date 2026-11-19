@@ -1,5 +1,6 @@
 import copy
 from datetime import datetime, timedelta, timezone
+from closure_fixtures import assessment, reason as closure_reason
 import json
 from pathlib import Path
 import sys
@@ -210,7 +211,7 @@ class OnboardingTests(unittest.TestCase):
 
     def test_failure_report_review_never_resumes(self):
         self.confirm()
-        self.request('bridge',name='l1_stop',arguments={'reason':'No feasible plan'})
+        self.request('bridge',name='l1_stop',arguments={'reason':closure_reason('No feasible plan')})
         preview=self.request('report_preview')
         with self.assertRaises(ValueError): self.request('report_confirm',sha256='forged')
         result=self.request('report_confirm',sha256=preview['sha256'])

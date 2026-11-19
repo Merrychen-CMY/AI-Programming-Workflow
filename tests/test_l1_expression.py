@@ -1,4 +1,5 @@
 """Selective writing adoption boundaries and wiring, not real-model language evaluation."""
+from closure_fixtures import assessment, reason as closure_reason
 import copy
 import json
 from pathlib import Path
@@ -240,15 +241,15 @@ class L1ExpressionRuntimeTests(unittest.TestCase):
         self.assert_report_preserved('Final candidate passed after repair; earlier failure and consumption remain in the attached record.')
 
     def test_failed_summary_preserves_original_report_and_does_not_approve(self):
-        self.c.report('FAILED', 'AC <=100 ms; observed 130 ms')
+        self.c.report('FAILED', 'AC <=100 ms; observed 130 ms', l1_assessment=assessment())
         self.assert_report_preserved('FAILED: latency exceeds the approved threshold; no acceptance change.')
 
     def test_unknown_summary_preserves_original_report_without_replay(self):
-        self.c.report('UNKNOWN', 'Execution result cannot be verified')
+        self.c.report('UNKNOWN', 'Execution result cannot be verified', l1_assessment=assessment())
         self.assert_report_preserved('UNKNOWN: result remains unverified; no replay or delivery performed.')
 
     def test_incomplete_summary_preserves_unexecuted_required_check(self):
-        self.c.report('INCOMPLETE', 'Required board test NOT_RUN')
+        self.c.report('INCOMPLETE', 'Required board test NOT_RUN', l1_assessment=assessment())
         self.assert_report_preserved('INCOMPLETE: required board test remains NOT_RUN; host tests alone are insufficient.')
 
 

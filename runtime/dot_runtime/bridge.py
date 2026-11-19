@@ -35,7 +35,7 @@ TOOLS = {
                   {'requirements': 'string', 'plan_json': 'string'}),
     'l1_submit_report': ('L1 submits its final assessment; cannot approve the human final report.',
                          {'summary': 'string', 'l1_session_id': 'string'}),
-    'l1_stop': ('Report failure/unknown when L1 cannot resolve a blocker; no retry or delivery.', {'reason': 'string'}),
+    'l1_stop': ('Finalize only after explicit L1 assessment. reason is JSON matching templates/l1-closure.example.json; bare reasons are rejected.', {'reason': 'string'}),
 }
 
 
@@ -157,10 +157,19 @@ class Bridge:
                 resources.pause(self.root, original, exc, state)
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_BUDGET_REVIEW'}
 
-    def preflight_report(self, reason):
+    def preflight_report(self, reason, *, l1_assessment=None):
+        if (self.root / 'preflight-report.json').exists():
+            raise ValueError('Existing final report cannot be replaced or reopened')
+        if l1_assessment is None:
+            planning.record_rejection(self.root, 'dot_plan', planning.PlanRejected(reason,
+                code='L1_ASSESSMENT_REQUIRED', details={'next': 'L2 considers in-scope solutions and submits options and permission gaps to L1; do not finalize'}))
+            return
+        from .closure import validate_assessment
+        l1_assessment = validate_assessment(l1_assessment)
         original = read_json(self.settings['delegation'])
         record = {'outcome': 'FAILED', 'reason': reason, 'execution_started': False,
-                  'owner': 'L1', 'user_review_required': True, 'planning_rejections': planning.history(self.root)}
+                  'owner': 'L1', 'user_review_required': True, 'planning_rejections': planning.history(self.root),
+                  'l1_closure_assessment': {'assessment': l1_assessment, 'entry': 'l1_stop'}}
         from .upgrades import records_for_control
         record['runtime_upgrades'] = records_for_control(self.root)
         from .initialization_recovery import records_for_control as recovery_records
@@ -197,10 +206,15 @@ class Bridge:
                 submit_l1_report(c, arguments['summary'], arguments['l1_session_id'])
                 return self.status()
             if name == 'l1_stop':
+                from .closure import validate_assessment
+                try:
+                    assessment = validate_assessment(arguments['reason'])
+                except ValueError as exc:
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED', 'reason': str(exc)}
                 if c:
-                    c.stop_with_report(arguments['reason'])
+                    c.stop_with_report(assessment['summary'], l1_assessment=assessment)
                 elif not (self.root / 'preflight-report.json').exists():
-                    self.preflight_report(arguments['reason'])
+                    self.preflight_report(assessment['summary'], l1_assessment=assessment)
                 return self.status()
             if c is None and (self.root / 'preflight-report.json').exists():
                 raise ValueError('Preflight has ended with a final failure report; no automatic resumption')
@@ -319,7 +333,7 @@ class Bridge:
                         c.stop_with_report(str(exc))
                     else:
                         self.preflight_report(str(exc))
-                    raise
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED'}
                 atomic_json(planning_path, {'status': 'PLAN_READY', 'facts_sha256': facts_sha,
                     'plan_sha256': digest(plan), 'requirements_sha256': digest(arguments['requirements']),
                     'authorization_scope': resources.scope_digest(original, self.root) if adaptive else None,

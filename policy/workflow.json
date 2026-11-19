@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.9.1",
+  "policy_version": "3.10.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -175,5 +175,16 @@
   "initialization_recovery_policy": "policy/initialization-recovery.json",
   "api_recovery_policy": "policy/api-recovery.json",
   "review_handoff_policy": "policy/review-handoff.json",
-  "input_material_policy": "policy/input-material.json"
+  "input_material_policy": "policy/input-material.json",
+  "non_success_closure": {
+    "schema_version": 1,
+    "non_success_requires_explicit_l1_assessment": true,
+    "l2_may_finalize_failure": false,
+    "l2_first_considers_in_scope_solutions": true,
+    "insufficient_evidence_is_terminal": false,
+    "out_of_scope_proposal_owner": "L1",
+    "automatic_non_success_route": "L1_assessment",
+    "assessment_template": "templates/l1-closure.example.json",
+    "guide": "docs/guides/l1-closure.md"
+  }
 }

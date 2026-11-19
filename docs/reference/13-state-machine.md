@@ -13,7 +13,7 @@
 | TRIAGE_PENDING / TRIAGING | L2 接收、根因分析 → RESOLVING 或 BLOCKED | 不得仅凭错误码直接派修；分类和依据入库 |
 | RESOLVING | 责任层完成 → REVERIFY_PENDING | L2 核对基线、候选、依赖和权限；L3 完成不等于关闭 |
 | REVERIFY_PENDING | 按20.6进入 L4 重验或审批/守卫核验 | 独立核验处理结果；需重验时生成新 run_id，更新门3并交 L5 |
-| ACCEPTANCE_READY | L5汇总 → REPORT_PENDING | 成功需独立测试和审核；失败且无可行恢复方案时提交报告；AC、风险、问题历史及证据齐备 |
+| ACCEPTANCE_READY | L5汇总 → REPORT_PENDING | 成功需独立测试和审核；非成功须先由L1明确评估无可行恢复方案后才提交报告；AC、风险、问题历史及证据齐备 |
 | REPORT_PENDING | 用户批准成功报告 → DELIVERY_PENDING；失败/未完成/未知确认 → BLOCKED | 报告批准绑定候选和证据；失败确认不授权继续 |
 | DELIVERY_PENDING | 成功报告已审核且有效门4及守卫 → DELIVERING | 报告审核和具体交付授权均必需；本地运行器未实现交付 |
 | DELIVERING | 核对实际结果 → DELIVERED | 领取一次性执行权；超时进入 UNKNOWN，先查询真实目标 |
@@ -60,3 +60,5 @@ REVIEW_PENDING只接受需求审批；PLAN_PENDING只接受计划审批。DECISI
 
 
 3.9.0调查规则：问题统一交L2调查；尚未查明原因不得自动结案。取消根因分类unknown，needs_analysis表示L2调查待办，缺资料、权限或资源交L1解决。L1在授权内推进，越界主动申请用户原生授权，有必要继续解决时保留任务；仅评估无可行方案、用户结束或无法调整的全任务限制才提交最终报告。材料超限返回NOT_SENT/COMPLETED_REJECTED，不产生本次API消耗或最终UNKNOWN；完整证据保留并分页读取，摘要明确标注。操作执行状态仍如实记录；只读调查不能清除未决产品操作或重放写入。详见[调查与材料处理](../guides/investigation.md)。
+
+3.10.0：L2先在权限内分析解决方案，越界将方案交L1评估。所有自动非成功出口转为评估暂停；只有显式L1结案评估才能进入最终REPORT_PENDING，见[结案规则](../guides/l1-closure.md)。

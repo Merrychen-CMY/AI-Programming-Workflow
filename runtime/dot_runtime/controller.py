@@ -688,7 +688,33 @@ class Controller:
         self.save()
         return result
 
-    def report(self, outcome, reason):
+    def request_l1_assessment(self, reason, proposed_outcome='FAILED'):
+        if self.state.get('report'):
+            raise ValueError('Existing final report cannot be replaced or reopened')
+        record = {'owner': 'L2', 'escalation_owner': 'L1', 'investigation_status': 'OPEN',
+                  'reason': reason, 'proposed_outcome': proposed_outcome,
+                  'unresolved_product_operation': self.state.get('active_run'),
+                  'next': 'L2 first evaluates in-scope solutions and evidence; submit options, benefit, '
+                          'verification and permission/resource gaps to L1. L1 coordinates recovery or '
+                          'native authorization. Only an explicit L1 closure assessment may finalize.'}
+        archive = self.run_dir / 'decision-requests'
+        archive.mkdir(exist_ok=True)
+        path = archive / (uuid.uuid4().hex + '.json')
+        atomic_json(path, record)
+        record['source_record'] = path.relative_to(self.run_dir.parent).as_posix()
+        atomic_json(self.run_dir / 'decision-request.json', record)
+        self.transition('DECISION_PENDING', reason)
+        return self.state
+
+    def report(self, outcome, reason, *, l1_assessment=None):
+        """Automatic non-success requests pause; only explicit L1 assessment can finalize."""
+        if self.state.get('report'):
+            raise ValueError('Existing final report cannot be replaced or reopened')
+        if outcome != 'SUCCESS':
+            if l1_assessment is None:
+                return self.request_l1_assessment(reason, outcome)
+            from .closure import validate_assessment
+            l1_assessment = validate_assessment(l1_assessment)
         record = {'run_id': self.state['run_id'], 'outcome': outcome, 'reason': reason, 'created_at': now(),
                   'candidate': self.state.get('candidate'), 'baseline': self.state.get('approved_baseline'),
                   'implementation_attempts': self.state['implementation_attempts'],
@@ -715,6 +741,9 @@ class Controller:
             original, root = resources.controller_context(self.state)
             if resources.enabled(original, root):
                 record['resource_governance'] = resources.report(root, original, self.state)
+        if l1_assessment is not None:
+            record['l1_closure_assessment'] = {'assessment': l1_assessment, 'at': now(),
+                'entry': 'l1_stop', 'state_sha256': digest(self.state)}
         archive = self.run_dir / 'reports'
         archive.mkdir(exist_ok=True)
         path = archive / (now().replace(':', '-') + '.json')
@@ -724,8 +753,8 @@ class Controller:
                                 'archive': path.relative_to(self.run_dir).as_posix()}
         self.transition('REPORT_PENDING', reason)
 
-    def stop_with_report(self, reason):
-        """External L1/API stop request: serialize with any real worker before reporting."""
+    def stop_with_report(self, reason, *, l1_assessment=None):
+        """Serialize a pause, or an explicitly assessed L1 finalization, with real workers."""
         with run_lock(self.run_dir):
             self.state = read_json(self.state_path)
             if self.state['state'] not in ('REVIEW_PENDING', 'PLAN_PENDING', 'DECISION_PENDING', 'EXECUTING', 'VERIFYING'):
@@ -733,7 +762,7 @@ class Controller:
             from .api_recovery import unresolved
             root = self.state.get('clarification_root')
             api_unknown = bool(root and unresolved(root))
-            self.report('UNKNOWN' if self.state['active_run'] or api_unknown else 'FAILED', reason)
+            self.report('UNKNOWN' if self.state['active_run'] or api_unknown else 'FAILED', reason, l1_assessment=l1_assessment)
             return self.state
 
     def triage(self, failure, workspace):
@@ -748,7 +777,8 @@ class Controller:
         packet = triage_packet(self.run_dir, failure, self.state['issues'])
         self.state['pending_triage'].update(source_record=packet['source_record'], source_sha256=packet['source_sha256'])
         self.save()
-        result = self.worker('triage', 'Act as DOT/L2. Analyze this failure with evidence. Classify root_cause; '
+        from .closure import L2_GUIDANCE
+        result = self.worker('triage', L2_GUIDANCE + 'Act as DOT/L2. Analyze this failure with evidence. Classify root_cause; '
                              'use a stable concrete component-and-defect root_cause_key, reuse it for the same cause. '
                              'Compare previous issues and distinguish new defects. Explain root cause and proposed action. '
                              'Do not fix files or relax requirements.\nEVIDENCE PACKET:\n' + canonical(packet), workspace)
@@ -800,7 +830,7 @@ class Controller:
             self.save()
             resources.check_controller(self.state, 'same_root_cause_attempts', counts[key])
         if counts[key] >= budget['same_root_cause_attempts']:
-            self.report('FAILED', 'Same root-cause limit reached; report requires user review')
+            self.report('FAILED', 'Same root-cause limit reached; L1 must assess solutions and resources')
             return 'stop'
         if cause == 'implementation':
             resources.check_controller(self.state, 'implementation_attempts', self.state['implementation_attempts'])

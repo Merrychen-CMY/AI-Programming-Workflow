@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "non_success_requires_explicit_l1_assessment": true,
+  "l2_may_finalize_failure": false,
+  "l2_first_considers_in_scope_solutions": true,
+  "insufficient_evidence_is_terminal": false,
+  "out_of_scope_proposal_owner": "L1",
+  "automatic_non_success_route": "L1_assessment",
+  "assessment_template": "templates/l1-closure.example.json",
+  "guide": "docs/guides/l1-closure.md"
+}

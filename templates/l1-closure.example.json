@@ -1,0 +1,12 @@
+{
+  "summary": "经 L1 评估，当前任务没有可行恢复方案，申请非成功结案。",
+  "solutions_considered": [
+    "逐项填写 L2 提交的方案、核验结果和不可行原因；不能只写未知。"
+  ],
+  "authority_review": "说明现有权限、所需追加授权及实际批准/拒绝结果；缺权限本身不等于无法解决。",
+  "resource_review": "说明累计消耗、剩余额度、总上限及调整的可行性。",
+  "termination_basis": "no_feasible_solution",
+  "evidence": [
+    "填写可核实的任务记录路径或用户停止请求来源。"
+  ]
+}

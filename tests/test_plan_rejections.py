@@ -1,4 +1,5 @@
 """Recover only proven plan refusals; mocks never count as live model or product evidence."""
+from closure_fixtures import assessment, reason as closure_reason
 import copy
 import json
 import sys
@@ -88,7 +89,7 @@ class PlanRejectionTests(unittest.TestCase):
             b.call('l1_approve', {'kind': kind, 'l1_session_id': 'author'})
         c = Controller(b.run_dir)
         self.assertEqual(c.state['approved_plan']['budgets']['implementation_attempts'], 3)
-        c.stop_with_report('Fixture stops before any product execution')
+        c.stop_with_report('Fixture stops before any product execution', l1_assessment=assessment())
         self.assertEqual(len(read_json(b.run_dir / 'final-report.json')['planning_rejections']), 1)
 
     def test_identical_bad_output_and_feedback_does_not_loop_across_restart(self):
@@ -166,10 +167,12 @@ class PlanRejectionTests(unittest.TestCase):
         atomic_json(self.delegation_path, value)
         b = self.bridge([proposed(phase_tasks())])
         b.call('dot_plan', {'requirements': 'x'})
-        with self.assertRaisesRegex(ValueError, 'budget exhausted'):
-            b.call('dot_plan', {'requirements': 'x'})
+        paused = b.call('dot_plan', {'requirements': 'x'})
+        self.assertIsNone(paused['preflight_report'])
+        self.assertEqual(paused['state'], 'PLAN_REJECTED')
         self.assertEqual(len(self.requests), 1)
-        self.assertEqual(len(read_json(b.root / 'preflight-report.json')['planning_rejections']), 1)
+        self.assertEqual(len(planning.history(b.root)), 2)
+        self.assertFalse((b.root / 'preflight-report.json').exists())
 
     def test_real_transport_failure_and_unexpected_errors_are_not_plan_rejections(self):
         b = self.bridge([])

@@ -259,5 +259,5 @@ export const descriptions = {
   l1_add_facts: 'Append sourced facts in the same paused task. Read templates/fact-supplement.example.json. '
     + 'Retain original confirmation, authority, counters and expiry; independent baseline review still required.',
   l1_submit_report: 'Submit L1 assessment while preserving DOT outcome/evidence, then request user report review.',
-  l1_stop: 'Produce failure/unknown report; does not kill/replay unverified old processes or expand authorization.',
+  l1_stop: 'Finalize only after L1 explicitly assesses options, authority and resources. reason must be JSON matching templates/l1-closure.example.json. Does not clear unresolved processes.',
 };

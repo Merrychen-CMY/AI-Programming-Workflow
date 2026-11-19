@@ -1,5 +1,6 @@
 """Behavioral tests for delegated authority; fake AI results do not attest live API/Harness operation."""
 from datetime import datetime, timedelta, timezone
+from closure_fixtures import assessment, reason as closure_reason
 import copy
 import json
 from pathlib import Path
@@ -113,13 +114,15 @@ class DelegatedTests(unittest.TestCase):
         reviewer = fixtures.FakeAdapter([('review', fixtures.result('UNKNOWN'))])
         approve_l1(self.c, 'requirements', 'l1-author', reviewer)
         self.assertEqual(len(self.c.state['l1_reviews']), 1)
-        self.assertEqual(self.c.state['report']['outcome'], 'UNKNOWN')
+        self.assertEqual(self.c.state['state'], 'DECISION_PENDING')
+        self.assertIsNone(self.c.state['report'])
+        self.assertIsNotNone(self.c.state['active_run'])
         with self.assertRaises(ValueError):
             approve_l1(self.c, 'requirements', 'l1-author', reviewer)
         self.assertEqual(len(reviewer.calls), 1)
 
     def test_l1_cannot_upgrade_failed_outcome(self):
-        self.c.report('FAILED', 'Missing required environment')
+        self.c.report('FAILED', 'Missing required environment', l1_assessment=assessment())
         submit_l1_report(self.c, 'Text cannot turn this into success', 'l1-author')
         self.assertEqual(read_json(self.run_dir / 'final-report.json')['outcome'], 'FAILED')
         self.c.approve('report', lambda *_: True)
@@ -128,7 +131,7 @@ class DelegatedTests(unittest.TestCase):
             self.c.revise(self.requirements, self.plan)
 
     def test_failure_report_can_be_reviewed_after_expiry(self):
-        self.c.report('FAILED', 'Budget exhausted')
+        self.c.report('FAILED', 'Budget exhausted', l1_assessment=assessment())
         value = read_json(self.delegation_path)
         value['expires_at'] = '2000-01-01T00:00:00+00:00'
         atomic_json(self.delegation_path, value)
@@ -249,11 +252,12 @@ class DelegatedTests(unittest.TestCase):
         self.assertEqual(c.state['state'], 'DELIVERY_READY')
         self.assertEqual(len(read_json(bridge.root / 'api/ledger.json')['attempts']), 2)
 
-    def test_revision_limit_and_review_limit_produce_report(self):
+    def test_revision_limit_requests_l1_assessment(self):
         self.c.state['revision_count'] = 2
         self.c.transition('DECISION_PENDING', 'Fixture review request')
         self.c.revise(self.requirements, self.plan)
-        self.assertEqual(self.c.state['report']['outcome'], 'FAILED')
+        self.assertEqual(self.c.state['state'], 'DECISION_PENDING')
+        self.assertIsNone(self.c.state['report'])
 
     def test_expired_execution_budget_prevents_new_review(self):
         import time

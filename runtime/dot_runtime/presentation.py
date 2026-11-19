@@ -11,7 +11,7 @@ def read_record(root, name, offset):
         'planning-status.json', 'preflight-report.json', 'api/ledger.json', 'run/final-report.json',
         'run/state.json', 'run/decision-request.json')
     allowed |= name.startswith(('run/l1-reviews/', 'run/l1-review-inputs/', 'run/reports/',
-                                'run/triage-inputs/', 'input-rejections/'))
+                                'run/triage-inputs/', 'run/decision-requests/', 'input-rejections/'))
     if (not allowed or '\\' in name or ':' in name or relative.is_absolute() or '..' in relative.parts
             or relative.suffix not in ('.json', '.md', '.txt', '.jsonl', '.log')
             or not offset.isascii() or not offset.isdecimal()):
@@ -70,7 +70,7 @@ def compact(value):
         report = result.get(key)
         if report:
             result[key] = {k: report[k] for k in ('outcome', 'reason', 'created_at', 'l1_submission',
-                'implementation_attempts', 'delivery_executed') if k in report}
+                'implementation_attempts', 'delivery_executed', 'l1_closure_assessment') if k in report}
             governance = report.get('resource_governance', {})
             result[key]['actual_usage'] = governance.get('actual_usage')
             result[key]['dot_api_reported_usage'] = governance.get('dot_api_reported_usage')

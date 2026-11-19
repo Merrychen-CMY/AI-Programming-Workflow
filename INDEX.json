@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.9.1",
+  "workflow_version": "3.10.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -379,5 +379,6 @@
   "initialization_recovery_policy": "policy/initialization-recovery.json",
   "api_recovery_policy": "policy/api-recovery.json",
   "review_handoff_policy": "policy/review-handoff.json",
-  "input_material_policy": "policy/input-material.json"
+  "input_material_policy": "policy/input-material.json",
+  "closure_policy": "policy/closure.json"
 }

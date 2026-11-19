@@ -44,3 +44,5 @@ Dot 到 Codex 的桥接必须明确实现。原有 submit_task、get_task、canc
 ---
 
 [返回阅读导航](../../START_HERE.md) · [核心规则](../core-rules.md)
+
+3.10.0：L2先在权限内分析解决方案，越界将方案交L1评估。所有自动非成功出口转为评估暂停；只有显式L1结案评估才能进入最终REPORT_PENDING，见[结案规则](../guides/l1-closure.md)。

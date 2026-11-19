@@ -2,6 +2,7 @@
 
 These do not call Codex or attest product/hardware acceptance.
 """
+from closure_fixtures import assessment, reason as closure_reason
 import copy
 import json
 from pathlib import Path
@@ -209,15 +210,19 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(adapter.calls, ['implementation', 'triage', 'implementation', 'test', 'review'])
         self.assertEqual(c.state['completed_tasks'], ['build'])
 
-    def test_exhaustion_reports_failure_without_reset_after_reload(self):
+    def test_exhaustion_requests_assessment_without_reset_after_reload(self):
         adapter = FakeAdapter([('test', result('FAIL', 'implementation')), ('triage', result('PASS', 'implementation')),
                                ('test', result('FAIL', 'implementation')), ('triage', result('PASS', 'implementation'))])
         c = self.approved(adapter)
-        self.assertEqual(c.run()['report']['outcome'], 'FAILED')
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
         c = self.controller()
         self.assertEqual(c.state['implementation_attempts'], 2)
         with self.assertRaises(ValueError):
             c.run()
+        with self.assertRaises(ValueError):
+            c.approve('report', lambda *_: True)
+        c.stop_with_report('L1 evaluated alternatives', l1_assessment=assessment())
         self.assertEqual(c.approve('report', lambda *_: True)['state'], 'BLOCKED')
         c.revise(self.requirements, self.plan)
         self.assertEqual(c.state['implementation_attempts'], 2)
@@ -269,7 +274,8 @@ class ControllerTests(unittest.TestCase):
             if role == 'test':
                 (workspace / 'value.py').write_text('changed', encoding='utf-8')
         c = self.approved(FakeAdapter(hook=tamper))
-        self.assertEqual(c.run()['report']['outcome'], 'INCOMPLETE')
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
         self.assertNotIn('review', c.adapter.calls)
 
     def test_missing_real_tests_cannot_pass_with_claimed_count(self):
@@ -309,7 +315,8 @@ class ControllerTests(unittest.TestCase):
             if role == 'implementation':
                 (workspace / 'unapproved.py').write_text('escape', encoding='utf-8')
         c = self.approved(FakeAdapter(hook=escape))
-        self.assertEqual(c.run()['report']['outcome'], 'INCOMPLETE')
+        self.assertEqual(c.run()['state'], 'DECISION_PENDING')
+        self.assertIsNone(c.state['report'])
         self.assertNotIn('test', c.adapter.calls)
 
     def test_revision_binds_current_project_without_erasing_history(self):
