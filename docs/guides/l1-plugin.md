@@ -1,12 +1,12 @@
-# DeepSeek Harness 原生 L1 插件
+# ReqPilot · DeepSeek Harness 原生 L1 插件
 
 本插件把配置、环境检查、需求引导、一次开工确认、DOT 工具和最终报告审核放到同一个 L1 会话。固定顺序为：**配置模型和密钥 → 检查环境 → 沟通原始需求 → 集中确认开工 → L1 自动推进 → 用户审核最终报告**。
 
 ## 安装和首次使用
 
-1. 获取本仓库 3.2.0 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
+1. 获取本仓库 3.2.1 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
 2. 在 DeepSeek Harness 的插件管理中添加本地插件包/目录。也可让 Harness 自身有插件管理能力的 Agent 使用 `plugin_manager install_bundle` 安装本地来源；实际参数以宿主工具声明为准。本仓库不直接修改你的 Harness 配置文件。
-3. 创建新会话，选择 **AI 编程 L1**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。旧会话可能仍保留旧 preset，不能用来判断新插件是否生效。
+3. 创建新会话，选择 **ReqPilot · 需求领航**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。旧会话可能仍保留旧 preset，不能用来判断新插件是否生效。
 4. 对 L1 说：**“开始一个项目，请按配置模型和密钥、检查环境、沟通需求的顺序引导我，再集中确认开工。”** L1 会提供本机配置页链接。在页面填写 GPT API 模型 ID、密钥及 Python/Codex 可执行文件路径。这里的 GPT 就是 DOT，不是另一个人工操作入口；L1 自己的模型仍由 Harness 设置。
 5. 点击保存，再点击“测试 API”。测试发出两次可能计费的固定示例请求，核对工具调用和结构化输出兼容性，不发送项目内容。不在安装、打开页面或启动聊天时自动调用付费 API。
 6. 回到 L1，先让它调用 `workflow_check_environment` 检查Python、Git、Codex及登录；此时无需提供项目目录或需求草案。失败/未知时先解决环境缺口，再继续。
@@ -26,7 +26,7 @@
 
 ### 配置或API测试失败
 
-3.2.0配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
+3.2.1配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
 
 | 错误编号 | 含义与处理 |
 | --- | --- |
@@ -85,8 +85,12 @@ flowchart TD
 
 插件入口为 `harness/index.js`，打包根为仓库根。`harness/cordis.patch.yml` 声明专用 L1 preset。`workflow_reference` 提供受限只读规则读取；内部 Python 管道不直接暴露给模型。开工和最终确认来自 `ctx.userQuestions` 的原生人类答复，模型无法传入 `confirmed=true`。
 
-运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/ai-programming-workflow-3.2.0.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.2.0验证记录](../reports/3.2.0-validation.md)。
+运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.2.1.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.2.1验证记录](../reports/3.2.1-validation.md)。
 
 ## 开工后发现资料缺口
 
 读取[同任务事实补充与恢复](clarifications.md)。3.2.0的dot_plan可返回NEEDS_INFO；L1追加事实后继续原任务，无需重复开工确认。资料、审查、API及时间预算均保留，候选和旧批准按修订失效。3.1.x已锁定任务没有自动迁移，不删除旧记录或中断标记。
+
+## 名称与图标
+
+3.2.1起显示为 ReqPilot · 需求领航，使用透明罗盘图标。内部包名和数据目录沿用旧标识以保持升级兼容；见[名称与兼容说明](branding.md)。更新本地安装后按宿主要求重启，新名称和图标才会显示。

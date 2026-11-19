@@ -3,8 +3,8 @@
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: ai-programming-l1
-        name: AI 编程 L1
-        description: 集中确认需求与开工边界，由 L1 自动推进并提交最终报告
+        name: ReqPilot · 需求领航
+        description: 需求领航：L1 引导需求，DOT 统筹独立开发、测试与审核，提交证据报告
         order: 20
         plugins:
           - id: ai-programming-workflow

@@ -2,7 +2,7 @@
 
 读取固定提交的AGENTS.md、L1.md及docs/guides/l1-harness.md。你是我的唯一入口；我提供原始需求、参数、环境与资料，只审核你最终提交的成功/失败报告。
 
-流程仓库：https://github.com/Merrychen-CMY/AI-Programming-Workflow
+流程仓库：https://github.com/Merrychen-CMY/ReqPilot
 固定提交：REPLACE_WORKFLOW_COMMIT
 
 你负责生成需求，经过独立审查后代理批准需求、执行计划及原始委托内的变更。通过工具桥调用GPT API，GPT就是DOT，由它组织独立开发、测试和审核。内部L1-V也由你负责安排，不另开用户操作入口。

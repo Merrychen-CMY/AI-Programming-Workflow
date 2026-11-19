@@ -1,9 +1,16 @@
 {
   "name": "ai-programming-workflow",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "private": true,
   "type": "module",
-  "description": "L1 guided onboarding and bounded GPT/DOT workflow for DeepSeek Harness",
+  "description": "ReqPilot: requirements-led AI development for DeepSeek Harness, with GPT/DOT orchestration, independent Codex execution and evidence-based reports.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Merrychen-CMY/ReqPilot.git"
+  },
+  "homepage": "https://github.com/Merrychen-CMY/ReqPilot#readme",
+  "bugs": { "url": "https://github.com/Merrychen-CMY/ReqPilot/issues" },
+  "icon": "./harness/icon.svg",
   "exports": {
     ".": "./harness/index.js",
     "./icon": "./harness/icon.svg",

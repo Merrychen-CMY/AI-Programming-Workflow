@@ -1,1 +1,6 @@
-{"meta":{"title":"AI Programming L1","description":"Guided model setup, environment checks, human startup confirmation and bounded DOT execution."}}
+{
+  "meta": {
+    "title": "ReqPilot",
+    "description": "Requirements-led AI development for DeepSeek Harness. Select the ReqPilot preset, configure the model, check the environment, discuss requirements and confirm the bounded startup plan. L1 coordinates GPT/DOT and independent Codex implementation, testing and review, then submits the final report. GPT/DOT uses a separately billed API and sends authorized task data; enter keys only on the local setup page. Installing does not start tasks. Disabling preserves records and does not guarantee termination of external processes."
+  }
+}
