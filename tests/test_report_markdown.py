@@ -185,7 +185,7 @@ class ReviewMarkdownTests(unittest.TestCase):
     def test_report_creation_and_verification_support_long_windows_task_paths(self):
         from dot_runtime.report_markdown import final, verify
         from dot_runtime.snapshot import _filesystem_path
-        root = self.root / ('nested-task-' * 8) / ('nested-control-' * 7) / 'run'
+        root = self.root / ('nested-task-' * 8) / ('nested-control-' * 10) / 'run'
         report = {'outcome': 'FAILED', 'reason': 'No feasible solution', 'l1_submission': {
             'summary': 'Retained failure', 'dot_report_sha256': 'a' * 64}}
         report['markdown_report'] = final(root, report)
