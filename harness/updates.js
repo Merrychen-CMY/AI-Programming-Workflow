@@ -3,9 +3,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
+import { githubCredential } from './github-auth.js';
 
 export const REPOSITORY = 'Merrychen-CMY/ReqPilot';
-export const BOOTSTRAP_ABI = 1;
+export const BOOTSTRAP_ABI = 2;
 export const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const MAX_ARCHIVE = 8_000_000, MAX_EXPANDED = 32_000_000;
 const sha = data => createHash('sha256').update(data).digest('hex');
@@ -46,10 +47,10 @@ function inventory(manifest, manifestHash) {
     if (!names.includes(path)) fail('UPDATE_MANIFEST');
   return names;
 }
-function packageIdentity(data, expectedVersion) {
+function packageIdentity(data, expectedVersion, allowedAbis = [BOOTSTRAP_ABI]) {
   const pkg = JSON.parse(data.toString('utf8'));
   if (pkg.name !== 'ai-programming-workflow' || pkg.version !== expectedVersion
-      || pkg.reqpilot?.bootstrap_abi !== BOOTSTRAP_ABI) fail('HOST_UPDATE_REQUIRED');
+      || !allowedAbis.includes(pkg.reqpilot?.bootstrap_abi)) fail('HOST_UPDATE_REQUIRED');
 }
 /** Manifest is an integrity check. Publisher trust comes from the fixed GitHub HTTPS origin. */
 export function decodeRuntime(archive, metadata) {
@@ -71,7 +72,7 @@ export function decodeRuntime(archive, metadata) {
   packageIdentity(files.get('package.json'), metadata.version);
   return files;
 }
-export async function verifyRuntime(root, expected) {
+export async function verifyRuntime(root, expected, { pinned = false } = {}) {
   if ((await lstat(root)).isSymbolicLink()) fail('RUNTIME_INTEGRITY');
   const raw = await readFile(resolve(root, 'MANIFEST.json')), hash = sha(raw);
   if (expected && hash !== expected) fail('RUNTIME_INTEGRITY');
@@ -88,20 +89,26 @@ export async function verifyRuntime(root, expected) {
     if (!stat.isFile() || (size += stat.size) > MAX_EXPANDED) fail('RUNTIME_INTEGRITY');
     if (path !== 'MANIFEST.json' && sha(await readFile(current)) !== manifest.files[path]) fail('RUNTIME_INTEGRITY');
   }
-  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version);
+  // ABI2 changes updater authentication only; already-confirmed ABI1 engines keep their exact code.
+  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2] : [BOOTSTRAP_ABI]);
   return { version: manifest.workflow_version, manifest_sha256: hash, root };
 }
-/** Bounded, credential-free requests; redirects never inherit private headers. */
-export async function download(url, limit, fetchImpl = fetch, signal) {
-  const allowed = new Set(['github.com', 'release-assets.githubusercontent.com', 'objects.githubusercontent.com']);
+/** A GitHub credential is restricted to exact repository API URLs, never redirects/CDN. */
+export async function download(url, limit, fetchImpl = fetch, signal, credential) {
+  const allowed = new Set(['api.github.com', 'github.com', 'release-assets.githubusercontent.com', 'objects.githubusercontent.com']);
   const timeout = AbortSignal.timeout(15_000);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
   for (let hop = 0; hop < 5; hop++) {
     const target = new URL(url);
     if (target.protocol !== 'https:' || target.username || target.password || target.port
         || !allowed.has(target.hostname)) fail('UPDATE_ORIGIN');
-    const result = await fetchImpl(target.href, { redirect: 'manual', signal: combined,
-      headers: { 'User-Agent': 'ReqPilot-updater', 'Accept': 'application/octet-stream' } });
+    const headers = { 'User-Agent': 'ReqPilot-updater', 'Accept': 'application/octet-stream' };
+    if (target.hostname === 'api.github.com') {
+      if (hop !== 0 || !new RegExp(`^/repos/${REPOSITORY}/releases/(latest|assets/[0-9]+)$`).test(target.pathname)) fail('UPDATE_ORIGIN');
+      if (target.pathname.endsWith('/latest')) headers.Accept = 'application/vnd.github+json';
+      if (credential) headers.Authorization = `Bearer ${credential}`;
+    }
+    const result = await fetchImpl(target.href, { redirect: 'manual', signal: combined, headers });
     if ([301, 302, 303, 307, 308].includes(result.status)) {
       const location = result.headers.get('location'); await result.body?.cancel();
       if (!location) fail('UPDATE_HTTP'); url = new URL(location, target).href; continue;
@@ -126,7 +133,7 @@ export async function loadEngine(root, fields) {
   return engine;
 }
 
-export function createUpdates({ root, directory, fields, fetchImpl = fetch, now = Date.now }) {
+export function createUpdates({ root, directory, fields, fetchImpl = fetch, now = Date.now, credentialProvider = githubCredential }) {
   const base = resolve(directory, 'updates'), cache = resolve(base, 'runtimes');
   const statePath = resolve(base, 'state.json'), settingsPath = resolve(base, 'settings.json');
   let bundled, pending, stopped = false;
@@ -188,8 +195,21 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
         const old = await optional(statePath) || {};
         const state = { ...old, checked_at: now() };
         try {
-          // GitHub's latest-asset link avoids the shared-IP quota of anonymous REST requests.
-          const metadata = JSON.parse((await download(`https://github.com/${REPOSITORY}/releases/latest/download/reqpilot-update.json`, 16_000, fetchImpl, abort.signal)).toString('utf8'));
+          // Public assets need no credentials. Private repos reuse an existing local Git login.
+          let metadata, privateRelease, credential;
+          try {
+            metadata = JSON.parse((await download(`https://github.com/${REPOSITORY}/releases/latest/download/reqpilot-update.json`, 16_000, fetchImpl, abort.signal)).toString('utf8'));
+          } catch {
+            credential = await credentialProvider();
+            if (!credential) fail('UPDATE_GITHUB_LOGIN_REQUIRED');
+            const api = `https://api.github.com/repos/${REPOSITORY}/releases/`;
+            privateRelease = JSON.parse((await download(api + 'latest', 1_000_000, fetchImpl, abort.signal, credential)).toString('utf8'));
+            if (privateRelease.draft !== false || privateRelease.prerelease !== false || !Array.isArray(privateRelease.assets)) fail('UPDATE_RELEASE');
+            const asset = privateRelease.assets.find(item => item.name === 'reqpilot-update.json');
+            if (!Number.isSafeInteger(asset?.id) || asset.id < 1) fail('UPDATE_RELEASE');
+            metadata = JSON.parse((await download(api + 'assets/' + asset.id, 16_000, fetchImpl, abort.signal, credential)).toString('utf8'));
+            if (privateRelease.tag_name !== `v${metadata.version}`) fail('UPDATE_RELEASE');
+          }
           const target = metadata.version;
           if (metadata.format !== 1 || metadata.channel !== 'stable' || !version(target)) fail('UPDATE_RELEASE');
           const current = await selected();
@@ -200,7 +220,13 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
             state.available_version = target;
             const prefix = `https://github.com/${REPOSITORY}/releases/download/v${target}/`;
             if (metadata.bootstrap_abi !== BOOTSTRAP_ABI) fail('HOST_UPDATE_REQUIRED');
-            const data = await download(prefix + 'reqpilot-runtime.json.gz', MAX_ARCHIVE, fetchImpl, abort.signal);
+            let url = prefix + 'reqpilot-runtime.json.gz';
+            if (privateRelease) {
+              const asset = privateRelease.assets.find(item => item.name === 'reqpilot-runtime.json.gz');
+              if (!Number.isSafeInteger(asset?.id) || asset.id < 1) fail('UPDATE_RELEASE');
+              url = `https://api.github.com/repos/${REPOSITORY}/releases/assets/${asset.id}`;
+            }
+            const data = await download(url, MAX_ARCHIVE, fetchImpl, abort.signal, credential);
             const files = decodeRuntime(data, metadata);
             const candidate = await store(files, metadata.manifest_sha256);
             await loadEngine(candidate.root, fields);
@@ -236,7 +262,7 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
     if (receipt) {
       const hash = receipt.settings?.workflow_sha256;
       if (!digest(hash)) fail('TASK_RUNTIME_MISSING');
-      try { return { ...await verifyRuntime(resolve(cache, hash), hash), pinned: true }; }
+      try { return { ...await verifyRuntime(resolve(cache, hash), hash, { pinned: true }), pinned: true }; }
       catch { fail('TASK_RUNTIME_MISSING_OR_DAMAGED'); }
     }
     // Legacy interrupted tasks without a confirmation must never be switched implicitly.

@@ -62,9 +62,11 @@ def validate_manifest(root, manifest):
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 1,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 2,
         'default_enabled': True, 'check_interval_seconds': 21600,
-        'checks_on_tool_activity_only': True, 'network_sends_project_or_credentials': False,
+        'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
+        'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
+        'github_credential_in_logs_or_model': False,
         'paid_api_calls': False, 'confirmed_tasks_pin_manifest': True,
         'task_history_mutation': False, 'automatic_task_migration': False,
         'unknown_clear_or_replay': False, 'install_scripts': False,
@@ -526,7 +528,7 @@ def validate_repository(root):
         errors.append('Onboarding must preserve all nine discovery topics')
     package = documents.get('package.json', {})
     errors.extend(validate_update_policy(documents.get('policy/updates.json')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 1:
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 2:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
         if documents[key].get('update_policy') != 'policy/updates.json':

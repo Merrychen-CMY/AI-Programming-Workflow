@@ -75,4 +75,4 @@ policy/resources.json、runtime/dot_runtime/resources.py、原生授权界面与
 
 ## 自动更新维护
 
-遵循policy/updates.json和docs/guides/automatic-updates.md。兼容版本保留ABI1工具名称、参数及授权语义；新增工具需要宿主升级。发布资产通过scripts/package_release.py从清单构建，只有通过全部CI的v版本标签才发布。不得增加任意来源、安装脚本、付费探测或旧任务自动迁移；覆盖离线保留、损坏拒绝、版本固定、重启恢复、摘要过期及路径/重定向反例。
+遵循policy/updates.json和docs/guides/automatic-updates.md。兼容版本保留ABI2工具名称、参数及授权语义；新增工具需要宿主升级。发布资产通过scripts/package_release.py从清单构建，只有通过全部CI的v版本标签才发布。不得增加任意来源、安装脚本、付费探测或旧任务自动迁移；覆盖离线保留、损坏拒绝、版本固定、重启恢复、摘要过期及路径/重定向反例。

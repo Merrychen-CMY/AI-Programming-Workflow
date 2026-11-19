@@ -10,10 +10,13 @@ import { createUpdates, decodeRuntime, download, verifyRuntime, CHECK_INTERVAL }
 import { createBootstrap, updateFields } from '../bootstrap.js';
 import { toolFields as actualFields } from '../workflow.js';
 import { saveConfig, keyDigest } from '../setup.js';
+import { githubCredential } from '../github-auth.js';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 
 const sha = data => createHash('sha256').update(data).digest('hex');
 const fields = { workflow_status: {}, workflow_confirm_start: {}, dot_run: {} };
-function release(v = '3.4.1', modify = files => files, abi = 1) {
+function release(v = '3.4.1', modify = files => files, abi = 2) {
   let files = {
     'package.json': JSON.stringify({ name: 'ai-programming-workflow', version: v, type: 'module', reqpilot: { bootstrap_abi: abi } }),
     'harness/workflow.js': `import {writeFile,mkdir,readFile} from 'node:fs/promises';
@@ -50,7 +53,7 @@ async function fixture(t, target = release()) {
     if (url.endsWith('reqpilot-update.json')) return Response.json({...control.target.metadata,channel:control.prerelease?'preview':'stable'});
     return new Response(control.target.archive);
   };
-  const options = { root, directory: data, fields, fetchImpl, now: () => clock };
+  const options = { root, directory: data, fields, fetchImpl, now: () => clock, credentialProvider: async()=>null };
   const updates = createUpdates(options); t.after(() => updates.dispose());
   const session = 'fixture-session', exec = {agent: {id: session}}, task = resolve(data,'tasks',sha(session));
   const bootstrap = createBootstrap({ctx:{}, root, directory:data, fields, updates}); t.after(() => bootstrap.dispose());
@@ -94,6 +97,17 @@ test('unknown legacy task cannot silently use installed or newest code', async t
   await assert.rejects(f.updates.forTask(f.task),/TASK_RUNTIME_MISSING/); assert.equal(f.calls.length,0);
 });
 
+test('ABI2 bootstrap retains an already-confirmed ABI1 cache without migration',async t=>{
+  const f=await fixture(t);await f.updates.setEnabled(false);
+  const old=release('3.4.0',files=>files,1), hash=old.metadata.manifest_sha256;
+  await put(resolve(f.directory,'updates/runtimes',hash),old.files);
+  await mkdir(f.task,{recursive:true});const receipt=JSON.stringify({settings:{workflow_sha256:hash}});
+  await writeFile(resolve(f.task,'confirmation.json'),receipt);
+  const result=await f.bootstrap.invoke('workflow_status',{},f.exec);
+  assert.equal(result.workflow_runtime.task_pinned,true);assert.equal(result.workflow_runtime.manifest_sha256,hash);
+  assert.equal(await readFile(resolve(f.task,'confirmation.json'),'utf8'),receipt);
+});
+
 test('cached code corruption blocks a pinned task and never falls back to newer code', async t => {
   const f = await fixture(t); await f.updates.setEnabled(false);
   const info = await f.bootstrap.invoke('workflow_confirm_start',{},f.exec);
@@ -116,7 +130,7 @@ test('offline checks preserve selected code and redact raw diagnostics', async t
 });
 
 for (const [label, target] of [
-  ['major',release('4.0.0')], ['ABI',release('3.4.1', x=>x,2)],
+  ['major',release('4.0.0')], ['ABI',release('3.4.1', x=>x,3)],
   ['tool contract',release('3.4.1',x=>({...x,'harness/workflow.js':x['harness/workflow.js'].replace('workflow_status','new_tool')}))],
   ['import error',release('3.4.1',x=>({...x,'harness/workflow.js':'throw new Error("bad import");'}))],
 ]) test(`${label} update never becomes selected`,async t=>{
@@ -206,7 +220,7 @@ test('snapshot loader executes the actual Python status pipe without network or 
   await updates.setEnabled(false);
   const bootstrap=createBootstrap({root,directory,fields:actualFields,ctx:{},updates});t.after(()=>bootstrap.dispose());
   const result=await bootstrap.invoke('workflow_status',{}, {agent:{id:'真实管道只读会话'}});
-  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.4.0');
+  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.4.1');
   assert.equal(result.workflow_runtime.task_pinned,false);assert.equal(result.workflow_runtime.updates.enabled,false);
 });
 
@@ -234,4 +248,50 @@ test('compatible update invalidates prepared environment and prevents approval o
   assert.equal(result.executed_successfully,false);assert.match(result.error,/基础环境未通过或配置已改变/);
   assert.equal(result.workflow_runtime.version,'3.4.1');assert.equal(questions,0);assert.equal(runs,0);
   await assert.rejects(lstat(resolve(f.task,'confirmation.json')),e=>e.code==='ENOENT');
+});
+
+test('private repository updates reuse Git login without leaking it to CDN or status',async t=>{
+  const f=await fixture(t), token='fixture-github-secret', target=release();let credentials=0;const requests=[];
+  const fetchImpl=async(url,options)=>{
+    requests.push({url,authorization:options.headers.Authorization});
+    if(url.includes('/releases/latest/download/')) return new Response(null,{status:404});
+    if(url==='https://api.github.com/repos/Merrychen-CMY/ReqPilot/releases/latest')
+      return Response.json({tag_name:'v3.4.1',draft:false,prerelease:false,assets:[{id:123,name:'reqpilot-update.json'},{id:124,name:'reqpilot-runtime.json.gz'}]});
+    if(url.includes('/releases/assets/')) return new Response(null,{status:302,headers:{location:'https://release-assets.githubusercontent.com/'+(url.endsWith('123')?'metadata':'runtime')}});
+    return url.endsWith('metadata')?Response.json(target.metadata):new Response(target.archive);
+  };
+  const updates=createUpdates({...f.options,fetchImpl,credentialProvider:async()=>{credentials++;return token;}});t.after(()=>updates.dispose());
+  const result=await updates.check();assert.equal(result.status,'READY');assert.equal(credentials,1);
+  assert.ok(!JSON.stringify(result).includes(token));
+  for(const r of requests) assert.equal(r.authorization,r.url.startsWith('https://api.github.com/')?'Bearer '+token:undefined);
+  assert.equal((await updates.forTask(f.task)).version,'3.4.1');
+  assert.ok(!(await readFile(resolve(f.directory,'updates/state.json'),'utf8')).includes(token));
+});
+
+test('missing Git login reports actionable update error and keeps bundled task runtime',async t=>{
+  const f=await fixture(t);f.control.offline=true;
+  assert.equal((await f.updates.check()).error,'UPDATE_GITHUB_LOGIN_REQUIRED');
+  assert.equal((await f.updates.forTask(f.task)).version,'3.4.0');
+});
+
+test('GitHub token is never sent to another repository API or followed API redirect',async()=>{
+  let requests=0;
+  await assert.rejects(download('https://api.github.com/repos/other/repo/releases/latest',100,async()=>{requests++;},undefined,'secret'),/UPDATE_ORIGIN/);
+  assert.equal(requests,0);
+  await assert.rejects(download('https://api.github.com/repos/Merrychen-CMY/ReqPilot/releases/latest',100,async()=>{
+    requests++;return new Response(null,{status:302,headers:{location:'https://api.github.com/repos/other/repo/releases/latest'}});
+  },undefined,'secret'),/UPDATE_ORIGIN/);assert.equal(requests,1);
+});
+
+for(const host of ['github.com','other.example'])test(`local Git credential validates host ${host} and prevents interactive prompts`,async()=>{
+  const token='fixture-only-token';let input='',options;
+  const value=await githubCredential({spawnImpl:(file,args,opts)=>{
+    assert.equal(file,'git');assert.deepEqual(args,['-c','credential.interactive=never','credential','fill']);options=opts;
+    const child=new EventEmitter();child.stdin=new PassThrough();child.stdout=new PassThrough();child.stderr=new PassThrough();child.kill=()=>{};
+    child.stdin.on('data',data=>{input+=data.toString();});
+    setImmediate(()=>{child.stdout.write(`protocol=https\nhost=${host}\npassword=${token}\n`);child.emit('close',0);});return child;
+  }});
+  assert.equal(value,host==='github.com'?token:null);assert.match(input,/path=Merrychen-CMY\/ReqPilot.git/);
+  assert.equal(options.env.GIT_TERMINAL_PROMPT,'0');assert.equal(options.env.GCM_INTERACTIVE,'Never');
+  assert.equal(options.windowsHide,true);assert.equal(options.shell,false);assert.equal(options.env.OPENAI_API_KEY,undefined);
 });

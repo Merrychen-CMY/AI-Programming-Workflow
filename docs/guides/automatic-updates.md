@@ -1,6 +1,6 @@
 # 自动更新与会话连续性
 
-从3.4.0起，ReqPilot由稳定的Harness入口和按版本保存的工作流组成。首次安装3.4.0需要按宿主要求重新加载插件，让会话获得`workflow_updates`工具。之后兼容更新可以在同一会话的工具调用之间启用，不再每次下载安装包、重启对话。这里更新的是ReqPilot工作流，不是DeepSeek Harness本身。
+从3.4.1起，ReqPilot由稳定的Harness入口和按版本保存的工作流组成。首次安装3.4.1需要按宿主要求重新加载插件，让会话获得`workflow_updates`工具。之后兼容更新可以在同一会话的工具调用之间启用，不再每次下载安装包、重启对话。这里更新的是ReqPilot工作流，不是DeepSeek Harness本身。
 
 ## 用户怎么使用
 
@@ -9,7 +9,7 @@
 - “检查ReqPilot更新，并告诉我当前任务实际使用的版本。”
 - “关闭自动更新。”或“重新开启自动更新。”
 
-L1调用`workflow_updates(action)`，action只能是status、check、enable或disable。检查只访问固定公开仓库，不发送项目资料、模型密钥或产品记录，不调用付费API。关闭后也不执行手动check的网络请求；重新启用后下一次工作流活动触发检查。不要把更新失败当作产品任务失败。
+L1调用`workflow_updates(action)`，action只能是status、check、enable或disable。检查只访问固定仓库，不发送项目资料、GPT模型密钥或产品记录，不调用付费API。关闭后也不执行手动check的网络请求；重新启用后下一次工作流活动触发检查。不要把更新失败当作产品任务失败。
 
 状态中的READY表示新版已下载、校验并通过工具接口检查。实际执行版本以每次工作流结果的`workflow_runtime.version`和`manifest_sha256`为准；`task_pinned:true`表示当前任务仍使用已确认的版本。安装管理页显示的是稳定入口版本，可能与工作流版本不同。
 
@@ -25,13 +25,13 @@ L1调用`workflow_updates(action)`，action只能是status、check、enable或di
 
 已开工任务不会因为自动更新而要求重开对话，但也**不会自动获得新版本的运行器修复**。若必须将进行中的任务迁到新运行器，需要另行设计、审查并授权迁移；本版没有该功能，不能通过更新功能清除UNKNOWN、撤销最终报告或重置次数。
 
-3.3.x及更早版本没有自动更新入口，也没有事先保留完整运行版本。直接覆盖旧安装不能保证旧任务继续执行。旧任务原版本缺失或损坏时报TASK_RUNTIME_MISSING_OR_DAMAGED，保留全部记录；需要维护者核对并恢复准确旧版本，不会猜测兼容性或改写确认摘要。未开工会话可安装3.4.0后继续整理已有需求，但需重新核对环境和摘要。
+3.3.x及更早版本没有自动更新入口，也没有事先保留完整运行版本。直接覆盖旧安装不能保证旧任务继续执行。旧任务原版本缺失或损坏时报TASK_RUNTIME_MISSING_OR_DAMAGED，保留全部记录；需要维护者核对并恢复准确旧版本，不会猜测兼容性或改写确认摘要。未开工会话可安装3.4.1后继续整理已有需求，但需重新核对环境和摘要。
 
 ## 实现与失败恢复
 
 缓存放在用户目录`.ai-programming-workflow/updates/runtimes/<MANIFEST摘要>/`；密钥仍由Harness凭据服务管理。每个版本保存完整规则和运行器，每次调用验证清单内容后再加载。已确认任务从原confirmation.json读取版本摘要，重启后仍选择同一份缓存；任务数据目录不由更新器写入。缓存不自动清理，以免破坏历史任务恢复。
 
-来源固定为Merrychen-CMY/ReqPilot的正式GitHub Release。通过[GitHub官方最新资产链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)读取stable通道信息，不使用易受共享IP限流影响的匿名REST接口。只接受固定命名更新资产，限制请求时间、下载/解压大小、路径及文件集合，拒绝路径越界、符号链接、大小写别名、内容摘要不符和工具契约变化。不运行安装脚本，不执行远端命令，不自行修改Harness配置。SHA-256证明内容一致；发布者信任来自固定GitHub仓库和HTTPS，不是独立签名审批服务，也不防同账户恶意进程。
+来源固定为Merrychen-CMY/ReqPilot的正式GitHub Release。公开资产优先通过[GitHub官方最新资产链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)读取stable通道信息。私有仓库或公开下载不可用时，通过本机已有Git凭据只读访问此仓库的GitHub API，避免匿名REST接口限流。只接受固定命名更新资产，限制请求时间、下载/解压大小、路径及文件集合，拒绝路径越界、符号链接、大小写别名、内容摘要不符和工具契约变化。不运行安装脚本，不执行远端命令，不自行修改Harness配置。SHA-256证明内容一致；发布者信任来自固定GitHub仓库和HTTPS，不是独立签名审批服务，也不防同账户恶意进程。
 
 下载和准备使用临时目录，验证、模块导入及接口检查均通过后才原子切换可用版本指针。更新锁只保护缓存安装；遇到并发安装返回UPDATE_BUSY，保留任务和原版本。若宿主异常退出留下install.lock，应先核实该文件记录的安装进程已停止，再由维护者处理更新锁；不能清除产品interrupted.json。已启用版本后来损坏时阻止运行，不自动换版本执行。更新前失败可保留旧版；执行产品动作后的异常仍按原UNKNOWN规则处理，更新器不回滚产品动作。
 
@@ -42,6 +42,14 @@ L1调用`workflow_updates(action)`，action只能是status、check、enable或di
 1. 修改代码、文档、版本与清单；同ABI更新必须保留原工具名称、参数名及其语义，不可借兼容更新改变确认/授权含义。
 2. 更新`docs/releases/<版本>.md`。用`python scripts/package_release.py --output-dir <仓库外目录>`构建本地安装包、完整运行包和摘要信息。
 3. 提交并推送代码，再推送与VERSION一致的`v<版本>`标签。验证工作流全部通过后，独立发布作业创建正式Release和三个资产。普通main提交不会成为自动更新源。
-4. GitHub的发布仓库访问权限必须受保护。当前入口只支持ABI1和同一主版本；更新器自身、稳定入口、新工具或宿主接口调整须提高入口ABI并发布需要安装的版本，说明原因。内置工作流更新不会替换已加载的入口/更新器自身代码。
+4. GitHub的发布仓库访问权限必须受保护。当前入口只支持ABI2和同一主版本；更新器自身、稳定入口、新工具或宿主接口调整须提高入口ABI并发布需要安装的版本，说明原因。内置工作流更新不会替换已加载的入口/更新器自身代码。
 
-查看[3.4.0验证边界](../reports/3.4.0-validation.md)。模拟同会话切换、真实本地Python管道、远端发布检查和真实Harness聊天验证分别记录，不相互替代。
+查看[3.4.1验证边界](../reports/3.4.1-validation.md)。模拟同会话切换、真实本地Python管道、远端发布检查和真实Harness聊天验证分别记录，不相互替代。
+
+## 私有仓库的登录
+
+你的ReqPilot仓库可以保持私有。3.4.1入口复用Git Credential Manager等本机Git凭据助手已保存的GitHub登录，不索取聊天中的密钥，也不把GitHub凭据写进ReqPilot设置。仅向api.github.com上本仓库的精确只读API地址临时发送凭据；重定向到下载CDN时不携带凭据。更新检查不修改远程仓库。
+
+没有可用Git登录时返回UPDATE_GITHUB_LOGIN_REQUIRED，保留当前版本和任务。先通过Git/Git Credential Manager的正常登录流程登录有本仓库读取权限的账号，再让L1检查更新；插件不会弹出自动登录或询问GPT密钥。凭据助手最多等待8秒，禁止交互提示；它不是新的凭据库。仅需读取仓库和发布资产的权限。
+
+3.4.0首版更新器仅支持公开下载，不能自动访问本私有仓库。首次应安装3.4.1（入口ABI2）；3.4.0已安装用户也需要这一次升级，随后同ABI兼容版本才能自动处理。ABI2明确兼容已经确认并缓存的ABI1工作流，按原摘要继续执行，不把它迁成新版；其他旧版不能推定兼容。仍不自动迁移3.3.x旧任务。

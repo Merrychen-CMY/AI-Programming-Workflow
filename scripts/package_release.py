@@ -23,7 +23,8 @@ def package_release(directory):
         name: base64.b64encode((ROOT / name).read_bytes()).decode('ascii')
         for name in sorted([*manifest['files'], 'MANIFEST.json'])}}
     archive = gzip.compress(json.dumps(payload, separators=(',', ':')).encode('utf-8'), mtime=0)
-    metadata = {'format': 1, 'channel': 'stable', 'version': version, 'bootstrap_abi': 1,
+    bootstrap_abi = json.loads((ROOT / 'package.json').read_text())['reqpilot']['bootstrap_abi']
+    metadata = {'format': 1, 'channel': 'stable', 'version': version, 'bootstrap_abi': bootstrap_abi,
                 'sha256': hashlib.sha256(archive).hexdigest(),
                 'manifest_sha256': hashlib.sha256(raw_manifest).hexdigest()}
     (directory / 'reqpilot-runtime.json.gz').write_bytes(archive)

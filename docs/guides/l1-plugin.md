@@ -6,7 +6,7 @@
 
 1. 从[正式发布](https://github.com/Merrychen-CMY/ReqPilot/releases/latest)获取本仓库安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
 2. 在 DeepSeek Harness 的插件管理中添加本地插件包/目录。也可让 Harness 自身有插件管理能力的 Agent 使用 `plugin_manager install_bundle` 安装本地来源；实际参数以宿主工具声明为准。本仓库不直接修改你的 Harness 配置文件。
-3. 创建新会话，选择 **ReqPilot · 需求领航**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。首次引入更新器或入口接口变化时，旧会话可能保留旧preset，需要宿主重新加载；已具备3.4.0稳定入口后，兼容工作流更新按[自动更新规则](automatic-updates.md)在同一会话生效。
+3. 创建新会话，选择 **ReqPilot · 需求领航**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。首次引入更新器或入口接口变化时，旧会话可能保留旧preset，需要宿主重新加载；已具备3.4.1稳定入口后，兼容工作流更新按[自动更新规则](automatic-updates.md)在同一会话生效。
 4. 对 L1 说：**“开始一个项目，请按配置模型和密钥、检查环境、沟通需求的顺序引导我，再集中确认开工。”** L1 会提供本机配置页链接。在页面填写 GPT API 模型 ID、密钥及 Python/Codex 可执行文件路径。这里的 GPT 就是 DOT，不是另一个人工操作入口；L1 自己的模型仍由 Harness 设置。
 5. 点击保存，再点击“测试 API”。测试发出两次可能计费的固定示例请求，核对工具调用和结构化输出兼容性，不发送项目内容。不在安装、打开页面或启动聊天时自动调用付费 API。
 6. 回到 L1，先让它调用 `workflow_check_environment` 检查Python、Git、Codex及登录；此时无需提供项目目录或需求草案。失败/未知时先解决环境缺口，再继续。
@@ -26,7 +26,7 @@
 
 ### 配置或API测试失败
 
-3.4.0配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
+3.4.1配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
 
 | 错误编号 | 含义与处理 |
 | --- | --- |
@@ -91,7 +91,7 @@ flowchart TD
 
 插件入口为 `harness/index.js`，打包根为仓库根。`harness/cordis.patch.yml` 声明专用 L1 preset。`workflow_reference` 提供受限只读规则读取；内部 Python 管道不直接暴露给模型。开工和最终确认来自 `ctx.userQuestions` 的原生人类答复，模型无法传入 `confirmed=true`。
 
-运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.4.0.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.4.0验证记录](../reports/3.4.0-validation.md)。
+运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.4.1.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.4.1验证记录](../reports/3.4.1-validation.md)。
 
 ## 开工后发现资料缺口
 
@@ -107,4 +107,4 @@ flowchart TD
 
 ## 自动更新
 
-3.4.0起默认开启，详见[自动更新与会话连续性](automatic-updates.md)。运行器按内容摘要缓存，当前任务确认后使用原版本；更新器不写任务历史。用户可让L1查询、检查或启停更新。新的兼容版本在未开工会话的下一次调用采用，环境和摘要需重新核对。主版本/工具接口/入口ABI变化，以及3.3.x旧任务缺原运行缓存，均不会自动迁移。
+3.4.1起默认开启，详见[自动更新与会话连续性](automatic-updates.md)。运行器按内容摘要缓存，当前任务确认后使用原版本；更新器不写任务历史。用户可让L1查询、检查或启停更新。新的兼容版本在未开工会话的下一次调用采用，环境和摘要需重新核对。主版本/工具接口/入口ABI变化，以及3.3.x旧任务缺原运行缓存，均不会自动迁移。

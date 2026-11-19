@@ -16,7 +16,7 @@ class UpdatePolicyTests(unittest.TestCase):
         for key, value in {'repository': 'another/repository', 'task_history_mutation': True,
                            'confirmed_tasks_pin_manifest': False, 'automatic_task_migration': True,
                            'unknown_clear_or_replay': True, 'paid_api_calls': True,
-                           'network_sends_project_or_credentials': True,
+                           'network_sends_project_or_gpt_credentials': True,
                            'automatic_host_plugin_replacement': True}.items():
             with self.subTest(key=key):
                 changed = copy.deepcopy(policy)

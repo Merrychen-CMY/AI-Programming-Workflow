@@ -2,11 +2,10 @@
   "schema_version": 1,
   "repository": "Merrychen-CMY/ReqPilot",
   "channel": "github_stable_releases",
-  "bootstrap_abi": 1,
+  "bootstrap_abi": 2,
   "default_enabled": true,
   "check_interval_seconds": 21600,
   "checks_on_tool_activity_only": true,
-  "network_sends_project_or_credentials": false,
   "paid_api_calls": false,
   "confirmed_tasks_pin_manifest": true,
   "task_history_mutation": false,
@@ -15,5 +14,8 @@
   "install_scripts": false,
   "automatic_host_plugin_replacement": false,
   "new_tool_or_major_or_abi_change": "host_install_required",
-  "guide": "docs/guides/automatic-updates.md"
+  "guide": "docs/guides/automatic-updates.md",
+  "network_sends_project_or_gpt_credentials": false,
+  "private_repository_auth": "existing_local_git_credential_no_interactive_prompt",
+  "github_credential_in_logs_or_model": false
 }
