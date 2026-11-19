@@ -21,6 +21,22 @@ class ReviewMarkdownTests(unittest.TestCase):
     controller = delegated.DelegatedTests.controller
     approved = delegated.DelegatedTests.approved
 
+    def test_markdown_uses_evidence_index_instead_of_embedded_runtime_log(self):
+        from dot_runtime.report_markdown import review
+        raw = 'UNIQUE_RAW_COMMAND_OUTPUT' * 100000
+        record = {'kind': 'requirements', 'status': 'FAIL', 'baseline': {'requirements': 'fixture'},
+            'result': {'session_id': 'independent-reviewer', 'summary': 'Missing build prerequisite',
+                       'findings': ['Locate generated input'], 'runtime_evidence': {'output': raw}},
+            'evidence_files': [{'path': 'l1-reviews/1/result.json', 'sha256': 'f' * 64}]}
+        before = copy.deepcopy(record)
+        report = review(self.c.run_dir, record, 1, usage={'actual_usage': {'l1_reviews': 1}})
+        text = Path(report['path']).read_text(encoding='utf-8')
+        self.assertNotIn('UNIQUE_RAW_COMMAND_OUTPUT', text)
+        self.assertIn('Locate generated input', text)
+        self.assertIn('l1-reviews/1/result.json', text)
+        self.assertLess(len(text.encode()), 10000)
+        self.assertEqual(record, before)
+
     def test_requirements_and_plan_have_distinct_files_and_actual_approval(self):
         self.approved()
         descriptors = [r['markdown_report'] for r in self.c.state['l1_reviews']]

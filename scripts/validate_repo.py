@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -75,6 +75,8 @@ def validate_task_upgrade_policy(value):
 
 def validate_review_handoff_policy(value):
     expected = {'schema_version': 1, 'guide': 'docs/guides/normal-start.md',
+        'planning_includes_current_approval_and_native_amendments': True,
+        'approval_reply_aliases_compacted': True, 'review_markdown_embeds_raw_runtime_output': False,
         'source_packet_owner': 'controller', 'source_packet_digest_bound': True,
         'existing_record_copy_consumes_revision': False,
         'new_facts_and_baseline_changes_retain_existing_limits': True,
@@ -111,6 +113,8 @@ def validate_closure_policy(value):
 
 def validate_flow_recovery(value):
     expected = {'schema_version': 1, 'guide': 'docs/guides/flow-recovery.md', 'bootstrap_abi': 8,
+        'completed_preflight_review_recovery_requires_native_attestation': True,
+        'completed_review_recovery_preserves_valid_approval': True, 'maintenance_recovery_changes_pinned_runtime': False,
         'new_native_adaptive_limits_required': True, 'requirements_review_before_initial_planning': True,
         'initialization_adopts_review_without_replay': True, 'preflight_review_usage_preserved': True,
         'read_only_investigation_tool': 'dot_investigate', 'l1_decision_tool': 'l1_resume_decision',
@@ -177,7 +181,7 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.1'],
                 'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,

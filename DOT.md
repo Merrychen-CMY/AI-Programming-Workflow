@@ -71,3 +71,7 @@ API异常先读取dot_status.api_review，进入API_REVIEW_PENDING由L1评估，
 3.11.0流程顺序与恢复：新原生任务强制动态额度。开工确认并分配额度后，先l1_prepare_requirements → l1_approve(requirements)，通过后才dot_plan → dot_initialize → l1_approve(plan) → dot_run。初始化承接原需求独立审核及消耗，不重复审核。DECISION_PENDING使用dot_investigate继续只读分析，L1用l1_resume_decision选择有证据的恢复方案；旧操作未核实时先经原生恢复核对，不能重放。修订保留不受影响的已完成实现，候选与验证随基线重新核验。开工前后报告均先l1_submit_report再由用户审核；非成功结案须真实任务证据。新增入口需安装ABI7主包，历史CLI和已开工旧任务保留原收据，不得伪造先审后规划的历史或重开最终报告。详见[完整流程与恢复](docs/guides/flow-recovery.md)。
 
 3.13.0：规划须填写verification.test_contract，绑定必需项、当前候选产品源码及受控构建。L3派工必须附L2完整solutions、原失败和范围。设施问题通过facility_actions选择获批facility_recovery.actions；未列明操作交L1，不能仅重复原检查。独立test写产物只在分配工作区，禁止改输入；全部必需项及来源证据同时通过才可成功。详见[测试契约与恢复](docs/guides/verification-contract.md)。
+
+## 当前批准依据
+
+规划时读取控制器提供的CURRENT CONTROLLER HANDOFF。它包含经核验的当前需求批准、原生授权变更收据、当前上限/分配及累计消耗。只对明确批准的字段采用新值，原始目标和未变更约束继续有效；历史事实的待审标签不覆盖绑定当前事实摘要的最新批准。不得因缺少已有批准的手工转述而要求L1消耗一次事实修订；真实缺口仍提交NEEDS_INFO。

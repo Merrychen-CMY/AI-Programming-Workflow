@@ -42,6 +42,13 @@ def bridge(settings):
                 marker.write_text('fixture-only')
                 return delegated.call_response('stop', {'reason': 'Fixture: consider authorized alternative, submit permission gap to L1'})
             if any(t.get('name') == 'propose_plan' for t in payload.get('tools', [])):
+                text = payload['input'][-1]['content']
+                # Unlike a blind PASS stub, reject a missing/currently unapproved
+                # handoff so the real host lifecycle exercises the contract.
+                marker = 'CURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n'
+                handoff = json.JSONDecoder().raw_decode(text.split(marker, 1)[1])[0]
+                if not handoff['requirements_approval'] or handoff['requirements_approval']['authority'] != 'delegated_l1':
+                    raise ValueError('Fixture DOT did not receive a current requirements approval')
                 return delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})
             return delegated.call_response('run_approved_workflow')
         class FixtureClient(ResponsesClient):

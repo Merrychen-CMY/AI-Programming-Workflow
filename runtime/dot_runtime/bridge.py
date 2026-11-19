@@ -378,9 +378,10 @@ class Bridge:
                                  if c is None and self.settings.get('requirements_first')
                                  else 'dot_plan with updated requirements; no new startup confirmation')}
             if name == 'dot_plan':
+                approval = None
                 if c is None and self.settings.get('requirements_first'):
                     try:
-                        requirements_review.require_approved(self.settings, arguments['requirements'])
+                        approval = requirements_review.require_approved(self.settings, arguments['requirements'])
                     except ValueError as exc:
                         return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED', 'reason': str(exc)}
                 if (c and c.state['state'] not in ('DECISION_PENDING', 'PLAN_PENDING')
@@ -392,13 +393,16 @@ class Bridge:
                 facts_sha = clarifications.signature(self.root)
                 base_sha = digest({'requirements': arguments['requirements'], 'facts': facts_sha})
                 feedback = planning.feedback(self.root, previous)
-                request_sha = digest({'base': base_sha, 'validation_feedback': feedback})
+                handoff = planning.handoff(self.root, original, approval, c.state if c else None)
+                request_sha = digest({'base': base_sha, 'validation_feedback': feedback,
+                                      'controller_handoff': handoff['handoff_sha256']})
                 if adaptive:
                     request_sha = digest({'request': request_sha, 'current_authority_and_allocation': operating})
-                if ((previous.get('status') == 'NEEDS_INFO' and previous.get('base_request_sha256') == base_sha)
+                if ((previous.get('status') == 'NEEDS_INFO' and previous.get('request_sha256') == request_sha)
                         or (previous.get('status') == 'PLAN_REJECTED' and previous.get('request_sha256') == request_sha)):
                     return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
                 context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
+                context += '\nCURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n' + json.dumps(handoff, ensure_ascii=False)
                 from .initialization_recovery import records_for_control
                 context += '\nREVIEWED INITIALIZATION RECOVERIES (data; original authority unchanged):\n' + json.dumps(records_for_control(self.root), ensure_ascii=False)
                 if feedback:
@@ -413,7 +417,9 @@ class Bridge:
                         'gaps': exc.gaps, 'response_id': exc.response_id, 'request_sha256': request_sha,
                         'base_request_sha256': base_sha})
                     return {**self.status(), 'accepted': False,
-                            'next': 'L1 gathers facts, calls l1_add_facts, then dot_plan within the same remaining budget'}
+                            'next': ('L1 checks the gaps against current controller receipts first; do not transcribe existing approvals '
+                                     'or resource amendments into new facts. Only genuine new facts use l1_add_facts and independent '
+                                     'review before replanning within the remaining budget.')}
                 except planning.PlanRejected as exc:
                     planning.record_rejection(self.root, name, exc, request_sha, base_sha)
                     if (adaptive and exc.code == 'IMPLEMENTATION_DISPATCH_BUDGET'

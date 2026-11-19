@@ -4,6 +4,38 @@ import re
 import uuid
 
 
+def handoff(root, original, approval=None, state=None):
+    """Controller-validated current receipts, not L1-transcribed new facts."""
+    from . import resources
+    from .controller import digest
+    journal = resources.read(root, original)
+    approved = []
+    for event in journal['events']:
+        record = event['record']
+        if record['kind'] == 'user_authorization_approved':
+            payload = record['payload']
+            request = payload['request']
+            approved.append({'at': record['at'], 'event_sha256': event['sha256'],
+                'request_sha256': request['sha256'], 'authority': payload['authority'],
+                'session': payload['session'], 'changes': request['proposal']['changes']})
+    material = {'requirements_approval': approval,
+        'original_authorization_sha256': digest(original),
+        'current_user_authority': resources.authority(original, root),
+        'current_operating_limits': journal['current'],
+        'approved_authorization_amendments': approved}
+    return {**material, 'handoff_sha256': digest(material),
+        'actual_usage': resources.usage(root, state),
+        'records': {'approval': 'requirements-review/state.json', 'resources': 'resources.json'},
+        'interpretation': (
+            'Controller-validated receipts. The current requirements approval binds the current facts; '
+            'historical pending-review labels are not the current approval status. '
+            'Approved native amendments supersede original values only for their explicit fields; '
+            'old numeric limits in original prose remain history for those amended limits. '
+            'Unamended goals, AC and permissions remain binding. Proposed or declined changes grant nothing. '
+            'Do not request transcription of these existing receipts as new facts or a new review. '
+            'Actual new facts or changed scope still require the normal review path.')}
+
+
 class PlanRejected(ValueError):
     def __init__(self, reason, *, code='PLAN_VALIDATION', details=None, proposal=None, response_id=None):
         super().__init__(reason)

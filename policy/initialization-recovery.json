@@ -10,7 +10,8 @@
     "3.10.0",
     "3.11.0",
     "3.12.1",
-    "3.13.0"
+    "3.13.0",
+    "3.13.1"
   ],
   "scope": "uncommitted_or_unbound_local_initialization_only",
   "native_confirmation_required": true,

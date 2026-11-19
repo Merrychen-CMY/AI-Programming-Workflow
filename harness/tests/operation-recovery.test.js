@@ -7,6 +7,9 @@ import { tmpdir } from 'node:os';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pythonCall } from '../process.js';
+import { createBootstrap } from '../bootstrap.js';
+import { toolFields } from '../workflow.js';
+import { createHash } from 'node:crypto';
 
 function fixture(choice = 'approve', ready = true) {
   const calls = [], questions = [];
@@ -46,6 +49,49 @@ test('unknown or running process blocks before asking for approval', async () =>
   assert.equal(result.status, 'OPERATION_RECOVERY_BLOCKED');
   assert.equal(f.questions.length, 0);
   assert.equal(f.calls.length, 1);
+});
+
+test('bootstrap uses verified maintenance for a completed pre-plan review without changing the task runtime', async t => {
+  const root = fileURLToPath(new URL('../../', import.meta.url));
+  const python = process.env.PYTHON || 'python';
+  const created = JSON.parse(execFileSync(python, ['-B', '-c', `import sys,json,hashlib
+from pathlib import Path
+sys.path[:0]=[str(Path.cwd()/'runtime'),str(Path.cwd()/'tests')]
+from test_completed_review_handoff import CompletedReviewTests
+from dot_runtime.controller import file_hash
+x=CompletedReviewTests();x.setUp()
+x.task=x.base/'tasks'/hashlib.sha256(b'native-l1-session').hexdigest()
+x.stopped_review()
+x.tool('l1_prepare_recovery',proposal_json=json.dumps({'reason':'Completed review reply overflow','analysis':'Completed native fixture approval and persisted evidence','resume_plan':'Continue planning after native confirmation','side_effects':'Read-only fixture, no product work','evidence':[{'path':'requirements-review/state.json','sha256':file_hash(x.root/'requirements-review/state.json'),'description':'Persisted fixture approval'}]}))
+x.temp._finalizer.detach()
+print(json.dumps({'directory':str(x.base),'task':str(x.task)}))
+`], { cwd: root, windowsHide: true, encoding: 'utf8' }));
+  const relativePath = relative(tmpdir(), created.directory);
+  assert.ok(relativePath && !relativePath.startsWith('..') && !isAbsolute(relativePath));
+  t.after(() => rm(created.directory, { recursive: true, force: true }));
+  const manifest = createHash('sha256').update(await readFile(resolve(root, 'MANIFEST.json'))).digest('hex');
+  const version = (await readFile(resolve(root, 'VERSION'), 'utf8')).trim();
+  const before = await readFile(resolve(created.task, 'confirmation.json'));
+  const review = await readFile(resolve(created.task, 'control/requirements-review/state.json'));
+  const calls = [], questions = [];
+  const updates = {forTask: async () => ({root, version, manifest_sha256: manifest, pinned: true}),
+    operationRecoveryTarget: async () => ({root, version, manifest_sha256: manifest}), dispose() {}};
+  const bootstrap = createBootstrap({root, directory: created.directory, fields: toolFields, updates,
+    ctx: {credentials: {resolve() {throw Error('Recovery must not read credentials');}}, userQuestions: {ask: async ({questions: q}) => {
+      questions.push(...q); return {answers: [{id: q[0].id, selected: [q[0].options[0].label]}]};
+    }}}, workflowOptions: {runner: (exe, script, request, options) => {
+      calls.push(request.action); assert.equal(options.key, undefined); return pythonCall(exe, script, request, options);
+    }}});
+  t.after(() => bootstrap.dispose());
+  const result = await bootstrap.invoke('workflow_recover_operation', {}, {agent: {id: 'native-l1-session'}});
+  assert.equal(result.status, 'OPERATION_RECONCILED', JSON.stringify(result));
+  assert.equal(result.task_runtime_changed, false);
+  assert.deepEqual(calls, ['operation_preview', 'operation_commit']);
+  assert.equal(questions.length, 1);
+  assert.match(questions[0].question, /不重复审查/);
+  assert.deepEqual(await readFile(resolve(created.task, 'confirmation.json')), before);
+  assert.deepEqual(await readFile(resolve(created.task, 'control/requirements-review/state.json')), review);
+  await assert.rejects(readFile(resolve(created.task, 'interrupted.json')), /ENOENT/);
 });
 
 test('cancelled native question cannot commit', async () => {

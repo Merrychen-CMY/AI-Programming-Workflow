@@ -34,13 +34,15 @@ export function pythonCall(executable, script, request, { key, signal, spawnImpl
       clearTimeout(timer);
       error ? reject(error) : resolve(value);
     };
-    const abort = () => { child.kill(); finish(new Error('UNKNOWN: caller interrupted; reconcile old processes before retry')); };
-    const timer = setTimeout(abort, 4 * 60 * 60 * 1000);
+    const terminate = reason => { child.kill(); finish(new Error(reason)); };
+    const abort = () => terminate('UNKNOWN: caller interrupted; reconcile old processes before retry');
+    const overflow = () => terminate('OUTPUT_LIMIT: runner reply exceeded 8000000 bytes; operation may already be recorded. Reconcile recorded completion; do not replay');
+    const timer = setTimeout(() => terminate('UNKNOWN: runner exceeded host wait limit; reconcile old processes before retry'), 4 * 60 * 60 * 1000);
     child.on('error', () => finish(new Error('Python runner could not start; check the configured executable')));
     child.stdin.on('error', () => {});
     child.stdout.setEncoding('utf8');
-    child.stderr.on('data', chunk => { size += chunk.length; if (size > 8_000_000) abort(); });
-    child.stdout.on('data', chunk => { size += Buffer.byteLength(chunk); stdout += chunk; if (size > 8_000_000) abort(); });
+    child.stderr.on('data', chunk => { size += chunk.length; if (size > 8_000_000) overflow(); });
+    child.stdout.on('data', chunk => { size += Buffer.byteLength(chunk); if (size > 8_000_000) overflow(); else stdout += chunk; });
     child.on('close', code => {
       try {
         if (tracked && JSON.parse(readFileSync(processPath, 'utf8')).pid === child.pid)

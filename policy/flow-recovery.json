@@ -17,5 +17,8 @@
   "recovery_preserves_original_unknown_and_usage": true,
   "recovery_reopens_final_report": false,
   "preflight_report_requires_l1_submission": true,
-  "legacy_receipts_rewritten_as_requirements_first": false
+  "legacy_receipts_rewritten_as_requirements_first": false,
+  "completed_preflight_review_recovery_requires_native_attestation": true,
+  "completed_review_recovery_preserves_valid_approval": true,
+  "maintenance_recovery_changes_pinned_runtime": false
 }

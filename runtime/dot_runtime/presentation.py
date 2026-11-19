@@ -57,13 +57,19 @@ def compact(value):
     if not isinstance(value, dict) or 'state' not in value:
         return value
     result = copy.deepcopy(value)
-    initial = result.get('requirements_review')
-    if initial and initial.get('reviews'):
-        reviews = initial.pop('reviews')
-        initial['review_count'] = len(reviews)
-        initial['latest_review'] = _review_summary(reviews[-1], len(reviews), prefix='',
-                                                  fallback='requirements-review/state.json')
-        initial['record'] = 'requirements-review/state.json'
+    # Approval/preparation return separate copies of the same journal. Compact
+    # every copy: otherwise one unbounded alias can exceed the host pipe limit.
+    for key in ('requirements_review', 'requirements_approval', 'requirements_preparation'):
+        initial = result.get(key)
+        if isinstance(initial, dict):
+            reviews = initial.pop('reviews', None)
+            initial.pop('drafts', None)
+            if reviews is not None:
+                initial['review_count'] = len(reviews)
+            if reviews:
+                initial['latest_review'] = _review_summary(reviews[-1], len(reviews), prefix='',
+                                                          fallback='requirements-review/state.json')
+            initial['record'] = 'requirements-review/state.json'
     reviews = result.pop('l1_reviews', [])
     if reviews:
         result['review_count'] = len(reviews)
@@ -125,7 +131,7 @@ def compact(value):
                 ' only to generate the recorded review Markdown. Approval, usage and any unresolved operation remain unchanged.')
     # Prevent host spill even with adversarially verbose reviews or old journals.
     if len(json.dumps(result, ensure_ascii=False)) > 18000:
-        for key in ('decision', 'planning', 'resources', 'api_review', 'requirements_review', 'latest_review', 'final_report', 'preflight_report'):
+        for key in ('decision', 'planning', 'resources', 'api_review', 'requirements_review', 'requirements_approval', 'requirements_preparation', 'latest_review', 'final_report', 'preflight_report'):
             if key in result:
                 result[key] = bounded(result[key])
         result['details_abridged'] = True

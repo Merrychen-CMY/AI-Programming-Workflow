@@ -298,6 +298,14 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
     if (!digest(hash)) fail('INITIALIZATION_NO_VALID_PENDING_RECOVERY');
     return verifyRuntime(resolve(cache, hash), hash);
   }
+  async function operationRecoveryTarget(task) {
+    const pending = await optional(resolve(task, 'operation-recovery-pending.json'));
+    if (!pending) return selected();
+    const hash = pending.entry?.maintenance_runtime?.manifest_sha256;
+    if (!digest(hash)) fail('OPERATION_NO_VALID_PENDING_RUNTIME');
+    return verifyRuntime(resolve(cache, hash), hash);
+  }
   return { status, check, schedule, setEnabled, forTask, ensureBundled, upgradeTarget, recoveryTarget,
+    operationRecoveryTarget,
     dispose: () => { stopped = true; abort.abort(); }, settled: () => pending };
 }

@@ -32,9 +32,14 @@ export async function recoverOperation({ call, ctx, exec }) {
     + `原操作：\n${JSON.stringify(preview.binding, null, 2)}\n\n`
     + `累计消耗：\n${JSON.stringify(displayedUsage, null, 2)}\n\n`
     + `API 状态：\n${JSON.stringify(displayedApi, null, 2)}\n\n`
+    + `本次恢复动作：${preview.action || '恢复到调查与独立重审'}\n`
+    + (preview.maintenance_runtime ? `恢复工具版本：${preview.maintenance_runtime.version}；任务固定版本不因此改变。\n` : '')
     + '请先核对所列实际证据，确认旧操作的进程、工作区和设备/网络副作用均已核实。'
     + '模型陈述不等于真实核实。批准仅解除这份快照中已核实的中断保护，归档原记录，保留全部累计消耗、失败和已完成工作。'
-    + '恢复后进入 L2 调查与 L1 独立重审；若仍有未决 API，必须先走独立 API 评估流程，旧结果和未知费用原样保留。'
+    + (preview.processes?.completed_approval && !adoption?.changed
+      ? '本次需求独立审核已完成且基线未变，保留原批准和次数，恢复后继续规划，不重复审查。'
+      : '恢复后进入 L2 调查与 L1 独立重审。')
+    + '若仍有未决 API，必须先走独立 API 评估流程，旧结果和未知费用原样保留。'
     + '不重放旧操作、不立即派工、不修改产品、不增加权限、不撤销最终报告。';
   if (question.length > 65_000) throw new Error('恢复材料超过原生界面上限；缩小方案后重新提交，未解除中断');
   const reply = await ctx.userQuestions.ask({ agent: exec.agent, signal: exec.signal, questions: [{

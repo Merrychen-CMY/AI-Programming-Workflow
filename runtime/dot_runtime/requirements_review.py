@@ -306,12 +306,17 @@ def approve(settings, l1_session_id, reviewer):
 
 def require_approved(settings, requirements=None):
     """Gate DOT planning and initialization on a current independent approval."""
+    return _require_approved_binding(settings, None, requirements)
+
+
+def _require_approved_binding(settings, binding, requirements=None):
+    """Shared validation; recovery supplies the verified pinned runtime binding."""
     root = Path(settings['control_dir'])
     value = _load(root)
     if not value or value['active_run'] or not value.get('approval'):
         raise ApprovalRejected('Independent requirements approval is required before DOT planning')
     receipt = value['approval']
-    binding = _binding(settings)
+    binding = binding if binding is not None else _binding(settings)
     if receipt['baseline'] != binding:
         raise ApprovalRejected('Requirements approval is stale; re-stage and independently review the changed baseline')
     if requirements is not None and requirements != (root / 'requirements.md').read_text(encoding='utf-8'):

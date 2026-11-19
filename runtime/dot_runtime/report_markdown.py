@@ -62,7 +62,13 @@ def review(root, record, number, approval=None, usage=None, *, preflight=False):
                 'findings': result.get('findings', []), 'refusal': source.get('refusal'),
                 'approval': approval if approved else None})),
             ('额度、实际消耗及调整', _block(usage if usage is not None else {'recorded': False})),
-            ('审核基线与完整证据记录', _block(source)),
+            ('审核基线与完整证据记录', _block({
+                'baseline': source.get('baseline'), 'kind': source['kind'],
+                'review_number': number, 'l1_session_id': source.get('l1_session_id'),
+                'reviewer_session_id': result.get('session_id'),
+                'evidence_files': source.get('evidence_files', []),
+                'record': 'requirements-review/state.json' if preflight else 'state.json',
+                'note': '完整结果、命令输出及历史保留在原始记录中；使用证据路径或分页读取，不在本报告重复嵌入。'})),
             ('使用说明', '本文件是现有审核记录的可读副本，不新增人工审批，不改变原始证据或授权。'
              '审核通过不等于产品已实现或已通过测试。')])
 

@@ -46,5 +46,8 @@
     "final_confirmation_checks_markdown_digest": true,
     "adds_user_approval_checkpoint": false,
     "delivery_failure_replays_review_or_execution": false
-  }
+  },
+  "planning_includes_current_approval_and_native_amendments": true,
+  "approval_reply_aliases_compacted": true,
+  "review_markdown_embeds_raw_runtime_output": false
 }

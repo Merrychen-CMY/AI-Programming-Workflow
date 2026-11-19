@@ -5,6 +5,8 @@ import { homedir } from 'node:os';
 import { createUpdates, loadEngine } from './updates.js';
 import { upgradeTask } from './task-upgrades.js';
 import { recoverInitialization } from './initialization-recovery.js';
+import { recoverOperation } from './operation-recovery.js';
+import { pythonCall } from './process.js';
 
 export const updateFields = { workflow_updates: { action: 'status | check | enable | disable | upgrade_preview | upgrade | upgrade_recover | initialization_preview | initialization_recover | initialization_finish. Initialization recovery supports only an uncommitted local initialization and requires exact native approval; no API, product action or usage reset. Enable/disable only at user request.' } };
 export const updateDescriptions = { workflow_updates: 'Check releases, review task upgrades, or review a failed initialization. Previews are read-only; native approval is mandatory for recovery and baseline adoption. finish only completes recorded authorized local writes. Product UNKNOWN and final reports cannot reopen.' };
@@ -40,6 +42,33 @@ export function createBootstrap({ ctx, root, keyRef, fields,
         return { ...result, instruction: '更新不调用GPT、不启动任务。READY指新版已就绪；已确认任务保持原版本，直到upgrade预检及原生确认通过。不能清除UNKNOWN、最终报告或预算。' };
       }
       const runtime = await updates.forTask(task);
+      if (name === 'workflow_recover_operation') {
+        if (Object.keys(args).length) throw new Error('Operation recovery accepts no model arguments');
+        const optional = async name => { try { return JSON.parse(await readFile(resolve(task, name), 'utf8')); }
+          catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+        const marker = await optional('interrupted.json');
+        const pending = await optional('operation-recovery-pending.json');
+        // A verified maintenance runtime may reconcile a completed pre-plan
+        // review. Ordinary task tools still use the original pinned runtime.
+        if (pending?.entry?.maintenance_runtime || (marker?.name === 'l1_approve' && !await optional('control/run/state.json'))) {
+          const target = await updates.operationRecoveryTarget(task);
+          await loadEngine(target.root, fields);
+          const compatibility = JSON.parse(await readFile(resolve(target.root, 'policy/task-upgrades.json'), 'utf8'));
+          if (runtime.version !== target.version && !compatibility.supported_source_versions.includes(runtime.version))
+            throw new Error('Unsupported source runtime for maintenance recovery; task remains pinned');
+          const receipt = await optional('confirmation.json');
+          const runner = workflowOptions.runner || pythonCall;
+          const result = await recoverOperation({ ctx, exec, call: (action, payload = {}) =>
+            runner(receipt.settings.python, resolve(target.root, 'scripts/harness_workflow.py'),
+              { action, task, session, ...payload }, { signal: exec.signal }) });
+          if (result.status === 'OPERATION_RECONCILED' && target.manifest_sha256 !== runtime.manifest_sha256
+              && !result.record?.api_review?.unresolved?.length && !result.record?.api_review?.pending)
+            result.next = 'workflow_updates action=upgrade_preview, then native upgrade approval before resuming planning. '
+              + 'Old runtime remains pinned; review affected baselines under the new runtime, preserving all history and usage.';
+          return { ...result, task_runtime: { version: runtime.version, manifest_sha256: runtime.manifest_sha256 },
+            maintenance_runtime: { version: target.version, manifest_sha256: target.manifest_sha256 }, task_runtime_changed: false };
+        }
+      }
       // Checks run in the background; this invocation keeps the selected immutable root.
       await updates.schedule().catch(() => {});
       if (!engines.has(runtime.manifest_sha256)) {

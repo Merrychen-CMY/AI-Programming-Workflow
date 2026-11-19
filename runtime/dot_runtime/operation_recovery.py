@@ -145,7 +145,7 @@ def process_inventory():
     raise ValueError('Independent process inventory is not implemented for this OS')
 
 
-def _windows_process_inventory():
+def _windows_process_inventory(*, metadata_only=False):
     """Use native read-only process APIs; no elevation or process termination."""
     import ctypes
     from ctypes import wintypes as w
@@ -207,6 +207,9 @@ def _windows_process_inventory():
             pid, ppid, name = int(item.th32ProcessID), int(item.th32ParentProcessID), item.szExeFile
             valid = kernel.Process32NextW(snapshot, ctypes.byref(item))
             if pid <= 4: continue
+            if metadata_only:
+                rows.append({'pid': pid, 'ppid': ppid, 'name': name})
+                continue
             observed_session = w.DWORD()
             if not kernel.ProcessIdToSessionId(pid, ctypes.byref(observed_session)):
                 if pid_status(pid) != 'STOPPED': unknown.append(pid)
@@ -245,6 +248,91 @@ def _windows_process_inventory():
     if unknown:
         raise ValueError('Process ownership or command line could not be read for PID(s): ' + ', '.join(map(str, unknown[:20])))
     return rows
+
+
+def process_creation_time(pid):
+    """OS identity evidence for Windows PID reuse; absence proves nothing."""
+    if os.name != 'nt':
+        return None
+    import ctypes
+    from ctypes import wintypes as w
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenProcess.argtypes = (w.DWORD, w.BOOL, w.DWORD)
+    kernel.OpenProcess.restype = w.HANDLE
+    kernel.GetProcessTimes.argtypes = (w.HANDLE, *[ctypes.POINTER(w.FILETIME)] * 4)
+    kernel.GetProcessTimes.restype = w.BOOL
+    kernel.CloseHandle.argtypes = (w.HANDLE,)
+    handle = kernel.OpenProcess(0x1000, False, pid)
+    if not handle: return None
+    try:
+        times = [w.FILETIME() for _ in range(4)]
+        if not kernel.GetProcessTimes(handle, *[ctypes.byref(t) for t in times]): return None
+        return ((times[0].dwHighDateTime << 32) + times[0].dwLowDateTime) / 10_000_000 - 11644473600
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def completed_review_processes(task, settings, state, marker):
+    """Narrow read-only completion recovery; never infer product completion."""
+    if state is not None or not marker or marker.get('name') != 'l1_approve':
+        return None
+    try:
+        from datetime import datetime
+        from . import requirements_review as rr
+        from .upgrades import journal
+        receipt = read_json(task / 'confirmation.json')
+        _, manifest = journal(task, receipt)
+        binding = rr._binding(settings)
+        binding['workflow_manifest'] = manifest
+        approval = rr._require_approved_binding(settings, binding)
+        value = rr._load(task / 'control')
+        number = approval['review_number']
+        if number != len(value['reviews']) or value['state'] != 'REQUIREMENTS_APPROVED':
+            return None
+        review = value['reviews'][number - 1]
+        path = task / 'control/requirements-review/outputs' / str(number) / 'process-record.json'
+        relative = path.relative_to(task / 'control').as_posix()
+        if not any(e['path'] == relative and e['sha256'] == file_hash(path) for e in review['evidence_files']):
+            return None
+        host = marker.get('process') or read_json(task / 'host-process.json')
+        worker = read_json(path)
+        dates = [marker['at'], host['started_at'], review['at'], worker['started_at'],
+                 worker['ended_at'], approval['at'], host['ended_at']]
+        dates = [datetime.fromisoformat(t.replace('Z', '+00:00')) for t in dates]
+        if dates != sorted(dates) or host.get('operation') != 'l1_approve':
+            return None
+        records = [host, worker]
+        if any(r.get('status') != 'EXITED' or type(r.get('pid')) is not int or r['pid'] <= 4 for r in records):
+            return None
+        checks = [{'operation': name, 'record': record, 'status': pid_status(record['pid'])}
+                  for name, record in zip(('host', 'completed_requirements_review'), records)]
+        for check in checks:
+            if check['status'] == 'ACTIVE':
+                created = process_creation_time(check['record']['pid'])
+                ended = datetime.fromisoformat(check['record']['ended_at'].replace('Z', '+00:00')).timestamp()
+                if created is not None and created > ended:
+                    check.update(status='STOPPED', pid_reused=True,
+                                 reason='OS creation time is after the recorded operation ended', created_at=created)
+        if any(c['status'] != 'STOPPED' for c in checks):
+            return {'status': 'ACTIVE' if any(c['status'] == 'ACTIVE' for c in checks) else 'UNKNOWN',
+                    'checks': checks, 'completed_approval': approval}
+        rows = _windows_process_inventory(metadata_only=True) if os.name == 'nt' else process_inventory()
+        descendants = {r['pid'] for r in records}
+        while True:
+            expanded = descendants | {r['pid'] for r in rows if r['ppid'] in descendants}
+            if expanded == descendants: break
+            descendants = expanded
+        reused = {c['record']['pid'] for c in checks if c.get('pid_reused')}
+        matches = [{k: r[k] for k in ('pid', 'ppid', 'name')} for r in rows if r['pid'] in descendants and r['pid'] not in reused]
+        return {'status': 'ACTIVE' if matches else 'REQUIRES_NATIVE_ATTESTATION', 'checks': checks,
+            'completed_approval': approval, 'independent_scan': {'status': 'ACTIVE' if matches else 'NO_RELEVANT_PROCESS',
+                'matches': matches, 'method': 'OS parent-PID tree of the hash-bound completed read-only review',
+                'inspected_count': len(rows)},
+            'limitations': 'No command-line access to unrelated processes is required for this completed read-only review. '
+                'A reparented or detached child cannot be excluded by a parent-PID scan. Native user must verify '
+                'the cited process and side-effect evidence. This does not resolve product operations or API uncertainty.'}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
 
 
 def independent_process_check(task, settings):
@@ -294,6 +382,9 @@ def process_status(task, settings, state, marker, *, preflight_active=None):
     For the same boot, runtime-recorded tree termination and a dead PID are
     both required. Model-supplied PIDs/booleans are deliberately ignored.
     """
+    completed = completed_review_processes(task, settings, state, marker)
+    if completed is not None:
+        return completed
     current_boot = boot_identity()
     checks = []
     activities = [('host', marker)] if marker else []
@@ -489,6 +580,13 @@ def preview(task, receipt, session):
              'action': 'Archive original interruption and state, preserve evidence/usage/completed work, '
                        'clear only these reconciled guards and invalidate approvals. Continue with L2 investigation '
                        'and L1 independent baseline review; never replay or dispatch the interrupted operation.'}
+    from .controller import ROOT
+    value['maintenance_runtime'] = {'version': (ROOT / 'VERSION').read_text().strip(),
+                                    'manifest_sha256': file_hash(ROOT / 'MANIFEST.json')}
+    if processes.get('completed_approval') and not adoption['changed']:
+        value['action'] = ('Archive only reconciled host interruption records. Preserve the completed independent '
+                           'requirements approval and all consumption. Continue with planning; do not rerun the review. '
+                           'The task runtime remains pinned; upgrading still requires its separate native approval.')
     # Wall-clock usage and irrelevant process-count churn are display context,
     # not approval changes. All persisted counters/records remain hash-bound.
     material = {k: v for k, v in value.items() if k != 'usage'}
@@ -561,7 +659,9 @@ def _finish(task, receipt, session):
     return {'status': 'OPERATION_RECONCILED', 'record': entry, 'operation_replayed': False,
             'product_execution_started': False,
             'next': ('l1_review_api and, if required, workflow_review_api_retry; API uncertainty and product execution guard retained'
-                     if pending_api else 'L2 read-only investigation, then L1 independent baseline review before product execution')}
+                     if pending_api else 'dot_plan with exactly the approved requirements; completed review and usage retained'
+                     if entry['processes'].get('completed_approval') and not entry['baseline_adoption']['changed']
+                     else 'L2 read-only investigation, then L1 independent baseline review before product execution')}
 
 
 def dispatch(task, receipt, request):
