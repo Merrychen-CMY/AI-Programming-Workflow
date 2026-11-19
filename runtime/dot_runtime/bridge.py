@@ -5,7 +5,7 @@ import time
 
 from .adapter import CodexAdapter
 from .controller import Controller, ROOT, InitializationIncomplete, atomic_json, digest, file_hash, initialize, read_json, run_lock
-from .delegation import attach_delegation, approve_l1, submit_l1_report, validate_delegation
+from .delegation import ApprovalRejected, attach_delegation, approve_l1, submit_l1_report, validate_delegation
 from .gpt_dot import ResponsesClient, DotAdapter, execute, propose_plan
 from .checks import run_check
 from . import clarifications
@@ -15,6 +15,8 @@ from . import api_recovery
 
 
 TOOLS = {
+    'dot_read_record': ('Read a bounded page of this task record; no replay, writes or API request.',
+                        {'path': 'string', 'offset': 'string'}),
     'l1_review_api': ('Assess an API failure or adjust its bounded wait; ambiguous retries require native approval.',
                      {'proposal_json': 'string', 'l1_session_id': 'string'}),
     'l1_adjust_limits': ('Allocate operating limits within user ceilings; preserve cumulative usage.',
@@ -117,6 +119,10 @@ class Bridge:
     def call(self, name, arguments):
         try:
             return self._call(name, arguments)
+        except ApprovalRejected as exc:
+            with run_lock(self.root):
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                        'reason': str(exc)}
         except api_recovery.ApiReview:
             with run_lock(self.root):
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_API_REVIEW',
@@ -150,6 +156,9 @@ class Bridge:
                 not isinstance(value, str) or not value.strip() for value in arguments.values()):
             raise ValueError('Unknown tool or invalid arguments')
         with run_lock(self.root):
+            if name == 'dot_read_record':
+                from .presentation import read_record
+                return read_record(self.root, arguments['path'], arguments['offset'])
             if (self.root.parent / 'initialization-recovery-pending.json').exists():
                 raise ValueError('INITIALIZATION_RECOVERY_PENDING: finish native recovery before task tools')
             # Pin all settings once. Restarting the server is not a new delegation or budget.
@@ -332,7 +341,8 @@ class Bridge:
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
                         'reason': 'No initialized baseline exists; use dot_plan to correct the draft, then dot_initialize'}
             elif c is None:
-                raise ValueError('Initialize the task first')
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                        'reason': 'Initialize the task first; no worker started'}
             elif not c.state.get('delegation'):
                 raise ValueError('Incomplete bridge initialization; do not dispatch or synthesize approvals')
             elif name == 'l1_approve':
@@ -372,7 +382,8 @@ class Bridge:
                     'requires_revision': False})
             elif name == 'dot_run':
                 if c.state['state'] not in ('EXECUTING', 'VERIFYING'):
-                    raise ValueError('Only approved work can run')
+                    return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
+                            'reason': 'Only approved work can run; no API dispatch or worker started'}
                 if c.state['active_run']:
                     c.stop_with_report('Prior process requires reconciliation; no redispatch')
                 else:

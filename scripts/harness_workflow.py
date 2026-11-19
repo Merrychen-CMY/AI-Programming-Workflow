@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'runtime'))
 from dot_runtime.onboarding import dispatch
+from dot_runtime.presentation import compact
 
 
 def main():
@@ -14,6 +15,8 @@ def main():
     try:
         request = json.loads(sys.stdin.read(1_000_001))
         result = dispatch(request)
+        if request.get('action') in ('status', 'bridge', 'report_confirm'):
+            result = compact(result)
         print(json.dumps({'ok': True, 'result': result}, ensure_ascii=False))
     except (ValueError, OSError, KeyError, TypeError, AttributeError) as exc:
         print(json.dumps({'ok': False, 'error': str(exc)}, ensure_ascii=False))

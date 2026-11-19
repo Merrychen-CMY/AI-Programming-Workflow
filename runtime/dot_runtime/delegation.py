@@ -124,6 +124,10 @@ def attach_delegation(controller, path, raw_input):
         return state
 
 
+class ApprovalRejected(ValueError):
+    """Known pre-dispatch refusal; no worker or approval was started."""
+
+
 def approve_l1(controller, kind, l1_session_id, reviewer):
     """The L1 tool invocation requests approval; a separate read-only reviewer can veto it."""
     from .controller import atomic_json, file_hash, now, read_json, run_lock
@@ -132,12 +136,12 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
         state = controller.state
         value = check_binding(state)
         if kind not in ('requirements', 'plan') or not l1_session_id.strip():
-            raise ValueError('L1 may approve only requirements and plan, with its session identity')
+            raise ApprovalRejected('L1 may approve only requirements and plan, with its session identity')
         wanted = 'REVIEW_PENDING' if kind == 'requirements' else 'PLAN_PENDING'
         if state['state'] != wanted or state['active_run']:
-            raise ValueError('L1 approval requires the matching pending artifact and no unresolved process')
+            raise ApprovalRejected('L1 approval requires the matching pending artifact and no unresolved process')
         if state.get('pending_clarification_revision'):
-            raise ValueError('Revise requirements and plan to incorporate new facts before approval')
+            raise ApprovalRejected('Revise requirements and plan to incorporate new facts before approval')
         if len(state['l1_reviews']) >= value['limits']['l1_reviews']:
             from .resources import check_controller
             check_controller(state, 'l1_reviews', len(state['l1_reviews']))
@@ -174,6 +178,8 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             atomic_json(workspace / 'current-resource-allocation.json', value['limits'])
         record = {'kind': kind, 'baseline': baseline, 'l1_session_id': l1_session_id, 'at': now(), 'status': 'UNKNOWN'}
         state['l1_reviews'].append(record)  # Reserve the attempt BEFORE any external dispatch.
+        from .review_packet import prepare
+        packet = prepare(controller, workspace, original, resource_root, number)
         state['active_run'] = {'role': 'l1_independent_review', 'output': str(output), 'at': now()}
         controller.save()
         prompt = ('Independently review the ' + kind + ' baseline against raw-input.md and delegation.json. '
@@ -194,6 +200,13 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
                   'source is not itself measured evidence. Check the plan reflects the latest relevant facts. '
                   'PASS requires specific source references and a complete reasoning-based review. '
                   'Do not execute project commands, edit files, approve anything or invent user decisions.'
+                  '\nRead source-index.json and sources/ for controller-owned inspection, baseline, API recovery, '
+                  'usage and pinned workflow references. Prefer these originals to L1 paraphrases. '
+                  'sources/usage.json includes THIS reserved review and is a point-in-time snapshot; '
+                  'earlier timestamps/counts are historical, not contradictions merely because time advanced. '
+                  'A historical UNKNOWN with an explicit retry grant is retained history, not automatically an unresolved request. '
+                  'Use sources/api-status.json to distinguish them. Read only relevant standards; C rules do not apply to non-C projects. '
+                  'Existing source records must not be requested again as a charged facts revision. '
                   + '\n' + communication_prompt() + constraints_prompt())
         try:
             result = reviewer.run('review', prompt, workspace, output, timeout)
@@ -201,7 +214,7 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             result = {'status': 'UNKNOWN', 'summary': type(exc).__name__, 'session_id': ''}
         record['result'] = result
         record['status'] = result.get('status', 'ERROR')
-        record['evidence_files'] = [{'path': p.relative_to(controller.run_dir).as_posix(), 'sha256': file_hash(p)}
+        record['evidence_files'] = packet + [{'path': p.relative_to(controller.run_dir).as_posix(), 'sha256': file_hash(p)}
                                     for p in sorted(output.rglob('*')) if p.is_file() and not p.is_symlink()]
         seen = {r.get('result', {}).get('session_id') for r in state['l1_reviews'][:-1]}
         seen |= {r['result'].get('session_id') for r in state['sessions']}
@@ -211,6 +224,9 @@ def approve_l1(controller, kind, l1_session_id, reviewer):
             return state
         state['active_run'] = None
         controller.save()
+        if any(file_hash(controller.run_dir / entry['path']) != entry['sha256'] for entry in packet):
+            controller.transition('DECISION_PENDING', 'Review source packet changed; approval refused')
+            return state
         if (result.get('status') != 'PASS' or not identity or identity == l1_session_id or identity in seen
                 or not result.get('evidence') or result.get('findings') or not record['evidence_files']):
             controller.transition('DECISION_PENDING', 'Independent L1 review rejected or lacks evidence: ' + result.get('summary', ''))

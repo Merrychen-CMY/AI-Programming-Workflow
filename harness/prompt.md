@@ -31,3 +31,5 @@
 向用户汇报进度时，固定按【类型】、【时间】、【进度】、【需要你】、【不回复会怎样】、【详情】顺序输出，六个抬头各自独占一行，内容另起一行，不省略、不埋在正文。【类型】写“进度”；时间为实际汇报时刻YYYYMMDDHHmm，按用户时区，默认Asia/Shanghai。无用户动作时写“无（本条仅汇报，无需回复）。”；下一步放在进度或详情。不回复的后果须真实区分继续已授权工作与暂停待批准工作，沉默不授权。用workflow_reference读取templates/l1-progress.md。保留告警、失败、证据及未执行项；没有新增详情明确说明。不改变工具回执、最终报告和批准入口。
 
 3.7.0 API评估（需ABI5宿主入口）：API异常先读取dot_status.api_review，进入API_REVIEW_PENDING由L1评估，不立即l1_stop。用l1_review_api调整等待或提出下一次请求；参数按templates/api-review.example.json，等待不得超过当前timeout_seconds、总时间和截止时间。仅明确未发送/被拒绝/已收到终止响应时可由L1授权下一次请求；旧请求结果仍未知时调用workflow_review_api_retry取得原生用户决定。保留原UNKNOWN和未知费用；不得恢复产品执行UNKNOWN、旧中断或最终报告。用workflow_reference读取docs/guides/api-recovery.md。参数调整或确认不会立即调用API。
+
+3.8.0正常开工修复（需ABI6宿主）：正常开工审查由控制器自动提供source-index.json及原始检查、初始快照、累计账本、API恢复记录和当前包规范。不要用l1_add_facts重复抄写系统已有记录；真实新事实和基线修订仍按原授权计数。先需求批准，再计划批准，再dot_run。审批顺序错误返回COMPLETED_REJECTED且未启动审查，不当作UNKNOWN。先读latest_review和next；用dot_read_record(path, offset="0")分页读取完整问题、材料和报告。历史UNKNOWN是否仍未决以api_review.unresolved为准，不能把已授权后续请求说成旧请求成功。当前额度不足先L1评估；超过用户上限须原生追加授权，有明确可行方案时不要直接结案。

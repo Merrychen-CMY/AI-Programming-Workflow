@@ -11,6 +11,7 @@ const exists = async path => { try { await readFile(path); return true; } catch(
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const save = (path, value) => writeFile(path, JSON.stringify(value, null, 2), { mode: 0o600 });
 const modelTools = {
+  dot_read_record: ['path', 'offset'],
   l1_review_api: ['proposal_json'],
   l1_adjust_limits: ['proposal_json'], l1_request_authorization: ['proposal_json'],
   dot_plan: ['requirements'], dot_initialize: [], l1_approve: ['kind'], dot_run: [], dot_status: [],
@@ -195,22 +196,22 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
         if (Object.keys(args).length) throw new Error('Report review accepts no model arguments');
         const preview = await call(settings, 'report_preview');
         await ask(exec, `report-${preview.sha256.slice(0,16)}`,
-          `最终报告（${preview.sha256}）\n${JSON.stringify(preview.report,null,2)}\n\n确认失败/未知仅表示已审核现状，不允许继续重试。确认成功也不执行发布、合并或刷写。`, '已审核此报告');
+          `最终报告摘要（完整报告摘要校验值：${preview.sha256}）\n${JSON.stringify(preview.report,null,2)}\n完整报告：${preview.full_report_path || '见任务记录'}\n可请L1用dot_read_record分页展示完整报告后再确认；此处摘要不代替完整证据。\n\n确认失败/未知仅表示已审核现状，不允许继续重试。确认成功也不执行发布、合并或刷写。`, '已审核此报告');
         return await call(settings, 'report_confirm', { sha256: preview.sha256 });
       }
       if (!Object.hasOwn(modelTools, name) || JSON.stringify(Object.keys(args).sort()) !== JSON.stringify([...modelTools[name]].sort()))
         throw new Error('Unknown tool or invalid model arguments');
       const wasInterrupted = await exists(`${task}/interrupted.json`);
-      if (wasInterrupted && !['dot_status','l1_stop','l1_submit_report'].includes(name))
+      if (wasInterrupted && !['dot_status','dot_read_record','l1_stop','l1_submit_report'].includes(name))
         throw new Error('UNKNOWN: 旧操作中断，禁止自动重放。核对旧进程后提交报告；不能新建会话静默重试。');
       let key;
-      if (!['dot_status','l1_stop','l1_submit_report'].includes(name)) {
+      if (!['dot_status','dot_read_record','l1_stop','l1_submit_report'].includes(name)) {
         const active = await configured();
         if (JSON.stringify(active.settings) !== JSON.stringify(settings)) throw new Error('本任务模型及执行器已固定；不能中途更换配置');
         if (['dot_plan','dot_run'].includes(name)) key = active.key;
       }
       // Persist in-flight before launch so host crashes also block replays on restart.
-      const mutating = name !== 'dot_status';
+      const mutating = !['dot_status', 'dot_read_record'].includes(name);
       if (mutating && !wasInterrupted) await save(`${task}/interrupted.json`, { name, at: new Date().toISOString(), status: 'UNKNOWN' });
       try {
         const result = await call(settings, 'bridge', { name, arguments: args }, key);
@@ -236,6 +237,7 @@ export const toolFields = {
   ...Object.fromEntries(Object.entries(modelTools).map(([name,fields])=>[name,Object.fromEntries(fields.map(f=>[f,f]))])),
 };
 export const descriptions = {
+  dot_read_record: 'Read a task record by control-relative path and decimal character offset (start with 0). Follow next_offset for full reviews/reports. No replay or API call.',
   l1_review_api: 'Assess API-only failures or set a bounded wait. Read templates/api-review.example.json. Never clears UNKNOWN or reopens final reports.',
   workflow_review_api_retry: 'Show exact API uncertainty, possible duplicate charges and L1 assessment; obtain a native user decision before a replacement request. No model-supplied approval.',
   l1_adjust_limits: 'L1 allocates bounded resources with evidence, remaining work, benefit and strategy; no user impersonation or counter reset.',

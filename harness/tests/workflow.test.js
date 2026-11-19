@@ -88,6 +88,26 @@ test('completed budget review clears only the current in-flight marker and can r
 test('no native startup approval means no bridge calls',async t=>{
   const f=await fixture(t);await assert.rejects(f.flow.invoke('dot_run',{},f.exec),/真实用户开工确认/);assert.equal(f.calls.length,0);
 });
+
+test('read-only record access preserves old interruption and never resolves API credentials',async t=>{
+  const f=await fixture(t);
+  await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  await writeFile(resolve(f.task,'interrupted.json'),'{}');
+  f.ctx.credentials.resolve=async()=>{throw new Error('Must not fetch a key for record reading');};
+  f.controls.bridgeReply={path:'run/state.json',content:'{}',next_offset:null};
+  const result=await f.flow.invoke('dot_read_record',{path:'run/state.json',offset:'0'},f.exec);
+  assert.equal(result.content,'{}');assert.equal(f.calls[0].options.key,undefined);
+  assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),'{}');
+});
+
+test('known approval refusal clears its current marker and allows the next correct request',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  f.controls.bridgeReply={accepted:false,operation_status:'COMPLETED_REJECTED',state:'REVIEW_PENDING'};
+  await f.flow.invoke('l1_approve',{kind:'plan'},f.exec);
+  await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+  f.controls.bridgeReply={state:'PLAN_PENDING'};
+  assert.equal((await f.flow.invoke('l1_approve',{kind:'requirements'},f.exec)).state,'PLAN_PENDING');
+});
 test('environment check waits for model/key setup',async t=>{
   const f=await fixture(t);await saveConfig(f.directory,{...settings,model:'',probe:null});
   await assert.rejects(f.flow.invoke('workflow_check_environment',{},f.exec),/配置页/);

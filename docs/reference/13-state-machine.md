@@ -53,3 +53,7 @@ API额度在诊断前耗尽保留pending_triage，恢复先分析失败；诊断
 ## API请求评估状态（3.7.0）
 
 结构化API失败 → API_REVIEW_PENDING（L1诊断、资源评估）→ 已明确未发送/拒绝/终止响应时由L1批准下一次请求；结果不明 → API_AUTHORIZATION_PENDING（原生用户决定）→ 允许下一次有预算的新请求或保持暂停。底层产品阶段与pending_triage保留，未决时不派工。旧请求的FAILED_OR_UNKNOWN及未知用量不改写；无可行方案再提交完整最终报告。宿主进程中断仍是原UNKNOWN，不被此状态覆盖。见[详细规则](../guides/api-recovery.md)。
+
+## 正常审批前置拒绝（3.8.0）
+
+REVIEW_PENDING只接受需求审批；PLAN_PENDING只接受计划审批。DECISION_PENDING须先修订再重审。顺序错误不派审查员、不调用DOT、不改变批准或消耗，返回COMPLETED_REJECTED并保留原阶段；宿主移除本次已完成调用的占位，不删除旧中断。最新审查问题及next置于简短返回中，完整记录由dot_read_record分页读取。

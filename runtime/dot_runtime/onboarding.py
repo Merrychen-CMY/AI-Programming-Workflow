@@ -241,12 +241,15 @@ def dispatch(request):
             return bridge.call('dot_status', {})
         if action == 'report_preview':
             status = bridge.call('dot_status', {})
+            from .presentation import compact
             if status.get('state') != 'REPORT_PENDING' or not (status.get('report') or {}).get('l1_submitted'):
                 preflight = status.get('preflight_report')
                 if preflight:
-                    return {'preflight': True, 'report': preflight, 'sha256': digest(preflight)}
+                    return {'preflight': True, 'report': compact({'state': 'REPORT_PENDING', 'preflight_report': preflight})['preflight_report'],
+                            'full_report_path': str(bridge.root / 'preflight-report.json'), 'sha256': digest(preflight)}
                 raise ValueError('L1 must submit the final report first')
-            return {'preflight': False, 'report': status['final_report'], 'sha256': status['report']['sha256']}
+            return {'preflight': False, 'report': compact(status)['final_report'],
+                    'full_report_path': str(bridge.run_dir / 'final-report.json'), 'sha256': status['report']['sha256']}
         if action == 'report_confirm':
             preflight = bridge.root / 'preflight-report.json'
             if not (bridge.run_dir / 'state.json').exists() and preflight.exists():
@@ -268,7 +271,7 @@ def dispatch(request):
             if 'l1_session_id' in arguments:
                 raise ValueError('L1 session identity comes from the host, not model arguments')
             arguments = {**arguments, 'l1_session_id': request['session']}
-        if name not in ('dot_status', 'l1_stop', 'l1_submit_report'):
+        if name not in ('dot_status', 'dot_read_record', 'l1_stop', 'l1_submit_report'):
             if digest(read_json(task / 'delegation.json')) != receipt['delegation_sha256']:
                 raise ValueError('Confirmed delegation changed')
             if (name not in ('l1_adjust_limits', 'l1_request_authorization', 'l1_review_api')
