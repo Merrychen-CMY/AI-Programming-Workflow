@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "scope": "structured_api_failures_only",
+  "review_state": "API_REVIEW_PENDING",
+  "native_review_state": "API_AUTHORIZATION_PENDING",
+  "default_wait_seconds": 120,
+  "wait_ceiling": "current_limits.timeout_seconds_and_remaining_total_time",
+  "l1_tool": "l1_review_api",
+  "native_tool": "workflow_review_api_retry",
+  "safe_l1_retry_outcomes": [
+    "NOT_SENT",
+    "REJECTED",
+    "RESPONSE_RECEIVED"
+  ],
+  "ambiguous_retry_requires_native_approval": true,
+  "automatic_retry": false,
+  "clear_old_unknown": false,
+  "reset_usage": false,
+  "reopen_final_report": false,
+  "legacy_interruption_recovery": false,
+  "live_response_retrieval": false,
+  "guide": "docs/guides/api-recovery.md"
+}

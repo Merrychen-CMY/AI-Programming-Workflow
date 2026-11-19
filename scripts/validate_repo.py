@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -73,8 +73,24 @@ def validate_task_upgrade_policy(value):
             if type(value[k]) is not type(wanted) or value[k] != wanted]
 
 
+def validate_api_recovery_policy(value):
+    expected = {'schema_version': 1, 'scope': 'structured_api_failures_only',
+        'review_state': 'API_REVIEW_PENDING', 'native_review_state': 'API_AUTHORIZATION_PENDING',
+        'default_wait_seconds': 120, 'wait_ceiling': 'current_limits.timeout_seconds_and_remaining_total_time',
+        'l1_tool': 'l1_review_api', 'native_tool': 'workflow_review_api_retry',
+        'safe_l1_retry_outcomes': ['NOT_SENT', 'REJECTED', 'RESPONSE_RECEIVED'],
+        'ambiguous_retry_requires_native_approval': True, 'automatic_retry': False,
+        'clear_old_unknown': False, 'reset_usage': False, 'reopen_final_report': False,
+        'legacy_interruption_recovery': False, 'live_response_retrieval': False,
+        'guide': 'docs/guides/api-recovery.md'}
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['API recovery policy fields differ from implemented scope']
+    return ['API recovery boundary drift: ' + k for k, v in expected.items()
+            if type(value[k]) is not type(v) or value[k] != v]
+
+
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0'],
                 'scope': 'uncommitted_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
@@ -91,7 +107,7 @@ def validate_initialization_recovery_policy(value):
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 4,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 5,
         'default_enabled': True, 'check_interval_seconds': 21600,
         'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
         'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
@@ -560,7 +576,8 @@ def validate_repository(root):
     errors.extend(validate_update_policy(documents.get('policy/updates.json')))
     errors.extend(validate_task_upgrade_policy(documents.get('policy/task-upgrades.json')))
     errors.extend(validate_initialization_recovery_policy(documents.get('policy/initialization-recovery.json')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 4:
+    errors.extend(validate_api_recovery_policy(documents.get('policy/api-recovery.json')))
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 5:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
         if documents[key].get('update_policy') != 'policy/updates.json':

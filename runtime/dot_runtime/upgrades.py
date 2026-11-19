@@ -64,7 +64,8 @@ def _quiescent(task, receipt, session):
     if (task / 'interrupted.json').exists() or (task / 'control/preflight-report.json').exists():
         raise ValueError('Upgrade cannot clear UNKNOWN or reopen a final report')
     ledger = task / 'control/api/ledger.json'
-    if ledger.exists() and any(a['status'] != 'COMPLETED' for a in read_json(ledger)['attempts']):
+    from . import api_recovery
+    if api_recovery.unresolved(task / 'control') or api_recovery.load(task / 'control')['pending']:
         raise ValueError('Unresolved API attempt must be reconciled before upgrade')
     state = read_json(task / STATE) if (task / STATE).exists() else None
     if state:

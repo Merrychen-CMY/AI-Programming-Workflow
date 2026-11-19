@@ -613,6 +613,7 @@ class Controller:
         return text + '\nCURRENT ASSIGNMENT:\n' + instruction
 
     def worker(self, role, instruction, workspace):
+        from .api_recovery import ApiReview
         if self.adapter is None:
             raise ValueError('A Codex adapter is required')
         timeout = self.operation_timeout(resources.controller_limits(self.state)['timeout_seconds'])
@@ -625,6 +626,14 @@ class Controller:
                                       timeout)
         except resources.BudgetReview:
             self.state['active_run'] = None
+            self.save()
+            raise
+        except ApiReview:
+            # Only the GPT triage adapter can establish an API-only pause. Product workers stay UNKNOWN.
+            if role != 'triage':
+                raise
+            self.state['active_run'] = None
+            self.state['history'].append({'action': 'api_review_pending', 'role': role, 'at': now()})
             self.save()
             raise
         except Exception as exc:
@@ -666,6 +675,8 @@ class Controller:
         if self.state.get('clarification_root'):
             from .initialization_recovery import records_for_control
             record['initialization_recoveries'] = records_for_control(self.state['clarification_root'])
+            from .api_recovery import report as api_report
+            record['api_review'] = api_report(self.state['clarification_root'])
         if self.state.get('clarification_root'):
             from .clarifications import records
             from .planning import history
@@ -690,7 +701,10 @@ class Controller:
             self.state = read_json(self.state_path)
             if self.state['state'] not in ('REVIEW_PENDING', 'PLAN_PENDING', 'DECISION_PENDING', 'EXECUTING', 'VERIFYING'):
                 raise ValueError('No active L1/DOT stage to stop')
-            self.report('UNKNOWN' if self.state['active_run'] else 'FAILED', reason)
+            from .api_recovery import unresolved
+            root = self.state.get('clarification_root')
+            api_unknown = bool(root and unresolved(root))
+            self.report('UNKNOWN' if self.state['active_run'] or api_unknown else 'FAILED', reason)
             return self.state
 
     def triage(self, failure, workspace):

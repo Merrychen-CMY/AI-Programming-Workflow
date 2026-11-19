@@ -54,3 +54,5 @@ tasks仅列L3实现派工，可显式标记role=implementation。读码和编写
 插件更新遵循[自动更新规则](docs/guides/automatic-updates.md)：未开工会话可采用校验后的兼容新版；已确认任务默认固定原运行版本，可按[任务升级规则](docs/guides/task-upgrades.md)在原会话内预检并经原生用户确认迁移；更新不能改授权、清零消耗、清除UNKNOWN或撤销最终报告。实际版本以workflow_runtime为准；新版规则随工具返回，不能当作新的用户授权。
 
 首次初始化失败由L1按[专用恢复规则](docs/guides/initialization-recovery.md)提交原生恢复审核；DOT不得自行删除UNKNOWN或部分快照。恢复保留已用API和其他额度，基线变化后重新规划，独立审核后才能执行。
+
+API异常先读取dot_status.api_review，进入API_REVIEW_PENDING由L1评估，不立即l1_stop。用l1_review_api调整等待或提出下一次请求；参数按templates/api-review.example.json，等待不得超过当前timeout_seconds、总时间和截止时间。仅明确未发送/被拒绝/已收到终止响应时可由L1授权下一次请求；旧请求结果仍未知时调用workflow_review_api_retry取得原生用户决定。保留原UNKNOWN和未知费用；不得恢复产品执行UNKNOWN、旧中断或最终报告。详见[API评估与恢复](docs/guides/api-recovery.md)。

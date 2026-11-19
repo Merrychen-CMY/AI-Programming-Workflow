@@ -4,9 +4,12 @@ No approval or arbitrary shell tool is exposed to GPT. API attempts are reserved
 on disk before transport, including failures. No automatic HTTP retry.
 """
 import json
+import http.client
 from datetime import datetime
 import os
 import re
+import socket
+import ssl
 from pathlib import Path
 import time
 import urllib.error
@@ -21,6 +24,7 @@ from .communication import prompt as communication_prompt
 from .clarifications import PlanningNeedsInfo, STAGES
 from .planning import PlanRejected, validate_proposal
 from . import resources
+from . import api_recovery
 
 
 def function(name, properties):
@@ -32,7 +36,7 @@ def function(name, properties):
 def transport(payload, timeout):
     key = os.environ.get('OPENAI_API_KEY', '')
     if not key:
-        raise ValueError('Configure OPENAI_API_KEY in the local bridge process; never in chat or repository')
+        raise api_recovery.ApiReview({'version': 1, 'code': 'API_KEY_MISSING', 'outcome': 'NOT_SENT'})
     request = urllib.request.Request('https://api.openai.com/v1/responses',
         data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
         headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'}, method='POST')
@@ -42,11 +46,45 @@ def transport(payload, timeout):
             return None
     try:
         with urllib.request.build_opener(NoRedirect()).open(request, timeout=timeout) as response:
-            return json.loads(response.read(8 * 1024 * 1024).decode('utf-8'))
+            body = response.read(8 * 1024 * 1024 + 1)
+            if len(body) > 8 * 1024 * 1024:
+                raise api_recovery.ApiReview({'version': 1, 'code': 'API_RESPONSE_SIZE', 'outcome': 'UNKNOWN'})
+            try:
+                value = json.loads(body.decode('utf-8'))
+            except (ValueError, UnicodeError):
+                raise api_recovery.ApiReview({'version': 1, 'code': 'API_RESPONSE_FORMAT', 'outcome': 'UNKNOWN'}) from None
+            return value
     except urllib.error.HTTPError as exc:
-        raise ValueError('GPT API HTTP ' + str(exc.code) + '; attempt counted, no automatic retry') from None
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        raise ValueError('GPT API transport/response failed; attempt counted, no automatic retry') from None
+        code = {401: 'API_AUTH', 403: 'API_PERMISSION', 429: 'API_RATE_OR_QUOTA'}.get(exc.code, 'API_HTTP')
+        diagnostic = {'version': 1, 'code': code, 'http_status': exc.code,
+                      'outcome': 'REJECTED' if exc.code in (400, 401, 403, 404, 413, 422, 429) else 'UNKNOWN'}
+        # Only allow known classifications. Raw provider/proxy bodies and exception strings can contain secrets.
+        try:
+            error_code = json.loads(exc.read(65536)).get('error', {}).get('code')
+            if error_code in ('insufficient_quota', 'billing_hard_limit_reached'):
+                diagnostic['code'] = 'API_QUOTA'
+        except (ValueError, OSError, AttributeError, TypeError):
+            pass
+        request_id = exc.headers.get('x-request-id', '') if exc.headers else ''
+        if re.fullmatch(r'req_[A-Za-z0-9_-]{1,180}', request_id):
+            diagnostic['request_id'] = request_id
+        exc.close()
+        raise api_recovery.ApiReview(diagnostic) from None
+    except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException) as exc:
+        reason = getattr(exc, 'reason', exc)
+        code, outcome = 'API_CONNECTION', 'UNKNOWN'
+        if isinstance(reason, TimeoutError):
+            code = 'API_TIMEOUT'
+        elif isinstance(reason, socket.gaierror):
+            code, outcome = 'API_DNS', 'NOT_SENT'
+        elif isinstance(reason, ConnectionRefusedError):
+            code, outcome = 'API_CONNECT_REFUSED', 'NOT_SENT'
+        elif isinstance(reason, ssl.SSLCertVerificationError):
+            code, outcome = 'API_TLS_CERTIFICATE', 'NOT_SENT'
+        elif isinstance(reason, ssl.SSLError):
+            code = 'API_TLS'
+        raise api_recovery.ApiReview({'version': 1, 'code': code, 'outcome': outcome,
+                                     'exception_type': type(reason).__name__}) from None
 
 
 class ResponsesClient:
@@ -72,8 +110,10 @@ class ResponsesClient:
             'started_at': time.time(), 'attempts': []}
         if ledger['delegation_sha256'] != digest(self.delegation) or ledger['model'] != self.model:
             raise ValueError('Cannot change model/delegation or reset API accounting in an existing session')
-        if any(attempt['status'] != 'COMPLETED' for attempt in ledger['attempts']):
+        if api_recovery.unresolved(self.root.parent, ledger):
             raise ValueError('Prior API attempt is unresolved; reconcile before any new request')
+        if api_recovery.load(self.root.parent)['pending']:
+            raise ValueError('A native API decision remains pending')
         limits = operating['limits']
         elapsed = time.time() - ledger['started_at']
         if adaptive:
@@ -95,12 +135,25 @@ class ResponsesClient:
         try:
             remaining = min(limits['wall_time_seconds'] - elapsed,
                             datetime.fromisoformat(operating['expires_at']).timestamp() - time.time())
-            response = self.send(payload, min(120, max(0.001, remaining)))
+            configured_wait = api_recovery.load(self.root.parent)['timeout_seconds']
+            wait = min(configured_wait, limits['timeout_seconds'], max(0.001, remaining))
+            item['timeout_seconds'] = wait
+            atomic_json(ledger_path, ledger)
+            response = self.send(payload, wait)
             atomic_json(self.root / (item['id'] + '-response.json'), response)
-            if response.get('status') != 'completed' or not response.get('id') or not isinstance(response.get('output'), list):
-                raise ValueError('GPT response incomplete/refused or missing identity/output')
+            if isinstance(response, dict):
+                item.update(response_id=response.get('id'), usage=response.get('usage'))
+            if (not isinstance(response, dict) or response.get('status') != 'completed'
+                    or not response.get('id') or not isinstance(response.get('output'), list)):
+                raise api_recovery.ApiReview({'version': 1, 'code': 'API_RESPONSE_INCOMPLETE',
+                    'outcome': 'RESPONSE_RECEIVED' if isinstance(response, dict) and response.get('id')
+                    and response.get('status') in ('failed', 'incomplete', 'cancelled') else 'UNKNOWN'})
             item.update(status='COMPLETED', response_id=response['id'], usage=response.get('usage'))
             return response
+        except api_recovery.ApiReview as exc:
+            item.update(status='FAILED_OR_UNKNOWN', diagnostic=exc.diagnostic,
+                        finished_at=time.time(), elapsed_seconds=round(time.time() - item['started_at'], 3))
+            raise
         except Exception:
             item['status'] = 'FAILED_OR_UNKNOWN'
             raise

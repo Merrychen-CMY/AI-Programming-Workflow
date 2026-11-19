@@ -11,9 +11,12 @@ from .checks import run_check
 from . import clarifications
 from . import planning
 from . import resources
+from . import api_recovery
 
 
 TOOLS = {
+    'l1_review_api': ('Assess an API failure or adjust its bounded wait; ambiguous retries require native approval.',
+                     {'proposal_json': 'string', 'l1_session_id': 'string'}),
     'l1_adjust_limits': ('Allocate operating limits within user ceilings; preserve cumulative usage.',
                          {'proposal_json': 'string', 'l1_session_id': 'string'}),
     'l1_request_authorization': ('Prepare an exact authorization amendment for native human review. Never approves it.',
@@ -80,6 +83,12 @@ class Bridge:
                     result['runtime_state'] = result['state']
                     result['state'] = 'AUTHORIZATION_PENDING' if governance['pending_authorization'] else 'BUDGET_REVIEW_PENDING'
                     result['next_owner'] = 'user' if governance['pending_authorization'] else 'L1'
+        api = api_recovery.report(self.root)
+        result['api_review'] = api
+        if api['state'] != 'READY' and not result.get('report') and not result.get('preflight_report'):
+            result.setdefault('runtime_state', result['state'])
+            result['state'] = api['state']
+            result['next_owner'] = 'user' if api['pending'] else 'L1'
         return result
 
     def _status(self):
@@ -108,6 +117,11 @@ class Bridge:
     def call(self, name, arguments):
         try:
             return self._call(name, arguments)
+        except api_recovery.ApiReview:
+            with run_lock(self.root):
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_API_REVIEW',
+                        'next': 'L1 inspects API diagnostics, remaining work and budgets, then l1_review_api; '
+                                'do not submit a final failure merely because a request timed out'}
         except resources.BudgetReview as exc:
             with run_lock(self.root):
                 original = read_json(self.settings['delegation'])
@@ -123,6 +137,9 @@ class Bridge:
         record['runtime_upgrades'] = records_for_control(self.root)
         from .initialization_recovery import records_for_control as recovery_records
         record['initialization_recoveries'] = recovery_records(self.root)
+        record['api_review'] = api_recovery.report(self.root)
+        if record['api_review']['unresolved']:
+            record['outcome'] = 'UNKNOWN'
         if resources.enabled(original, self.root):
             record['resource_governance'] = resources.report(self.root, original)
         atomic_json(self.root / 'preflight-report.json', record)
@@ -158,6 +175,13 @@ class Bridge:
                 raise ValueError('Preflight has ended with a final failure report; no automatic resumption')
             original = read_json(self.settings['delegation'])
             adaptive = resources.enabled(original, self.root)
+            if name == 'l1_review_api':
+                try:
+                    result = api_recovery.review(self.root, original, json.loads(arguments['proposal_json']),
+                                                 arguments['l1_session_id'], self.project)
+                except (ValueError, TypeError, KeyError) as exc:
+                    return {**self.status(), 'accepted': False, 'reason': str(exc)}
+                return {**self.status(), **result}
             if name in ('l1_adjust_limits', 'l1_request_authorization'):
                 if c and (c.state.get('active_run') or c.state.get('report')):
                     return {**self.status(), 'accepted': False, 'reason': 'Unknown operation or final report requires a separate verified recovery; cannot rewrite it'}
@@ -168,6 +192,9 @@ class Bridge:
                 except (ValueError, TypeError, KeyError) as exc:
                     return {**self.status(), 'accepted': False, 'reason': str(exc)}
                 return {**self.status(), 'accepted': True, 'resource_result': result}
+            if api_recovery.unresolved(self.root) or api_recovery.load(self.root)['pending']:
+                return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_API_REVIEW',
+                        'reason': 'Review the recorded API request first; do not replay, approve or initialize while unresolved'}
             if adaptive:
                 journal = resources.read(self.root, original)
                 if journal['pause'] or journal['pending']:
@@ -201,8 +228,7 @@ class Bridge:
                     if c and (c.state['state'] not in ('PLAN_PENDING', 'DECISION_PENDING')
                               or c.state['active_run'] or c.state.get('report')):
                         raise ValueError('Facts require a paused planning decision with no unresolved process or final report')
-                    ledger_path = self.root / 'api/ledger.json'
-                    if ledger_path.exists() and any(a['status'] != 'COMPLETED' for a in read_json(ledger_path)['attempts']):
+                    if api_recovery.unresolved(self.root):
                         raise ValueError('Unresolved API attempt: reconcile before adding facts')
                 except (ValueError, TypeError) as exc:
                     return {**self.status(), 'accepted': False, 'reason': str(exc)}

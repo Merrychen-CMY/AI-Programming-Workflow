@@ -34,6 +34,7 @@ async function fixture(t, answer='approve') {
     if(request.action==='confirm')await writeFile(resolve(task,'confirmation.json'),JSON.stringify({settings}));
     if(request.action==='report_preview')return{sha256:'b'.repeat(64),report:{outcome:'FAILED',evidence:['original']}};
     if(request.action==='authorization_preview')return{sha256:'c'.repeat(64),proposal:{changes:{limits:{api_calls:20}},reason:'Remaining diagnosed work'}};
+    if(request.action==='api_retry_preview')return{sha256:'d'.repeat(64),attempt_id:'fixture-request',diagnostic:{code:'API_TIMEOUT',outcome:'UNKNOWN'},proposal:{timeout_seconds:300,reason:'Long planning request'},usage:{api_calls:3}};
     if(request.action==='bridge' && controls.bridgeError)throw new Error(controls.bridgeError);
     if(request.action==='bridge' && controls.bridgeReply)return controls.bridgeReply;
     return {state:request.action==='confirm'?'START_CONFIRMED':'FIXTURE'};
@@ -177,6 +178,33 @@ test('unknown transport failure still blocks facts and repeated planning',async 
   await assert.rejects(f.flow.invoke('l1_add_facts',{facts_json:'{}'},f.exec),/UNKNOWN/);
   await assert.rejects(f.flow.invoke('dot_plan',{requirements:'new requirements'},f.exec),/UNKNOWN/);
   assert.equal(f.calls.length,count);
+});
+
+test('structured API review clears current host marker without claiming request success',async t=>{
+  const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  f.controls.bridgeReply={state:'API_REVIEW_PENDING',accepted:false,operation_status:'COMPLETED_API_REVIEW'};
+  const result=await f.flow.invoke('dot_plan',{requirements:'fixture'},f.exec);
+  assert.equal(result.state,'API_REVIEW_PENDING');
+  await assert.rejects(readFile(resolve(f.task,'interrupted.json')),/ENOENT/);
+  await f.flow.invoke('l1_review_api',{proposal_json:'{"action":"configure"}'},f.exec);
+  assert.equal(f.calls.at(-1).options.key,undefined);
+  assert.equal(f.questions.length,0);
+});
+
+for(const answer of ['approve','decline','skip'])test(`API retry needs exact native decision: ${answer}`,async t=>{
+  const f=await fixture(t,answer);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
+  if(answer==='skip') {
+    await assert.rejects(f.flow.invoke('workflow_review_api_retry',{},f.exec),/未取得明确决定/);
+    assert.equal(f.calls.at(-1).request.action,'api_retry_preview');
+  } else {
+    await f.flow.invoke('workflow_review_api_retry',{},f.exec);
+    assert.equal(f.calls.at(-1).request.action,'api_retry_decide');
+    assert.equal(f.calls.at(-1).request.approved,answer==='approve');
+    assert.equal(f.calls.at(-1).request.sha256,'d'.repeat(64));
+    assert.equal(f.calls.at(-1).options.key,undefined);
+  }
+  assert.match(f.questions[0].questions[0].question,/重复产生API费用/);
+  await assert.rejects(f.flow.invoke('workflow_review_api_retry',{approved:'true'},f.exec),/no model arguments/);
 });
 test('known plan rejection clears only this call marker and permits correction',async t=>{
   const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));

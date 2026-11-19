@@ -27,3 +27,5 @@
 插件自动更新只改变未开工会话后续选用的兼容运行版本；已确认任务默认由MANIFEST摘要固定代码和规则；可按[任务升级规则](guides/task-upgrades.md)预检并经原生用户确认迁移。迁移保留原授权、历史及已完成任务，失效旧审批/候选并重新审核验证，不能清零消耗或解除UNKNOWN/终态。详见[更新规则](guides/automatic-updates.md)。
 
 初始化的专用恢复见[初始化恢复规则](guides/initialization-recovery.md)：仅处理未提交运行状态的本地初始化，准确原生批准后归档部分文件与中断标记；允许明确接受新基线，随后重新规划和独立审核。原确认及累计消耗保留，产品UNKNOWN和终态不得借此解锁。
+
+API请求异常采用[API评估与恢复](guides/api-recovery.md)：先L1评估，必要时原生确认下一次请求；原UNKNOWN和消耗不改写，终态及产品执行UNKNOWN不恢复。

@@ -195,6 +195,20 @@ def dispatch(request):
         if receipt['bridge_sha256'] != digest(settings) or receipt['draft_sha256'] != digest(read_json(task / 'draft.json')):
             raise ValueError('Confirmed configuration or draft changed')
         bridge = Bridge(settings)
+        if action in ('api_retry_preview', 'api_retry_decide'):
+            from . import api_recovery
+            with run_lock(bridge.root):
+                original = read_json(settings['delegation'])
+                if digest(original) != receipt['delegation_sha256'] or (task / 'interrupted.json').exists():
+                    raise ValueError('API review cannot rewrite the delegation or clear an interrupted host operation')
+                api_recovery.check_task(bridge.root)
+                pending = api_recovery.load(bridge.root)['pending']
+                if action == 'api_retry_preview':
+                    if not pending:
+                        raise ValueError('No pending API retry decision')
+                    return pending
+                return api_recovery.decide(bridge.root, original, bridge.project,
+                    request['sha256'], request['approved'], request['session'])
         if action in ('authorization_preview', 'authorization_decide'):
             with run_lock(bridge.root):
                 original = read_json(settings['delegation'])
@@ -250,14 +264,14 @@ def dispatch(request):
         name, arguments = request['name'], request['arguments']
         from .initialization_recovery import effective_baseline
         current_baseline = effective_baseline(task, receipt)
-        if name in ('l1_approve', 'l1_submit_report', 'l1_add_facts', 'l1_adjust_limits', 'l1_request_authorization'):
+        if name in ('l1_approve', 'l1_submit_report', 'l1_add_facts', 'l1_adjust_limits', 'l1_request_authorization', 'l1_review_api'):
             if 'l1_session_id' in arguments:
                 raise ValueError('L1 session identity comes from the host, not model arguments')
             arguments = {**arguments, 'l1_session_id': request['session']}
         if name not in ('dot_status', 'l1_stop', 'l1_submit_report'):
             if digest(read_json(task / 'delegation.json')) != receipt['delegation_sha256']:
                 raise ValueError('Confirmed delegation changed')
-            if (name not in ('l1_adjust_limits', 'l1_request_authorization')
+            if (name not in ('l1_adjust_limits', 'l1_request_authorization', 'l1_review_api')
                     and not (bridge.run_dir / 'state.json').exists() and fingerprint(settings['project']) != current_baseline):
                 raise ValueError('Original project changed after startup confirmation; do not plan or initialize')
         result = bridge.call(name, arguments)

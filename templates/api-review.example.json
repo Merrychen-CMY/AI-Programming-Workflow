@@ -1,0 +1,8 @@
+{
+  "action": "retry",
+  "timeout_seconds": 300,
+  "reason": "根据本次实际诊断填写，不复制示例为事实",
+  "evidence": "引用当前api_review中的请求ID、错误分类和实际等待时间",
+  "remaining_work": "说明剩余规划或根因分析工作",
+  "expected_benefit": "说明增加等待或修复连接后重试的具体预期收益"
+}

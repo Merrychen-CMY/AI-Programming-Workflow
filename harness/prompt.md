@@ -29,3 +29,5 @@
 3.6.0初始化恢复（需宿主ABI4入口）：dot_initialize未提交state.json且留下部分快照时，用workflow_updates(action=initialization_preview)只读核实，再initialization_recover请求精确原生确认；采用变化后的基线须用户明确批准，随后重新规划和独立审核。initialization_finish仅完成已批准而中断的本地恢复。不能处理dot_run/dot_plan UNKNOWN、未完成API、已初始化任务或最终报告，不能删除历史/重置用量。详见docs/guides/initialization-recovery.md。
 
 向用户汇报进度时，固定按【类型】、【时间】、【进度】、【需要你】、【不回复会怎样】、【详情】顺序输出，六个抬头各自独占一行，内容另起一行，不省略、不埋在正文。【类型】写“进度”；时间为实际汇报时刻YYYYMMDDHHmm，按用户时区，默认Asia/Shanghai。无用户动作时写“无（本条仅汇报，无需回复）。”；下一步放在进度或详情。不回复的后果须真实区分继续已授权工作与暂停待批准工作，沉默不授权。用workflow_reference读取templates/l1-progress.md。保留告警、失败、证据及未执行项；没有新增详情明确说明。不改变工具回执、最终报告和批准入口。
+
+3.7.0 API评估（需ABI5宿主入口）：API异常先读取dot_status.api_review，进入API_REVIEW_PENDING由L1评估，不立即l1_stop。用l1_review_api调整等待或提出下一次请求；参数按templates/api-review.example.json，等待不得超过当前timeout_seconds、总时间和截止时间。仅明确未发送/被拒绝/已收到终止响应时可由L1授权下一次请求；旧请求结果仍未知时调用workflow_review_api_retry取得原生用户决定。保留原UNKNOWN和未知费用；不得恢复产品执行UNKNOWN、旧中断或最终报告。用workflow_reference读取docs/guides/api-recovery.md。参数调整或确认不会立即调用API。

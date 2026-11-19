@@ -49,3 +49,7 @@
 | 原运行阶段 | 资源问题已解决 | 累计计数保留；若目标/路径/AC变化，先DECISION_PENDING、重新规划并独立批准 |
 
 API额度在诊断前耗尽保留pending_triage，恢复先分析失败；诊断后的修复与设施重试保留待办。UNKNOWN和最终报告不通过这两种暂停恢复；不能用用户批准替代旧操作结果核实。
+
+## API请求评估状态（3.7.0）
+
+结构化API失败 → API_REVIEW_PENDING（L1诊断、资源评估）→ 已明确未发送/拒绝/终止响应时由L1批准下一次请求；结果不明 → API_AUTHORIZATION_PENDING（原生用户决定）→ 允许下一次有预算的新请求或保持暂停。底层产品阶段与pending_triage保留，未决时不派工。旧请求的FAILED_OR_UNKNOWN及未知用量不改写；无可行方案再提交完整最终报告。宿主进程中断仍是原UNKNOWN，不被此状态覆盖。见[详细规则](../guides/api-recovery.md)。

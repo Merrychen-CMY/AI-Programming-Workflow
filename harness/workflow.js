@@ -11,6 +11,7 @@ const exists = async path => { try { await readFile(path); return true; } catch(
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const save = (path, value) => writeFile(path, JSON.stringify(value, null, 2), { mode: 0o600 });
 const modelTools = {
+  l1_review_api: ['proposal_json'],
   l1_adjust_limits: ['proposal_json'], l1_request_authorization: ['proposal_json'],
   dot_plan: ['requirements'], dot_initialize: [], l1_approve: ['kind'], dot_run: [], dot_status: [],
   l1_revise: ['requirements', 'plan_json'], l1_submit_report: ['summary'], l1_stop: ['reason'],
@@ -26,7 +27,7 @@ export function startupSummary(draft, settings, inspection, digest) {
     + `\n\n原始信息与澄清记录：\n${draft.raw_input}\n\n不可降低的约束：\n${draft.hard_constraints.join('\n')}\n允许修改路径：${JSON.stringify(draft.allowed_paths)}\n`
     + `到期时间：${draft.expires_at}\n执行预算（次数、秒数和输出 token 上限）：\n${JSON.stringify(draft.limits,null,2)}\n环境检查：\n${JSON.stringify(inspection.checks,null,2)}\n${inspection.limits}\n\n`
     + '上述资源值是本任务授权上限。启用动态管理时，细粒度执行额度由 L1 在这些上限内制定和调整，无需逐项向你审批；达到当前额度先由 L1 评估，超过上限或需要改变目标/权限/截止时间时再次向你申请。每次调整与累计消耗均进入最终报告，不清零历史。\n\n'
-    + 'implementation_attempts 是全任务初次实现和修复的累计 L3 派工次数；独立构建、Doxygen、测试和审核仍须完整安排。API调用和时间另计，当前没有统一货币硬限额。\n\n'
+    + 'implementation_attempts 是全任务初次实现和修复的累计 L3 派工次数；独立构建、Doxygen、测试和审核仍须完整安排。timeout_seconds同时约束单次API等待和工作会话；L1可在当前额度内调整API等待，仍受总时间及截止时间限制。API调用和时间另计，当前没有统一货币硬限额。\n\n'
     + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。当前额度不足先由L1评估，超出授权须你明确批准；无可行方案或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
 }
 
@@ -148,6 +149,26 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
           environment: await exists(`${task}/environment.json`) ? await json(`${task}/environment.json`) : null };
       }
       if (!receipt) throw new Error('请先完成环境检查和真实用户开工确认');
+      if (name === 'workflow_review_api_retry') {
+        if (Object.keys(args).length) throw new Error('API retry review accepts no model arguments');
+        if (await exists(`${task}/interrupted.json`)) throw new Error('UNKNOWN: API review cannot clear an interrupted host operation');
+        const preview = await call(settings, 'api_retry_preview');
+        const question = `API请求结果尚未核实（${preview.sha256}）\n诊断：${JSON.stringify(preview.diagnostic)}\n`
+          + `原请求：${preview.attempt_id}\nL1评估：${JSON.stringify(preview.proposal,null,2)}\n已用额度：${JSON.stringify(preview.usage)}\n\n`
+          + '原请求可能已处理或计费，没有回执不能按零消耗计算。批准仅允许L1在原授权上限内发起下一次请求，可能重复产生API费用；保留原UNKNOWN、所有用量和历史。不会直接派工、修改产品、撤销最终报告或授权无限重试。';
+        if (question.length > 65_000) throw new Error('API review exceeds display limit; shorten the assessment');
+        const id = `api-retry-${preview.sha256}`;
+        const reply = await ctx.userQuestions.ask({agent:exec.agent,signal:exec.signal,questions:[{
+          id,question,header:'API恢复',multiSelect:false,options:[
+            {label:'允许发起下一次请求',description:'接受旧请求结果与费用未知，保留历史并计入原预算。'},
+            {label:'不允许重试',description:'保持暂停，由L1调整方案或提交报告。'}]}]});
+        const answer = reply.answers?.find(a=>a.id===id);
+        if (exec.signal?.aborted || !answer || answer.custom || answer.selected?.length!==1 ||
+            !['允许发起下一次请求','不允许重试'].includes(answer.selected[0]))
+          throw new Error('未取得明确决定；API请求保持暂停');
+        return await call(settings,'api_retry_decide',{sha256:preview.sha256,
+          approved:answer.selected[0]==='允许发起下一次请求'});
+      }
       if (name === 'workflow_review_authorization') {
         if (Object.keys(args).length) throw new Error('Authorization review accepts no model arguments');
         if (await exists(`${task}/interrupted.json`)) throw new Error('UNKNOWN: authorization cannot clear an interrupted operation');
@@ -211,10 +232,12 @@ export const toolFields = {
   workflow_setup: {}, workflow_reference: { path: 'Repository-relative .md/.json path', offset: 'Character offset as a decimal string; begin with 0' },
   workflow_check_environment: {},
   workflow_inspect: { draft_json: 'Complete JSON per templates/harness-start.example.json, prepared by L1 from user facts' },
-  workflow_confirm_start: {}, workflow_status: {}, workflow_review_report: {}, workflow_review_authorization: {},
+  workflow_confirm_start: {}, workflow_status: {}, workflow_review_report: {}, workflow_review_authorization: {}, workflow_review_api_retry: {},
   ...Object.fromEntries(Object.entries(modelTools).map(([name,fields])=>[name,Object.fromEntries(fields.map(f=>[f,f]))])),
 };
 export const descriptions = {
+  l1_review_api: 'Assess API-only failures or set a bounded wait. Read templates/api-review.example.json. Never clears UNKNOWN or reopens final reports.',
+  workflow_review_api_retry: 'Show exact API uncertainty, possible duplicate charges and L1 assessment; obtain a native user decision before a replacement request. No model-supplied approval.',
   l1_adjust_limits: 'L1 allocates bounded resources with evidence, remaining work, benefit and strategy; no user impersonation or counter reset.',
   l1_request_authorization: 'Stage exact requested changes for the user; this does not approve or execute them.',
   workflow_review_authorization: 'Show the exact pending amendment and obtain a real user decision. No model-supplied approval.',

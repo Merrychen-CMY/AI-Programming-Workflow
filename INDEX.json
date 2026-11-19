@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.6.1",
+  "workflow_version": "3.7.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -27,7 +27,9 @@
       "templates/harness-start.example.json",
       "docs/guides/automatic-updates.md",
       "docs/guides/task-upgrades.md",
-      "templates/l1-progress.md"
+      "templates/l1-progress.md",
+      "docs/guides/api-recovery.md",
+      "templates/api-review.example.json"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -183,6 +185,11 @@
     "plugin_update": [
       "policy/updates.json",
       "docs/guides/automatic-updates.md"
+    ],
+    "api_failure": [
+      "policy/api-recovery.json",
+      "docs/guides/api-recovery.md",
+      "templates/api-review.example.json"
     ]
   },
   "full_reference": [
@@ -363,5 +370,6 @@
   "resource_policy": "policy/resources.json",
   "update_policy": "policy/updates.json",
   "task_upgrade_policy": "policy/task-upgrades.json",
-  "initialization_recovery_policy": "policy/initialization-recovery.json"
+  "initialization_recovery_policy": "policy/initialization-recovery.json",
+  "api_recovery_policy": "policy/api-recovery.json"
 }

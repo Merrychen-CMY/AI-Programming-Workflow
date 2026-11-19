@@ -68,3 +68,5 @@ L1调用`l1_request_authorization(proposal_json)`保存具体差异，格式见[
 拒绝测试见`tests/test_resources.py`和`harness/tests/workflow.test.js`：越上限、低于已用、没有实际新增容量、伪造批准、过期或陈旧申请、范围变化沿用旧计划、API/实现/审核/修订/设施额度暂停、诊断恢复、历史篡改及UNKNOWN/最终报告保护。它们是运行器测试，不是产品或HIL验收。
 
 3.6.0的[初始化恢复](initialization-recovery.md)单独核实并审核未提交初始化；普通调参权限不因此扩大。恢复记录纳入状态/报告，原额度与截止时间不变。
+
+3.7.0将API网络等待纳入已有单次操作timeout_seconds上限；API等待值默认120秒，由l1_review_api配置，实际取该值、当前操作额度、剩余总时间和截止时间的最小值。l1_adjust_limits可先在用户上限内调整操作额度；超出总授权仍走原生追加授权。详见[API评估与恢复](api-recovery.md)。

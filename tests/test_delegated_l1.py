@@ -190,9 +190,10 @@ class DelegatedTests(unittest.TestCase):
         self.assertEqual(read_json(self.root / 'api/ledger.json')['attempts'][0]['status'], 'FAILED_OR_UNKNOWN')
 
     def test_incomplete_api_response_cannot_dispatch(self):
+        from dot_runtime.api_recovery import ApiReview
         self.approved()
         client = self.client(lambda *_: dict(call_response('run_approved_workflow'), status='incomplete'))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ApiReview):
             execute(client, self.c)
         self.assertNotIn('implementation', self.c.adapter.calls)
 

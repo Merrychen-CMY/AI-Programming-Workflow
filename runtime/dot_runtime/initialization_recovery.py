@@ -101,7 +101,9 @@ def _guard(task, receipt, session, *, finishing=False):
                                             and operation.get('status') == 'FAILED'):
         raise ValueError('No recoverable initialization failure')
     ledger = task / 'control/api/ledger.json'
-    if not ledger.exists() or any(a.get('status') != 'COMPLETED' for a in read_json(ledger)['attempts']):
+    from . import api_recovery
+    if (not ledger.exists() or api_recovery.unresolved(task / 'control')
+            or api_recovery.load(task / 'control')['pending']):
         raise ValueError('Missing or unresolved API ledger requires separate reconciliation')
     return settings, original, operation
 
