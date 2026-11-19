@@ -61,7 +61,7 @@ test('native initialization recovery retains task identity, API usage and histor
   const result=await f.bootstrap.invoke('workflow_updates',{action:'initialization_recover'},f.exec);
   assert.equal(result.status,'INITIALIZATION_RECOVERED');assert.equal(result.product_execution_started,false);
   assert.deepEqual(await readFile(resolve(f.task,'confirmation.json')),original);assert.deepEqual(await readFile(resolve(f.task,'control/api/ledger.json')),ledger);
-  assert.equal((await f.updates.forTask(f.task)).version,'3.17.0');
+  assert.equal((await f.updates.forTask(f.task)).version,'3.17.1');
   assert.deepEqual(f.controls.calls,['initialization_preview','initialization_preview','initialization_commit']);
   assert.match(f.controls.questions[0].question,/不修改产品文件/);
   const status=await f.bootstrap.invoke('workflow_status',{},f.exec);

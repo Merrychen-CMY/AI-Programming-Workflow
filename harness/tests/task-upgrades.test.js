@@ -67,7 +67,7 @@ test('native upgrade keeps the conversation, receipt and effective version after
   const restarted=createBootstrap({root,directory:f.directory,fields:toolFields,ctx:f.ctx,updates:f.updates,workflowOptions:{runner:f.runner}});
   t.after(()=>restarted.dispose());
   const status=await restarted.invoke('workflow_status',{},f.exec);
-  assert.equal(status.workflow_runtime.version,'3.17.0');assert.equal(status.runtime_upgrades_count,1);
+  assert.equal(status.workflow_runtime.version,'3.17.1');assert.equal(status.runtime_upgrades_count,1);
   assert.equal(status.workflow_runtime.task_pinned,true);assert.ok(status.workflow_runtime.guidance);
   assert.equal(status.interrupted,false);assert.deepEqual(f.control.calls,['upgrade_preview','upgrade_preview','upgrade_commit','status']);
   const original=JSON.parse(receipt);
