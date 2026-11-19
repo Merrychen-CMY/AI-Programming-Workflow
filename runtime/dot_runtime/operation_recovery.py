@@ -113,31 +113,33 @@ def record_process_end(output, pid, *, tree_stopped=False):
     return record
 
 
-def process_inventory():
+def process_inventory(*, metadata_only=False):
     """Read the current user's entire local process list, including ancestry.
 
     Never accept an inaccessible process as absent. System/other-user processes
     cannot be children of this user's sandboxed worker and are excluded only
     when ownership is known. Windows uses native process APIs; Linux reads procfs directly.
+    metadata_only reads ancestry across owners for completed-review reconciliation;
+    it does not provide the command/owner evidence needed by general recovery.
     """
     if os.name == 'nt':
-        return _windows_process_inventory()
+        return _windows_process_inventory(metadata_only=metadata_only)
     if sys.platform.startswith('linux'):
         rows = []
         for item in Path('/proc').iterdir():
             if not item.name.isdecimal():
                 continue
             try:
-                if item.stat().st_uid != os.getuid():
+                if not metadata_only and item.stat().st_uid != os.getuid():
                     continue
                 raw = (item / 'stat').read_text()
                 fields = raw[raw.rfind(')') + 2:].split()
-                command = (item / 'cmdline').read_bytes().replace(b'\0', b' ').decode('utf-8', errors='replace').strip()
-                if not command and fields[0] != 'Z':
+                command = '' if metadata_only else (item / 'cmdline').read_bytes().replace(b'\0', b' ').decode('utf-8', errors='replace').strip()
+                if not metadata_only and not command and fields[0] != 'Z':
                     raise ValueError('Process command line unavailable: ' + item.name)
                 rows.append({'pid': int(item.name), 'ppid': int(fields[1]), 'command': command,
                              'name': raw[raw.find('(') + 1:raw.rfind(')')]})
-            except FileNotFoundError:
+            except (FileNotFoundError, ProcessLookupError):
                 continue
             except PermissionError as exc:
                 raise ValueError('Permission denied reading process ' + item.name) from exc
@@ -316,7 +318,7 @@ def completed_review_processes(task, settings, state, marker):
         if any(c['status'] != 'STOPPED' for c in checks):
             return {'status': 'ACTIVE' if any(c['status'] == 'ACTIVE' for c in checks) else 'UNKNOWN',
                     'checks': checks, 'completed_approval': approval}
-        rows = _windows_process_inventory(metadata_only=True) if os.name == 'nt' else process_inventory()
+        rows = process_inventory(metadata_only=True)
         descendants = {r['pid'] for r in records}
         while True:
             expanded = descendants | {r['pid'] for r in rows if r['ppid'] in descendants}

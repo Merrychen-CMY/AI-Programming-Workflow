@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
 
 import test_requirements_first as native
 from test_resources import amendment
@@ -25,6 +26,27 @@ class CompletedReviewTests(unittest.TestCase):
     request = native.NativeRequirementsFlowTests.request
     tool = native.NativeRequirementsFlowTests.tool
     confirmed = native.NativeRequirementsFlowTests.confirmed
+
+    def test_linux_ancestry_scan_does_not_depend_on_unrelated_command_lines(self):
+        proc, item, stat, cmd = MagicMock(), MagicMock(), MagicMock(), MagicMock()
+        proc.iterdir.return_value = [item]
+        item.name = '123'
+        item.stat.return_value.st_uid = 1000
+        item.__truediv__.side_effect = lambda name: stat if name == 'stat' else cmd
+        stat.read_text.return_value = '123 (exiting process) R 456 0 0'
+        cmd.read_bytes.return_value = b''
+        with patch.object(recovery, 'os', SimpleNamespace(name='posix', getuid=lambda: 1000)), \
+                patch.object(recovery, 'sys', SimpleNamespace(platform='linux')), patch.object(recovery, 'Path', return_value=proc):
+            rows = recovery.process_inventory(metadata_only=True)
+            self.assertEqual((rows[0]['pid'], rows[0]['ppid']), (123, 456))
+            cmd.read_bytes.assert_not_called()
+            with self.assertRaisesRegex(ValueError, 'command line unavailable'):
+                recovery.process_inventory()
+            stat.read_text.side_effect = PermissionError('Cannot inspect ancestry')
+            with self.assertRaisesRegex(ValueError, 'Permission denied'):
+                recovery.process_inventory(metadata_only=True)
+            stat.read_text.side_effect = ProcessLookupError('Process exited during snapshot')
+            self.assertEqual(recovery.process_inventory(metadata_only=True), [])
 
     def approved(self):
         self.confirmed()

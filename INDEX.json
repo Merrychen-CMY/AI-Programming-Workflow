@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.13.2",
+  "workflow_version": "3.13.3",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
