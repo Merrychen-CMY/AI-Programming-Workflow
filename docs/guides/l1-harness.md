@@ -1,6 +1,6 @@
 # L1 DeepSeek Harness → GPT/DOT接入
 
-版本3.5.0（ReqPilot）：用户只与L1沟通原始需求、审核最终报告。以下配置由L1或安装维护者准备一次，运行时用户不手动搬运需求/计划。
+版本3.11.0（ReqPilot）：用户只与L1沟通原始需求、审核最终报告。以下配置由L1或安装维护者准备一次，运行时用户不手动搬运需求/计划。
 
 推荐优先使用[L1原生插件](l1-plugin.md)，它自动生成本文中的配置/委托并提供开工和最终报告确认界面。本文保留给手动MCP集成与终端后备路径。原生插件按“配置模型和密钥 → 检查环境 → 沟通原始需求 → 集中确认开工 → L1 自动推进 → 用户审核最终报告”引导；基础环境检查无需需求草案。之后不恢复逐项人工审批。
 
@@ -47,17 +47,20 @@ Harness加载的文档至少包含AGENTS.md、L1.md及本文；按需读取DOT.m
 | --- | --- | --- |
 | `l1_adjust_limits` | 新动态任务先分配当前额度，之后可在用户上限内调整并记录理由 | 无API调用、无派工 |
 | `l1_request_authorization` | 提交具体授权变更，由原生workflow_review_authorization取得人类决定；MCP没有模型代签入口 | AUTHORIZATION_PENDING |
-| `dot_plan` | 传需求全文，GPT结合固定环境生成执行草案 | 真实配置缺口时停止；不批准、不执行 |
-| `dot_initialize` | 固定项目起点和委托 | REVIEW_PENDING |
-| `l1_approve` | kind=requirements，传L1实际会话标识 | 独立Codex审查通过才记录L1批准；PLAN_PENDING |
+| `l1_prepare_requirements` | 新原生任务暂存需求，再l1_approve(requirements)独立审查 | 通过后才允许首次DOT规划 |
+| `dot_plan` | 传已批准需求全文，GPT结合固定环境生成执行草案 | 缺口交L1；不批准、不执行 |
+| `dot_initialize` | 固定项目起点和委托，承接先前需求审核 | 新原生任务PLAN_PENDING；历史模式保留原收据 |
+| `l1_approve` | kind=requirements，手动桥传L1实际会话标识，原生插件由宿主注入 | 首次独立审查通过为REQUIREMENTS_APPROVED；历史运行模式为PLAN_PENDING |
 | `l1_approve` | kind=plan，同样核查计划 | 独立审查通过后EXECUTING |
 | `dot_run` | 请求GPT/DOT受控派工 | 独立实现、检查、测试、审核；问题统一回L2 |
 | `dot_status` | 读取实际状态、审查记录、decision或最终报告 | 不会自动派新任务 |
+| `dot_investigate` | 待决时传明确question及真实evidence路径 | 只读L2调查，不派产品任务 |
+| `l1_resume_decision` | 评估L2方案，以action/reason/evidence选择继续方式 | 满足原批准、证据、权限和额度才恢复执行 |
 | `dot_plan` / `l1_revise` | DECISION_PENDING时，L1修需求或内部L1-V计划；先生成新计划，再提交requirements和plan_json | 保留计数、清除旧批准，回REVIEW_PENDING |
 | `l1_stop` | 评估后无可行方案、授权未获批准且无法继续，提供原因 | FAILED或UNKNOWN报告 |
 | `l1_submit_report` | 阅读DOT结果后传summary和实际l1_session_id | 绑定L1说明及原结果，供用户最终审核 |
 
-L1不得把DOT的FAILED/INCOMPLETE/UNKNOWN改成SUCCESS。委托过期仍可读取报告；动态任务可申请具体延期，批准并调整后才可继续，不能篡改原有效期。不可恢复的计划生成错误或明确停止时生成`control/preflight-report.json`，由L1直接呈现用户；此时没有创建产品运行，也没有任何实现授权。
+L1不得把DOT的FAILED/INCOMPLETE/UNKNOWN改成SUCCESS。委托过期仍可读取报告；动态任务可申请具体延期，批准并调整后才可继续，不能篡改原有效期。计划问题先暂停交L1评估；只有L1明确结案后生成`control/preflight-report.json`，随后同样调用l1_submit_report再由用户审核；此时没有创建产品运行，也没有任何实现授权。
 
 原始输入、委托或模型配置改变不能在旧控制目录悄悄重启。需求/计划变化用revision入口，审查与修复历史保留。模型语义审核不是数学证明，原始约束须有可验证AC和独立证据支持。
 
@@ -96,3 +99,5 @@ L1 AgentPreset同时读取[L1用户沟通指南](l1-user-expression.md)。桥的
 已开工任务需要升级时，使用[原对话任务升级](task-upgrades.md)：upgrade_preview预检→upgrade原生确认→重新独立审核→DOT继续与完整验证。不得改写原开工确认或清零历史。
 
 原生ABI4入口另提供[未提交初始化恢复](initialization-recovery.md)；模型仅能请求预览/原生审核，手工MCP桥没有可伪造的用户批准字段。
+
+3.11.0新增dot_investigate与l1_resume_decision，问题待决可继续只读调查和有证据的L1恢复决定。原生宿主需ABI7；历史CLI不伪造新审批历史。见[完整流程](flow-recovery.md)。

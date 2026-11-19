@@ -14,6 +14,19 @@ from dot_runtime import onboarding as o
 from dot_runtime.controller import Controller, atomic_json, digest, read_json
 
 
+def pin_legacy_fixture(task):
+    """Synthetic old-schema receipt for unit migration guards; never a production migration."""
+    receipt = read_json(task / 'confirmation.json')
+    for name, field, binding in [('bridge.json', 'requirements_first', 'bridge_sha256'),
+                                 ('draft.json', 'adaptive_limits', 'draft_sha256'),
+                                 ('delegation.json', 'adaptive_limits', 'delegation_sha256')]:
+        value = read_json(task / name)
+        value.pop(field, None)
+        atomic_json(task / name, value)
+        receipt[binding] = digest(value)
+    atomic_json(task / 'confirmation.json', receipt)
+
+
 class OnboardingTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -25,7 +38,6 @@ class OnboardingTests(unittest.TestCase):
         self.task = self.base / 'task'
         self.settings = {'model': 'fixture-model', 'python': sys.executable, 'codex': 'fixture-codex'}
         self.draft = json.loads((ROOT / 'templates/harness-start.example.json').read_text(encoding='utf-8'))
-        self.draft.pop('adaptive_limits', None)  # These fixtures retain the legacy fixed-budget contract.
         self.draft.update(project=str(self.project), raw_input='原始要求：完成输入解析，不发布。',
                           topics={key: '明确测试条件' for key in o.TOPICS}, hard_constraints=['不得发布'], allowed_paths=['.'],
                           expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),
@@ -45,6 +57,23 @@ class OnboardingTests(unittest.TestCase):
     def confirm(self, prepared=None):
         prepared = prepared or self.prepare()
         return self.request('confirm',draft=self.draft,settings=self.settings,digest=prepared['digest'])
+
+    def allocate(self):
+        from test_resources import allocation
+        return self.request('bridge', name='l1_adjust_limits', arguments={
+            'proposal_json': json.dumps(allocation(self.draft['limits']))})
+
+    def approve_requirements(self, text):
+        self.request('bridge', name='l1_prepare_requirements', arguments={'requirements': text})
+        return self.request('bridge', name='l1_approve', arguments={'kind': 'requirements'})
+
+    def test_new_task_cannot_disable_resource_review(self):
+        self.draft['adaptive_limits'] = False
+        with self.assertRaisesRegex(ValueError, 'adaptive_limits=true'):
+            self.prepare()
+        self.draft.pop('adaptive_limits')
+        with self.assertRaises(ValueError):
+            self.prepare()
 
     def test_inspection_is_read_only_and_not_confirmation(self):
         result = self.prepare()
@@ -106,16 +135,20 @@ class OnboardingTests(unittest.TestCase):
         original = {name: (self.task / name).read_bytes() for name in
                     ('raw-input.md', 'draft.json', 'bridge.json', 'delegation.json', 'confirmation.json')}
         replies = [needs_info(), call_response('propose_plan', {'plan_json': json.dumps(fixture_plan())})]
+        workers = FakeAdapter()
         def bridge_factory(settings):
-            return Bridge(settings, workers=FakeAdapter(), client_factory=lambda m, p, d:
+            return Bridge(settings, workers=workers, client_factory=lambda m, p, d:
                           ResponsesClient(m, p, d, send=lambda *_: replies.pop(0)))
         with patch.object(o, 'Bridge', side_effect=bridge_factory):
+            self.allocate()
+            self.approve_requirements('input parsing')
             result = self.request('bridge', name='dot_plan', arguments={'requirements': 'input parsing'})
             self.assertEqual(result['state'], 'NEEDS_INFO')
             with self.assertRaisesRegex(ValueError, 'identity comes from the host'):
                 self.request('bridge', name='l1_add_facts', arguments={
                     'facts_json': json.dumps(supplement()), 'l1_session_id': 'forged'})
             self.request('bridge', name='l1_add_facts', arguments={'facts_json': json.dumps(supplement())})
+            self.approve_requirements('input parsing')
             result = self.request('bridge', name='dot_plan', arguments={'requirements': 'input parsing'})
             self.assertTrue(result['plan'])
         from dot_runtime.clarifications import records
@@ -136,6 +169,8 @@ class OnboardingTests(unittest.TestCase):
             return Bridge(settings, workers=FakeAdapter(), client_factory=lambda m, p, d:
                           ResponsesClient(m, p, d, send=lambda *_: proposed(phase_tasks())))
         with patch.object(o, 'Bridge', side_effect=factory):
+            self.allocate()
+            self.approve_requirements('all work required')
             result = self.request('bridge', name='dot_plan', arguments={'requirements': 'all work required'})
             self.assertEqual(result['operation_status'], 'COMPLETED_REJECTED')
             result = self.request('bridge', name='dot_initialize', arguments={})
@@ -211,7 +246,10 @@ class OnboardingTests(unittest.TestCase):
 
     def test_failure_report_review_never_resumes(self):
         self.confirm()
-        self.request('bridge',name='l1_stop',arguments={'reason':closure_reason('No feasible plan')})
+        self.request('bridge',name='l1_stop',arguments={'reason':closure_reason('No feasible plan', ['settings-binding.json'])})
+        with self.assertRaisesRegex(ValueError, 'L1 must submit'):
+            self.request('report_preview')
+        self.request('bridge', name='l1_submit_report', arguments={'summary': 'Reviewed preflight failure and alternatives'})
         preview=self.request('report_preview')
         with self.assertRaises(ValueError): self.request('report_confirm',sha256='forged')
         result=self.request('report_confirm',sha256=preview['sha256'])

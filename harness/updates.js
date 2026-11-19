@@ -7,7 +7,7 @@ import { githubCredential } from './github-auth.js';
 import { taskRuntime } from './task-runtime.js';
 
 export const REPOSITORY = 'Merrychen-CMY/ReqPilot';
-export const BOOTSTRAP_ABI = 6;
+export const BOOTSTRAP_ABI = 7;
 export const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const MAX_ARCHIVE = 8_000_000, MAX_EXPANDED = 32_000_000;
 const sha = data => createHash('sha256').update(data).digest('hex');
@@ -91,7 +91,7 @@ export async function verifyRuntime(root, expected, { pinned = false } = {}) {
     if (path !== 'MANIFEST.json' && sha(await readFile(current)) !== manifest.files[path]) fail('RUNTIME_INTEGRITY');
   }
   // Retain old engines until a separately reviewed migration through the stable tool contract.
-  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4, 5, 6] : [BOOTSTRAP_ABI]);
+  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4, 5, 6, 7] : [BOOTSTRAP_ABI]);
   return { version: manifest.workflow_version, manifest_sha256: hash, root };
 }
 /** A GitHub credential is restricted to exact repository API URLs, never redirects/CDN. */
@@ -130,10 +130,13 @@ function contract(fields) {
 export async function loadEngine(root, fields) {
   const engine = await import(pathToFileURL(resolve(root, 'harness/workflow.js')).href);
   const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
-  const version5Fields = Object.fromEntries(Object.entries(fields).filter(([name])=>name !== 'dot_read_record'));
+  const version6Fields = Object.fromEntries(Object.entries(fields).filter(([name])=>
+    !['l1_prepare_requirements','dot_investigate','l1_resume_decision','l1_prepare_recovery','workflow_recover_operation','workflow_confirm_stop'].includes(name)));
+  const version5Fields = Object.fromEntries(Object.entries(version6Fields).filter(([name])=>name !== 'dot_read_record'));
   const legacyFields = Object.fromEntries(Object.entries(version5Fields).filter(([name])=>
     !['l1_review_api','workflow_review_api_retry'].includes(name)));
   const same = engine.toolFields && (contract(engine.toolFields) === contract(fields) ||
+    (pkg.reqpilot?.bootstrap_abi === 6 && contract(engine.toolFields) === contract(version6Fields)) ||
     (pkg.reqpilot?.bootstrap_abi === 5 && contract(engine.toolFields) === contract(version5Fields)) ||
     (pkg.reqpilot?.bootstrap_abi <= 4 && contract(engine.toolFields) === contract(legacyFields)));
   if (typeof engine.createWorkflow !== 'function' || !same)

@@ -1,4 +1,6 @@
 import { spawn } from 'node:child_process';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 
 /** No shell, no credential arguments, bounded capture; cancellation is UNKNOWN. */
 export function pythonCall(executable, script, request, { key, signal, spawnImpl = spawn } = {}) {
@@ -10,6 +12,20 @@ export function pythonCall(executable, script, request, { key, signal, spawnImpl
     if (key) env.OPENAI_API_KEY = key;
     const child = spawnImpl(executable, [script], { env, shell: false, windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'] });
+    const tracked = request.action === 'bridge' && !['dot_status', 'dot_read_record',
+      'l1_prepare_recovery', 'l1_stop', 'l1_submit_report'].includes(request.name) && Number.isInteger(child.pid);
+    const processPath = tracked ? resolvePath(request.task, 'host-process.json') : null;
+    const record = { schema_version: 1, pid: child.pid, boot_id: null, started_at: new Date().toISOString(),
+      operation: request.name, status: 'RUNNING', process_tree_status: 'UNKNOWN' };
+    const saveProcess = value => {
+      const temporary = `${processPath}.${child.pid}.tmp`;
+      writeFileSync(temporary, JSON.stringify(value), { mode: 0o600 });
+      renameSync(temporary, processPath);
+    };
+    if (tracked) {
+      try { saveProcess(record); }
+      catch { child.kill(); reject(new Error('Could not preserve process identity; operation was not sent')); return; }
+    }
     let stdout = '', size = 0, settled = false;
     const finish = (error, value) => {
       if (settled) return;
@@ -27,6 +43,8 @@ export function pythonCall(executable, script, request, { key, signal, spawnImpl
     child.stdout.on('data', chunk => { size += Buffer.byteLength(chunk); stdout += chunk; if (size > 8_000_000) abort(); });
     child.on('close', code => {
       try {
+        if (tracked && JSON.parse(readFileSync(processPath, 'utf8')).pid === child.pid)
+          saveProcess({ ...record, status: 'EXITED', exit_code: code, ended_at: new Date().toISOString() });
         const value = JSON.parse(stdout);
         if (value.ok && code === 0) finish(null, value.result);
         else finish(new Error(key ? String(value.error).replaceAll(key, '[REDACTED]') : value.error || 'Runner failed'));

@@ -221,6 +221,7 @@ class ResourceTests(unittest.TestCase):
         self.assertEqual(self.pause(b, c)['key'], 'api_calls')
         self.assertFalse((c.run_dir / 'sessions/0002-triage').exists())
         reply = fixtures.result('PASS', 'implementation')
+        reply.update(fixtures.triage_fields('implementation'))
         reply.pop('runtime_evidence')
         reply['evidence'][0]['test_count'] = 0
         self.responses.append({'id': 'triage-fixture', 'status': 'completed', 'output': [
@@ -335,7 +336,7 @@ class ResourceTests(unittest.TestCase):
         b, c = self.prepared()
         c.state['active_run'] = {'role': 'unknown'}; c.save()
         self.assertFalse(self.allocate(b)['accepted'])
-        c.stop_with_report('Unknown process fixture', l1_assessment=assessment())
+        c.stop_with_report('Unknown process fixture', l1_assessment=assessment(control=True))
         self.assertFalse(self.allocate(b)['accepted'])
         self.assertEqual(c.state['report']['outcome'], 'UNKNOWN')
 
@@ -355,7 +356,7 @@ class ResourceTests(unittest.TestCase):
 
     def test_preflight_final_includes_all_allocations_and_usage(self):
         b = self.bridge([]); self.allocate(b)
-        result = b.call('l1_stop', {'reason': closure_reason('No feasible remaining plan')})
+        result = b.call('l1_stop', {'reason': closure_reason('No feasible remaining plan', ['settings-binding.json'])})
         report = result['preflight_report']['resource_governance']
         self.assertEqual(report['actual_usage']['api_calls'], 0)
         self.assertEqual(len(report['history']), 1)
@@ -412,10 +413,11 @@ class NativeAuthorizationTests(unittest.TestCase):
         b.client_factory = lambda m, p, d: ResponsesClient(m, p, d, lambda *_: replies.pop(0))
         with patch.object(onboarding.o, 'Bridge', return_value=b):
             self.request('bridge', name='l1_adjust_limits', arguments={'proposal_json': json.dumps(allocation(self.original['limits']))})
+            self.request('bridge', name='l1_prepare_requirements', arguments={'requirements': 'initial'})
+            self.request('bridge', name='l1_approve', arguments={'kind': 'requirements'})
             self.request('bridge', name='dot_plan', arguments={'requirements': 'initial'})
             self.request('bridge', name='dot_initialize', arguments={})
-            for kind in ('requirements', 'plan'):
-                self.request('bridge', name='l1_approve', arguments={'kind': kind})
+            self.request('bridge', name='l1_approve', arguments={'kind': 'plan'})
             self.stage({'allowed_paths': ['value.py'], 'authorized_context': 'Explicit updated requirement'})
             pending = self.request('authorization_preview')
             self.request('authorization_decide', sha256=pending['sha256'], approved=True)
@@ -425,8 +427,8 @@ class NativeAuthorizationTests(unittest.TestCase):
             self.assertFalse(self.request('bridge', name='dot_run', arguments={})['accepted'])
             self.request('bridge', name='dot_plan', arguments={'requirements': 'new requirement'})
             self.request('bridge', name='l1_revise', arguments={'requirements': 'new requirement', 'plan_json': json.dumps(plan)})
-            for kind in ('requirements', 'plan'):
-                self.request('bridge', name='l1_approve', arguments={'kind': kind})
+            self.request('bridge', name='l1_approve', arguments={'kind': 'requirements'})
+            self.request('bridge', name='l1_approve', arguments={'kind': 'plan'})
             c = Controller(b.run_dir); c.check_approvals()
             self.assertEqual(c.state['revision_count'], 1)
             self.assertEqual(len(c.state['l1_reviews']), 4)

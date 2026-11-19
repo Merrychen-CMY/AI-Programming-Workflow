@@ -11,7 +11,7 @@ class PlanRejected(ValueError):
         self.proposal, self.response_id = proposal, response_id
 
 
-def validate_proposal(plan, delegation, implementation_used=0):
+def validate_proposal(plan, delegation, implementation_used=0, *, pending_dispatches=None):
     from .controller import validate_plan
     from .delegation import check_plan_bounds, validate_delegation
     # Authority expiry is not a repairable draft error.
@@ -19,10 +19,14 @@ def validate_proposal(plan, delegation, implementation_used=0):
     try:
         tasks = validate_plan(plan)
         check_plan_bounds(plan, delegation)
-        if implementation_used + len(tasks) > plan['budgets']['implementation_attempts']:
+        pending = len(tasks) if pending_dispatches is None else pending_dispatches
+        if type(pending) is not int or not 0 <= pending <= len(tasks):
+            raise ValueError('Pending dispatch count must be derived from the controller completed-task comparison')
+        if implementation_used + pending > plan['budgets']['implementation_attempts']:
             raise PlanRejected('Remaining implementation budget cannot cover the revised initial dispatches',
                 code='IMPLEMENTATION_DISPATCH_BUDGET', details={
-                    'implementation_used': implementation_used, 'initial_task_dispatches': len(tasks),
+                    'implementation_used': implementation_used, 'initial_task_dispatches': pending,
+                    'retained_completed_tasks': len(tasks) - pending,
                     'implementation_limit': plan['budgets']['implementation_attempts']})
     except PlanRejected as exc:
         exc.proposal = plan

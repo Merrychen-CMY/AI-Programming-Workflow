@@ -22,6 +22,7 @@ class InitializationRecoveryTests(unittest.TestCase):
         fixtures.OnboardingTests.setUp(self)
         self.settings['workflow_sha256'] = 'a' * 64
         self.confirm()
+        fixtures.pin_legacy_fixture(self.task)
         self.root = self.task / 'control'; self.root.mkdir(exist_ok=True)
         self.run = self.root / 'run'; self.run.mkdir()
         self.partial = self.run / 'initial-project'; self.partial.mkdir()

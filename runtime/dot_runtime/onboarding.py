@@ -34,8 +34,10 @@ def delegation(draft):
 
 
 def validate_draft(draft, task):
-    if not isinstance(draft, dict) or set(draft) not in (DRAFT_KEYS, DRAFT_KEYS | {'adaptive_limits'}):
+    if not isinstance(draft, dict) or set(draft) != DRAFT_KEYS | {'adaptive_limits'}:
         raise ValueError('Use every field in templates/harness-start.example.json; no extra fields')
+    if draft.get('adaptive_limits') is not True:
+        raise ValueError('New tasks require adaptive_limits=true; L1 allocates within user ceilings')
     if not isinstance(draft['raw_input'], str) or not draft['raw_input'].strip():
         raise ValueError('Original user input is required')
     if set(draft['topics']) != set(TOPICS) or any(
@@ -161,7 +163,7 @@ def dispatch(request):
             bridge_settings = {'project': str(Path(draft['project']).resolve()),
                 'control_dir': str(task / 'control'), 'raw_input': str(task / 'raw-input.md'),
                 'delegation': str(task / 'delegation.json'), 'model': settings['model'], 'codex': settings['codex'],
-                'environment_context': json.dumps({'topics': draft['topics'], 'inspection': current}, ensure_ascii=False)}
+                'requirements_first': True, 'environment_context': json.dumps({'topics': draft['topics'], 'inspection': current}, ensure_ascii=False)}
             atomic_json(task / 'bridge.json', bridge_settings)
             atomic_json(task / 'confirmation.json', {'authority': 'local_harness_user', 'session': request['session'],
                 'at': datetime.now(timezone.utc).isoformat(), 'digest': request['digest'],
@@ -170,12 +172,24 @@ def dispatch(request):
                 'delegation_sha256': digest(delegation(draft)), 'external_delivery': False})
             return {'state': 'START_CONFIRMED', 'next':
                     ('l1_adjust_limits within user ceilings; ' if draft.get('adaptive_limits') else '')
-                    + 'dot_plan; dot_initialize; L1 independent approvals; dot_run'}
+                    + 'l1_prepare_requirements; l1_approve requirements; dot_plan; dot_initialize; l1_approve plan; dot_run'}
         if action == 'status' and not confirmed:
             return {'state': 'DISCOVERY', 'start_confirmed': False}
         if not confirmed:
             raise ValueError('Native user startup confirmation required before DOT tools')
         receipt = read_json(task / 'confirmation.json')
+        if action in ('stop_preview', 'stop_confirm'):
+            from .user_stop import dispatch as native_stop
+            return native_stop(task, receipt, request)
+        from .user_stop import require_not_paused
+        if action not in ('status', 'report_preview', 'report_confirm') and not (
+                action == 'bridge' and request.get('name') in ('dot_status', 'dot_read_record', 'l1_stop', 'l1_submit_report')):
+            require_not_paused(task / 'control')
+        if action in ('operation_preview', 'operation_commit', 'operation_finish'):
+            from .operation_recovery import dispatch as recover_operation
+            return recover_operation(task, receipt, request)
+        if (task / 'operation-recovery-pending.json').exists():
+            raise ValueError('OPERATION_RECOVERY_PENDING: use workflow_recover_operation to finish the approved local recovery')
         if action in ('initialization_preview', 'initialization_commit', 'initialization_finish'):
             from .initialization_recovery import dispatch as recover_initialization
             return recover_initialization(task, receipt, request)
@@ -195,6 +209,12 @@ def dispatch(request):
         if receipt['bridge_sha256'] != digest(settings) or receipt['draft_sha256'] != digest(read_json(task / 'draft.json')):
             raise ValueError('Confirmed configuration or draft changed')
         bridge = Bridge(settings)
+        if action == 'bridge' and request['name'] == 'l1_prepare_recovery':
+            arguments = request['arguments']
+            if set(arguments) != {'proposal_json'}:
+                raise ValueError('Recovery preparation accepts only proposal_json')
+            from .operation_recovery import prepare as prepare_recovery
+            return prepare_recovery(task, receipt, request['session'], json.loads(arguments['proposal_json']))
         if action in ('api_retry_preview', 'api_retry_decide'):
             from . import api_recovery
             with run_lock(bridge.root):
@@ -215,7 +235,9 @@ def dispatch(request):
                 if digest(original) != receipt['delegation_sha256']:
                     raise ValueError('Original delegation changed')
                 state = read_json(bridge.run_dir / 'state.json') if (bridge.run_dir / 'state.json').exists() else None
-                if (task / 'interrupted.json').exists() or (state and (state.get('active_run') or state.get('report'))) or (bridge.root / 'preflight-report.json').exists():
+                from .requirements_review import status as initial_review_status
+                if ((task / 'interrupted.json').exists() or (state and (state.get('active_run') or state.get('analysis_activity') or state.get('report')))
+                        or initial_review_status(bridge.root).get('active_run') or (bridge.root / 'preflight-report.json').exists()):
                     raise ValueError('Unknown operation or final report requires verified recovery, not an authorization rewrite')
                 pending = resources.read(bridge.root, original)['pending']
                 if action == 'authorization_preview':
@@ -242,17 +264,21 @@ def dispatch(request):
         if action == 'report_preview':
             status = bridge.call('dot_status', {})
             from .presentation import compact
+            preflight = status.get('preflight_report')
+            if preflight:
+                if status['state'] != 'REPORT_PENDING' or not preflight.get('l1_submission'):
+                    raise ValueError('L1 must submit the final report first')
+                return {'preflight': True, 'report': compact(status)['preflight_report'],
+                        'full_report_path': str(bridge.root / 'preflight-report.json'), 'sha256': digest(preflight)}
             if status.get('state') != 'REPORT_PENDING' or not (status.get('report') or {}).get('l1_submitted'):
-                preflight = status.get('preflight_report')
-                if preflight:
-                    return {'preflight': True, 'report': compact({'state': 'REPORT_PENDING', 'preflight_report': preflight})['preflight_report'],
-                            'full_report_path': str(bridge.root / 'preflight-report.json'), 'sha256': digest(preflight)}
                 raise ValueError('L1 must submit the final report first')
             return {'preflight': False, 'report': compact(status)['final_report'],
                     'full_report_path': str(bridge.run_dir / 'final-report.json'), 'sha256': status['report']['sha256']}
         if action == 'report_confirm':
             preflight = bridge.root / 'preflight-report.json'
             if not (bridge.run_dir / 'state.json').exists() and preflight.exists():
+                if not read_json(preflight).get('l1_submission'):
+                    raise ValueError('L1 must submit the final report first')
                 if digest(read_json(preflight)) != request['sha256']:
                     raise ValueError('Report changed during review')
                 atomic_json(task / 'preflight-review.json', {'authority': 'local_harness_user',

@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -79,6 +79,9 @@ def validate_review_handoff_policy(value):
         'existing_record_copy_consumes_revision': False,
         'new_facts_and_baseline_changes_retain_existing_limits': True,
         'approval_order': ['requirements', 'plan', 'execution'],
+        'initial_native_order': ['prepare_requirements', 'independent_requirements_review', 'l1_requirements_approval',
+            'dot_plan', 'dot_initialize', 'independent_plan_review', 'l1_plan_approval', 'execution'],
+        'preplan_reviews_counted_and_imported': True,
         'wrong_phase_result': 'COMPLETED_REJECTED', 'wrong_phase_dispatches_worker_or_api': False,
         'wrong_phase_changes_authority_or_usage': False, 'latest_review_before_history': True,
         'record_tool': 'dot_read_record', 'record_page_characters': 6000,
@@ -97,6 +100,19 @@ def validate_closure_policy(value):
         'automatic_non_success_route': 'L1_assessment',
         'assessment_template': 'templates/l1-closure.example.json', 'guide': 'docs/guides/l1-closure.md'}
     return [] if value == expected else ['Invalid L1 closure governance']
+
+
+def validate_flow_recovery(value):
+    expected = {'schema_version': 1, 'guide': 'docs/guides/flow-recovery.md', 'bootstrap_abi': 7,
+        'new_native_adaptive_limits_required': True, 'requirements_review_before_initial_planning': True,
+        'initialization_adopts_review_without_replay': True, 'preflight_review_usage_preserved': True,
+        'read_only_investigation_tool': 'dot_investigate', 'l1_decision_tool': 'l1_resume_decision',
+        'l2_requires_solutions_or_investigation_steps': True, 'l2_may_finalize_failure': False,
+        'closure_evidence_must_exist': True, 'unaffected_completed_work_preserved': True,
+        'changed_candidate_reuses_old_pass': False, 'native_recovery_requires_process_and_evidence_checks': True,
+        'recovery_preserves_original_unknown_and_usage': True, 'recovery_reopens_final_report': False,
+        'preflight_report_requires_l1_submission': True, 'legacy_receipts_rewritten_as_requirements_first': False}
+    return [] if value == expected else ['Flow recovery policy differs from implemented boundaries']
 
 
 def validate_input_material_policy(value):
@@ -148,7 +164,7 @@ def validate_initialization_recovery_policy(value):
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 6,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 7,
         'default_enabled': True, 'check_interval_seconds': 21600,
         'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
         'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
@@ -245,6 +261,7 @@ def validate_planning_policy(value):
         'rejection_resets_counters': False,
         'replanning_consumes': ['api_calls', 'wall_time'],
         'independent_review_required': True, 'legacy_locked_task_auto_migration': False,
+        'initial_native_plan_requires_approved_requirements': True,
         'guide': 'docs/guides/plan-rejections.md'}
     if not isinstance(value, dict) or set(value) != set(expected):
         return ['Planning policy fields differ from implemented scope']
@@ -335,6 +352,7 @@ def validate_resource_policy(value):
     expected = {
         'schema_version': 1, 'opt_in_field': 'adaptive_limits', 'new_task_default': True,
         'legacy_auto_migration': False,
+        'new_native_task_required': True, 'legacy_mode': 'preserve_existing_confirmations_and_receipts_only',
         'user_confirms': ['goals_constraints_acceptance', 'permissions', 'resource_ceilings', 'final_deadline'],
         'allocation_owner': 'L1', 'exhaustion_state': 'BUDGET_REVIEW_PENDING',
         'human_request_state': 'AUTHORIZATION_PENDING', 'status_layer': 'bridge_overlay_preserves_runtime_state',
@@ -619,11 +637,12 @@ def validate_repository(root):
     errors.extend(validate_initialization_recovery_policy(documents.get('policy/initialization-recovery.json')))
     errors.extend(validate_api_recovery_policy(documents.get('policy/api-recovery.json')))
     errors.extend(validate_review_handoff_policy(documents.get('policy/review-handoff.json')))
+    errors.extend(validate_flow_recovery(documents.get('policy/flow-recovery.json')))
     errors.extend(validate_input_material_policy(documents.get('policy/input-material.json')))
     errors.extend(validate_closure_policy(documents.get('policy/closure.json')))
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):
         errors.extend(validate_closure_policy(documents[key].get('non_success_closure')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 6:
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 7:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
         if documents[key].get('update_policy') != 'policy/updates.json':
@@ -649,7 +668,7 @@ def validate_repository(root):
     for key in ('templates/harness-start.example.json', 'templates/l1-delegation.example.json'):
         if documents[key].get('adaptive_limits') is not True:
             errors.append('New task templates must enable adaptive resource governance: ' + key)
-    if onboarding.get('states_before_runtime') != ['DISCOVERY', 'PREPARED', 'START_CONFIRMED', 'NEEDS_INFO', 'PLAN_REJECTED']:
+    if onboarding.get('states_before_runtime') != ['DISCOVERY', 'PREPARED', 'START_CONFIRMED', 'NEEDS_INFO', 'PLAN_REJECTED', 'REQUIREMENTS_PENDING', 'REQUIREMENTS_APPROVED', 'DECISION_PENDING']:
         errors.append('Onboarding must distinguish recoverable planning results from UNKNOWN/final reports')
     if simple.get('startup_confirmation_required') is not True:
         errors.append('Consolidated startup confirmation is required')

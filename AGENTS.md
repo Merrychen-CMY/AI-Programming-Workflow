@@ -42,9 +42,11 @@ L1与用户沟通另须遵循[L1表达约束](docs/guides/l1-user-expression.md)
 
 API异常先读取dot_status.api_review，进入API_REVIEW_PENDING由L1评估，不立即l1_stop。用l1_review_api调整等待或提出下一次请求；参数按templates/api-review.example.json，等待不得超过当前timeout_seconds、总时间和截止时间。仅明确未发送/被拒绝/已收到终止响应时可由L1授权下一次请求；旧请求结果仍未知时调用workflow_review_api_retry取得原生用户决定。保留原UNKNOWN和未知费用；不得恢复产品执行UNKNOWN、旧中断或最终报告。详见[API评估与恢复](docs/guides/api-recovery.md)。
 
-正常开工审查由控制器自动提供source-index.json及原始检查、初始快照、累计账本、API恢复记录和当前包规范。不要用l1_add_facts重复抄写系统已有记录；真实新事实和基线修订仍按原授权计数。先需求批准，再计划批准，再dot_run。审批顺序错误返回COMPLETED_REJECTED且未启动审查，不当作UNKNOWN。先读latest_review和next；用dot_read_record(path, offset="0")分页读取完整问题、材料和报告。历史UNKNOWN是否仍未决以api_review.unresolved为准，不能把已授权后续请求说成旧请求成功。当前额度不足先L1评估；超过用户上限须原生追加授权，有明确可行方案时不要直接结案。详见[正常开工链路](docs/guides/normal-start.md)。
+正常开工审查由控制器自动提供source-index.json及原始检查、初始快照、累计账本、API恢复记录和当前包规范。不要用l1_add_facts重复抄写系统已有记录；真实新事实和基线修订仍按原授权计数。新原生任务先需求独立审查与批准，再dot_plan、dot_initialize、计划批准，最后dot_run。审批顺序错误返回COMPLETED_REJECTED且未启动审查，不当作UNKNOWN。先读latest_review和next；用dot_read_record(path, offset="0")分页读取完整问题、材料和报告。历史UNKNOWN是否仍未决以api_review.unresolved为准，不能把已授权后续请求说成旧请求成功。当前额度不足先L1评估；超过用户上限须原生追加授权，有明确可行方案时不要直接结案。详见[正常开工链路](docs/guides/normal-start.md)。
 
 
 3.9.0调查规则：问题统一交L2调查；尚未查明原因不得自动结案。取消根因分类unknown，needs_analysis表示L2调查待办，缺资料、权限或资源交L1解决。L1在授权内推进，越界主动申请用户原生授权，有必要继续解决时保留任务；仅评估无可行方案、用户结束或无法调整的全任务限制才提交最终报告。材料超限返回NOT_SENT/COMPLETED_REJECTED，不产生本次API消耗或最终UNKNOWN；完整证据保留并分页读取，摘要明确标注。操作执行状态仍如实记录；只读调查不能清除未决产品操作或重放写入。详见[调查与材料处理](docs/guides/investigation.md)。
 
 非成功结案规则（3.10.0）：L2 可以暂停操作、提交问题和建议终止，不能直接把整个任务判为最终失败。遇到问题先根据证据在现有权限内思考解决方案，记录已考虑方案、预计收益、核验步骤、资源及权限缺口；可执行的修复仍按原分工派 L3/L4。证据不足应提出有边界的调查方案，不能以“未知”替代分析并结束。超出 L2 权限时，将方案交 L1 评估；L1 在授权内协调，越界主动向用户申请。所有非成功结案（FAILED、INCOMPLETE、UNKNOWN）都必须先经过 L1 明确评估。控制器自动错误及旧预算耗尽只暂停，不生成最终报告。l1_stop 的 reason 使用 templates/l1-closure.example.json 所示 JSON 字符串，记录方案、证据、权限、资源和终止依据；普通理由文本会被拒绝且不结案。成功验收门禁、原始失败、累计消耗和未决操作保护保持有效。详见 docs/guides/l1-closure.md。
+
+3.11.0流程顺序与恢复：新原生任务强制动态额度。开工确认并分配额度后，先l1_prepare_requirements → l1_approve(requirements)，通过后才dot_plan → dot_initialize → l1_approve(plan) → dot_run。初始化承接原需求独立审核及消耗，不重复审核。DECISION_PENDING使用dot_investigate继续只读分析，L1用l1_resume_decision选择有证据的恢复方案；旧操作未核实时先经原生恢复核对，不能重放。修订保留不受影响的已完成实现，候选与验证随基线重新核验。开工前后报告均先l1_submit_report再由用户审核；非成功结案须真实任务证据。新增入口需安装ABI7主包，历史CLI和已开工旧任务保留原收据，不得伪造先审后规划的历史或重开最终报告。详见[完整流程与恢复](docs/guides/flow-recovery.md)。

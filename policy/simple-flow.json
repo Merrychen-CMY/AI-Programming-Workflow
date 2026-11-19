@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.10.0",
+  "workflow_version": "3.11.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -98,7 +98,7 @@
         "DECISION_PENDING",
         "REPORT_PENDING"
       ],
-      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure pauses for L2 solution analysis and L1 assessment; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
+      "guard": "L1 delegated approval bound to original input, envelope, exact artifact and independent review; failure pauses for L2 solution analysis and L1 assessment; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination; new native initialization adopts the actual pre-plan requirements review without replay or counter reset"
     },
     {
       "id": "EXECUTING",
@@ -131,7 +131,7 @@
         "BLOCKED",
         "DECISION_PENDING"
       ],
-      "guard": "L1 revises within current user authority; changes beyond authority require native user approval; reapprove affected baselines and preserve all counters; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination"
+      "guard": "L1 revises within current user authority; changes beyond authority require native user approval; reapprove affected baselines and preserve all counters; non-success finalization requires explicit L1 closure assessment; automatic errors pause for L2 solution analysis and L1 coordination; bounded read-only dot_investigate is permitted, l1_resume_decision validates existing approvals, evidence and resources before execution"
     },
     {
       "id": "BLOCKED",
@@ -236,5 +236,13 @@
     "automatic_non_success_route": "L1_assessment",
     "assessment_template": "templates/l1-closure.example.json",
     "guide": "docs/guides/l1-closure.md"
-  }
+  },
+  "flow_recovery_policy": "policy/flow-recovery.json",
+  "requirements_approval_before_initial_dot_plan": true,
+  "new_native_tasks_require_adaptive_limits": true,
+  "preflight_requirements_states": [
+    "REQUIREMENTS_PENDING",
+    "REQUIREMENTS_APPROVED",
+    "DECISION_PENDING"
+  ]
 }

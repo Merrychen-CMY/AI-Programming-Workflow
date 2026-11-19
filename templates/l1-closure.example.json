@@ -7,6 +7,6 @@
   "resource_review": "说明累计消耗、剩余额度、总上限及调整的可行性。",
   "termination_basis": "no_feasible_solution",
   "evidence": [
-    "填写可核实的任务记录路径或用户停止请求来源。"
+    "run/decision-request.json"
   ]
 }

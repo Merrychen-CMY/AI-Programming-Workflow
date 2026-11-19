@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "guide": "docs/guides/flow-recovery.md",
+  "bootstrap_abi": 7,
+  "new_native_adaptive_limits_required": true,
+  "requirements_review_before_initial_planning": true,
+  "initialization_adopts_review_without_replay": true,
+  "preflight_review_usage_preserved": true,
+  "read_only_investigation_tool": "dot_investigate",
+  "l1_decision_tool": "l1_resume_decision",
+  "l2_requires_solutions_or_investigation_steps": true,
+  "l2_may_finalize_failure": false,
+  "closure_evidence_must_exist": true,
+  "unaffected_completed_work_preserved": true,
+  "changed_candidate_reuses_old_pass": false,
+  "native_recovery_requires_process_and_evidence_checks": true,
+  "recovery_preserves_original_unknown_and_usage": true,
+  "recovery_reopens_final_report": false,
+  "preflight_report_requires_l1_submission": true,
+  "legacy_receipts_rewritten_as_requirements_first": false
+}

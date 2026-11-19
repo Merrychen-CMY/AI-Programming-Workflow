@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.10.0",
+  "workflow_version": "3.11.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -31,7 +31,8 @@
       "docs/guides/api-recovery.md",
       "templates/api-review.example.json",
       "docs/guides/normal-start.md",
-      "docs/guides/investigation.md"
+      "docs/guides/investigation.md",
+      "docs/guides/flow-recovery.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -50,7 +51,8 @@
       "docs/reference/20-reflow.md",
       "docs/guides/l1-dot-communication.md",
       "policy/communication.json",
-      "docs/guides/investigation.md"
+      "docs/guides/investigation.md",
+      "docs/guides/flow-recovery.md"
     ],
     "L3": [
       "roles/implementer-l3.md",
@@ -380,5 +382,6 @@
   "api_recovery_policy": "policy/api-recovery.json",
   "review_handoff_policy": "policy/review-handoff.json",
   "input_material_policy": "policy/input-material.json",
-  "closure_policy": "policy/closure.json"
+  "closure_policy": "policy/closure.json",
+  "flow_recovery_policy": "policy/flow-recovery.json"
 }

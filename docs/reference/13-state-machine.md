@@ -62,3 +62,7 @@ REVIEW_PENDING只接受需求审批；PLAN_PENDING只接受计划审批。DECISI
 3.9.0调查规则：问题统一交L2调查；尚未查明原因不得自动结案。取消根因分类unknown，needs_analysis表示L2调查待办，缺资料、权限或资源交L1解决。L1在授权内推进，越界主动申请用户原生授权，有必要继续解决时保留任务；仅评估无可行方案、用户结束或无法调整的全任务限制才提交最终报告。材料超限返回NOT_SENT/COMPLETED_REJECTED，不产生本次API消耗或最终UNKNOWN；完整证据保留并分页读取，摘要明确标注。操作执行状态仍如实记录；只读调查不能清除未决产品操作或重放写入。详见[调查与材料处理](../guides/investigation.md)。
 
 3.10.0：L2先在权限内分析解决方案，越界将方案交L1评估。所有自动非成功出口转为评估暂停；只有显式L1结案评估才能进入最终REPORT_PENDING，见[结案规则](../guides/l1-closure.md)。
+
+## 3.11.0本地原生流程补充
+
+3.11.0流程顺序与恢复：新原生任务强制动态额度。开工确认并分配额度后，先l1_prepare_requirements → l1_approve(requirements)，通过后才dot_plan → dot_initialize → l1_approve(plan) → dot_run。初始化承接原需求独立审核及消耗，不重复审核。DECISION_PENDING使用dot_investigate继续只读分析，L1用l1_resume_decision选择有证据的恢复方案；旧操作未核实时先经原生恢复核对，不能重放。修订保留不受影响的已完成实现，候选与验证随基线重新核验。开工前后报告均先l1_submit_report再由用户审核；非成功结案须真实任务证据。新增入口需安装ABI7主包，历史CLI和已开工旧任务保留原收据，不得伪造先审后规划的历史或重开最终报告。详见[完整流程、恢复与拒绝检查](../guides/flow-recovery.md)。本节正式服务端/设备交付示例仍属于高级接入，不表示本地插件已实现外部交付。

@@ -119,6 +119,22 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(''.join(pages), original.decode('utf-8'))
         self.assertEqual((self.bridge.root / name).read_bytes(), original)
 
+    def test_review_without_result_file_links_to_recorded_state(self):
+        result = self.approve('requirements')
+        result['l1_reviews'][-1]['evidence_files'] = []
+        self.assertEqual(compact(result)['latest_review']['record'], 'run/state.json')
+
+    def test_recovery_history_is_compact_and_readable(self):
+        result = self.approve('requirements')
+        result['operation_recoveries'] = [{'original': 'recorded unresolved operation'}] * 20
+        reply = compact(result)
+        self.assertEqual(reply['operation_recoveries_count'], 20)
+        self.assertNotIn('operation_recoveries', reply)
+        from dot_runtime.controller import atomic_json
+        atomic_json(self.bridge.root / 'operation-recovery-history.json', {'events': result['operation_recoveries']})
+        record = self.bridge.call('dot_read_record', {'path': 'operation-recovery-history.json', 'offset': '0'})
+        self.assertIn('recorded unresolved operation', record['content'])
+
     def test_record_rejects_traversal_secret_files_and_bad_offsets(self):
         for name in ('../delegation.json', 'run/l1-reviews/../../../../secret.json', 'api/secret-request.json',
                      'C:/secret.json', 'run\\state.json'):
@@ -126,6 +142,16 @@ class HandoffTests(unittest.TestCase):
                 read_record(self.bridge.root, name, '0')
         for offset in ('-1', '0.2', '', '１２'):
             with self.assertRaises(ValueError): read_record(self.bridge.root, 'plan.json', offset)
+
+    def test_native_stop_records_can_be_read_without_granting_authority(self):
+        from dot_runtime.controller import atomic_json
+        for name in ('user-stop.json', 'user-stop-pending.json', 'user-stop-decisions/fixture.json'):
+            path = self.bridge.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_json(path, {'fixture': 'Read-only data is not a native user decision'})
+            result = read_record(self.bridge.root, name, '0')
+            self.assertIn('Read-only data', result['content'])
+            self.assertIn('not new authority', result['instructions'])
 
     def test_packet_and_record_reader_support_deep_windows_paths(self):
         from dot_runtime.review_packet import prepare

@@ -37,6 +37,17 @@ def result(status='PASS', cause='needs_analysis', output='Ran 3 tests in 0.001s\
                                   'exit_code': 0, 'aggregated_output': output}]}}
 
 
+def triage_fields(cause='needs_analysis'):
+    action = {'implementation': 'repair', 'test_infrastructure': 'reverify',
+              'evidence_collection': 'reverify', 'needs_analysis': 'continue_investigation'}.get(cause, 'revise_baseline')
+    return {'solutions': [{'description': 'Correct the fixture condition within approved scope',
+                'expected_benefit': 'Restore the specified fixture behavior',
+                'verification_steps': ['Run the approved independent checks'],
+                'required_resources': ['Existing bounded allocation'], 'permission_gaps': []}],
+            'investigation_steps': ['Inspect the recorded fixture failure against its source'],
+            'missing_information': [], 'permission_gaps': [], 'recommended_action': action}
+
+
 class FakeAdapter:
     def __init__(self, overrides=None, hook=None, reused_session=False):
         self.overrides = list(overrides or [])
@@ -52,6 +63,12 @@ class FakeAdapter:
         if self.overrides and self.overrides[0][0] == role:
             report = self.overrides.pop(0)[1]
         report = copy.deepcopy(report)
+        if role == 'triage':
+            for key, value in triage_fields(report.get('root_cause')).items():
+                report.setdefault(key, value)
+            for item in report.get('evidence', []):
+                if item.get('kind') == 'review':
+                    item['test_count'] = 0
         report['session_id'] = 'reused' if self.reused_session else f'session-{len(self.calls)}'
         output_dir.mkdir(parents=True)
         atomic_json(output_dir / 'result.json', report)
@@ -133,14 +150,15 @@ class ControllerTests(unittest.TestCase):
         self.assertNotIn('report', c.state['approvals'])
         self.assertEqual(c.state['state'], 'REPORT_PENDING')
 
-    def test_rejected_report_can_be_revised_without_authorizing_a_retry(self):
+    def test_rejected_report_cannot_be_reopened_by_revision(self):
         c = self.approved()
         c.run()
         self.assertEqual(c.reject('report', 'Missing required case', lambda *_: True)['state'], 'BLOCKED')
         with self.assertRaises(ValueError):
             c.run()
-        c.revise(self.requirements, self.plan)
-        self.assertEqual(c.state['state'], 'REVIEW_PENDING')
+        with self.assertRaisesRegex(ValueError, 'Closed/rejected final report'):
+            c.revise(self.requirements, self.plan)
+        self.assertEqual(c.state['state'], 'BLOCKED')
         self.assertEqual(c.state['implementation_attempts'], 1)
 
     def test_changed_input_during_human_approval_rejected(self):
@@ -224,7 +242,8 @@ class ControllerTests(unittest.TestCase):
             c.approve('report', lambda *_: True)
         c.stop_with_report('L1 evaluated alternatives', l1_assessment=assessment())
         self.assertEqual(c.approve('report', lambda *_: True)['state'], 'BLOCKED')
-        c.revise(self.requirements, self.plan)
+        with self.assertRaisesRegex(ValueError, 'Closed/rejected final report'):
+            c.revise(self.requirements, self.plan)
         self.assertEqual(c.state['implementation_attempts'], 2)
 
     def test_requirement_failure_routes_to_decision_not_implementation(self):

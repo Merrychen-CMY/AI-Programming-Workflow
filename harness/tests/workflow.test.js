@@ -71,7 +71,7 @@ test('UNKNOWN blocks resource adjustments and human amendment without clearing t
   const f=await fixture(t); await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
   await writeFile(resolve(f.task,'interrupted.json'),'{}');
   for(const [name,args] of [['l1_adjust_limits',{proposal_json:'{}'}],['l1_request_authorization',{proposal_json:'{}'}],['workflow_review_authorization',{}]])
-    await assert.rejects(f.flow.invoke(name,args,f.exec),/UNKNOWN/);
+    await assert.rejects(f.flow.invoke(name,args,f.exec),/UNKNOWN|旧操作结果待核实/);
   assert.equal(f.calls.length,0);
   assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),'{}');
 });
@@ -158,7 +158,7 @@ test('model-supplied confirmation is rejected before asking user',async t=>{
 });
 test('restart preserves UNKNOWN and blocks repeated worker dispatch',async t=>{
   const f=await fixture(t);await mkdir(f.task,{recursive:true});await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
-  await writeFile(resolve(f.task,'interrupted.json'),'{}');await assert.rejects(f.flow.invoke('dot_run',{},f.exec),/UNKNOWN/);
+  await writeFile(resolve(f.task,'interrupted.json'),'{}');await assert.rejects(f.flow.invoke('dot_run',{},f.exec),/UNKNOWN|旧操作结果待核实/);
   await f.flow.invoke('workflow_status',{},f.exec);assert.equal(f.calls.at(-1).request.action,'status');
 });
 test('final report UI preserves FAILED evidence and waits for human',async t=>{
@@ -192,11 +192,11 @@ test('completed NEEDS_INFO clears in-flight marker and allows sourced facts with
 test('unknown transport failure still blocks facts and repeated planning',async t=>{
   const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
   f.controls.bridgeError='UNKNOWN: lost result';
-  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'requirements'},f.exec),/UNKNOWN/);
+  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'requirements'},f.exec),/UNKNOWN|旧操作结果待核实/);
   assert.ok(await readFile(resolve(f.task,'interrupted.json')));
   const count=f.calls.length;
-  await assert.rejects(f.flow.invoke('l1_add_facts',{facts_json:'{}'},f.exec),/UNKNOWN/);
-  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'new requirements'},f.exec),/UNKNOWN/);
+  await assert.rejects(f.flow.invoke('l1_add_facts',{facts_json:'{}'},f.exec),/UNKNOWN|旧操作结果待核实/);
+  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'new requirements'},f.exec),/UNKNOWN|旧操作结果待核实/);
   assert.equal(f.calls.length,count);
 });
 
@@ -242,7 +242,7 @@ test('known rejection cannot clear a marker left by an earlier unknown operation
   const f=await fixture(t);await writeFile(resolve(f.task,'confirmation.json'),JSON.stringify({settings}));
   await writeFile(resolve(f.task,'interrupted.json'),'prior unknown');
   f.controls.bridgeReply={accepted:false,operation_status:'COMPLETED_REJECTED'};
-  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'x'},f.exec),/UNKNOWN/);
+  await assert.rejects(f.flow.invoke('dot_plan',{requirements:'x'},f.exec),/UNKNOWN|旧操作结果待核实/);
   assert.equal(await readFile(resolve(f.task,'interrupted.json'),'utf8'),'prior unknown');
   assert.equal(f.calls.length,0);
 });

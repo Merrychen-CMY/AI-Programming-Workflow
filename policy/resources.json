@@ -41,5 +41,7 @@
     "dot_api_reported_usage"
   ],
   "unified_monetary_hard_cap": false,
-  "guide": "docs/guides/adaptive-resources.md"
+  "guide": "docs/guides/adaptive-resources.md",
+  "new_native_task_required": true,
+  "legacy_mode": "preserve_existing_confirmations_and_receipts_only"
 }

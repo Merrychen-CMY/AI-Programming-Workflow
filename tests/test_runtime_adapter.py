@@ -62,7 +62,8 @@ class AdapterTests(unittest.TestCase):
         return Process()
 
     def run_adapter(self, role="test"):
-        with patch.object(adapter.subprocess, "Popen", side_effect=self.fake_popen):
+        with patch.object(adapter.subprocess, "Popen", side_effect=self.fake_popen), \
+                patch('dot_runtime.operation_recovery.boot_identity', return_value='fixture-boot'):
             return adapter.CodexAdapter("codex-test-path").run(role, "Assigned scope only", self.workspace, self.output, 10)
 
     def test_fresh_session_identity_and_matching_command_evidence(self):
@@ -140,6 +141,8 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result["findings"], ["AC-2 mismatch"])
 
     def test_triage_requires_concrete_key_and_preserves_it(self):
+        from test_runtime_controller import triage_fields
+        self.report.update(triage_fields('implementation'))
         self.report.update(root_cause="implementation", root_cause_key="")
         self.assertEqual(self.run_adapter("triage")["status"], "ERROR")
         self.output = self.root / "runs" / "two"

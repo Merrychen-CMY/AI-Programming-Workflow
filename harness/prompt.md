@@ -8,13 +8,13 @@
 
 由你填写草案，不要求用户写 JSON。用户确认目标、权限、资源总上限和截止时间；你制定细粒度参数。草案启用adaptive_limits:true，limits是待用户确认的上限，不是固定当前额度。示例数值按任务规模调整后展示确认。将原始需求中相关澄清与资料引用完整保留。需求明确后用 workflow_inspect(draft_json) 复核基础条件、补查项目特有编译器/测试入口/设备，并固定项目指纹；这是开工前的补充核对，不是把首次环境检查延后。必要检查 FAIL/UNKNOWN 时先处理，不能绕过。配置改变须重新调用 workflow_check_environment。缺失工具时说明具体路径/安装需求，不自动安装、改变系统安全配置或猜测凭据。
 
-用 workflow_confirm_start 展示完整草案、检查证据、项目指纹、模型、范围、预算和有效期，通过 Harness 原生用户提问获得一次真实确认。模型不能传入 confirmed、用户回执或自选会话ID。取消、跳过或沉默都不批准。确认成功后不再逐份请求用户批准需求/计划，先按templates/resource-allocation.example.json调用l1_adjust_limits分配当前额度，再执行 dot_plan → dot_initialize → l1_approve(requirements) → l1_approve(plan) → dot_run；独立审查有否决权。工具同名、既有候选和累计预算规则继续有效。
+用 workflow_confirm_start 展示完整草案、检查证据、项目指纹、模型、范围、预算和有效期，通过 Harness 原生用户提问获得一次真实确认。模型不能传入 confirmed、用户回执或自选会话ID。取消、跳过或沉默都不批准。新原生任务必须adaptive_limits:true，确认成功后不再逐份请求用户批准需求/计划。先按templates/resource-allocation.example.json调用l1_adjust_limits分配当前额度，再执行 l1_prepare_requirements → l1_approve(requirements) → dot_plan → dot_initialize → l1_approve(plan) → dot_run。需求先由独立只读会话审查并由L1批准，DOT才能规划；初始化承接真实需求审核及已用次数，不重复审查。独立审查有否决权，累计预算不清零。
 
-中途问题由 DOT/L2 统一分类调度。范围内需求或验证计划调整由 L1 重新批准；完整返回的规划缺口进入NEEDS_INFO：先读planning.gaps，再查证或询问，按templates/fact-supplement.example.json调用l1_add_facts追加事实，然后dot_plan；不重新开工、不改旧摘要、不清零预算。未初始化用dot_initialize；已初始化暂停任务用l1_revise，均须重新独立审核后批准。当前额度耗尽先进入L1评估：读resources.budget_review、剩余工作和原始证据，用l1_adjust_limits在上限内调整；说明理由、预期收益及策略。超出用户目标/权限/上限/截止时间，先l1_request_authorization再workflow_review_authorization获得明确决定。无可行方案、授权被拒且无法继续或无法核实的中断才停止报告。不得换会话重置预算。每个 Harness 会话只绑定一个任务，未终结的动态任务可经原生用户授权变更目标并重审；旧版、UNKNOWN和已提交最终报告的任务不自动重开，新任务须明确关联旧记录。
+中途问题由 DOT/L2 统一分类调度。范围内需求或验证计划调整由 L1 重新批准；完整返回的规划缺口进入NEEDS_INFO：先读planning.gaps，再查证或询问，按templates/fact-supplement.example.json调用l1_add_facts追加事实。未初始化的新原生任务先l1_prepare_requirements和l1_approve(requirements)审查新事实，再dot_plan；不重新开工、不改旧摘要、不清零预算。已初始化任务进入DECISION_PENDING时先读原始记录，以dot_investigate继续只读分析，L2须提供具体方案或调查步骤，不能空列方案后称未知。已有证据及完整授权内方案时，用l1_resume_decision选择repair/reverify后再dot_run；需要基线修改才l1_revise并独立重审，保留不受影响的已完成实现。当前额度耗尽先进入L1评估：读resources.budget_review、剩余工作和原始证据，用l1_adjust_limits在上限内调整；说明理由、预期收益及策略。超出用户目标/权限/上限/截止时间，先l1_request_authorization再workflow_review_authorization获得明确决定。L1评估无可行方案、授权被拒且无法继续或经核实没有可行恢复路径后才提交非成功报告。不得换会话重置预算。每个 Harness 会话只绑定一个任务；旧版、UNKNOWN和已提交最终报告不自动重开，新任务须明确关联旧记录。
 
 先核查最终报告中每次参数调整理由、前后值、实际消耗和结果，再l1_submit_report，向用户展示完整报告和产物，调用 workflow_review_report 让用户在同一界面审核。该工具始终显示控制器原始结果、全部证据和 L1 结论，不接受模型代签。最终确认失败只确认现状，不授权重试。无外部发布、合并、部署或生产刷写执行器。
 
-长任务可能被宿主取消。取消只能记为 UNKNOWN，不证明所有子进程已停止。workflow_status 可读状态；禁止自动重放中断操作。先核实旧进程/证据，否则提交停止报告。配置与工作记录位于用户目录下 .ai-programming-workflow，不能作为产品输入。不要将 API 密钥带给 Codex、测试或审核工作会话。
+长任务可能被宿主取消。取消只能记为 UNKNOWN，不证明所有子进程已停止。workflow_status可读状态；禁止自动重放中断操作。使用l1_prepare_recovery提交真实证据、进程/副作用分析和恢复方案，再由workflow_recover_operation核验进程并取得原生用户决定；未核实先保留暂停，不能直接结案。批准仅归档原保护并回调查/独立重审，不立即派工，不改写旧UNKNOWN或重开最终报告。配置与工作记录位于用户目录下 .ai-programming-workflow，不能作为产品输入。不要将API密钥带给Codex、测试或审核工作会话。
 
 遵循 AGENTS.md 和 L1.md。按需用 workflow_reference 读取 INDEX.json、DOT.md、编码规范及模板，采用格赖斯沟通原则和 L1-EXPR-01～05。嵌入式 C 以华为为先，保留 Doxygen 和通用约束；这些规则不能因为插件化而弱化。
 
@@ -38,3 +38,5 @@
 3.9.0问题调查：问题统一交L2调查；尚未查明原因不得自动结案。取消根因分类unknown，needs_analysis表示L2调查待办，缺资料、权限或资源交L1解决。L1在授权内推进，越界主动申请用户原生授权，有必要继续解决时保留任务；仅评估无可行方案、用户结束或无法调整的全任务限制才提交最终报告。材料超限返回NOT_SENT/COMPLETED_REJECTED，不产生本次API消耗或最终UNKNOWN；完整证据保留并分页读取，摘要明确标注。操作执行状态仍如实记录；只读调查不能清除未决产品操作或重放写入。先读decision.analysis和source_record；不要用l1_stop结束尚有可行方案的材料整理或授权请求。
 
 非成功结案规则（3.10.0）：L2 可以暂停操作、提交问题和建议终止，不能直接把整个任务判为最终失败。遇到问题先根据证据在现有权限内思考解决方案，记录已考虑方案、预计收益、核验步骤、资源及权限缺口；可执行的修复仍按原分工派 L3/L4。证据不足应提出有边界的调查方案，不能以“未知”替代分析并结束。超出 L2 权限时，将方案交 L1 评估；L1 在授权内协调，越界主动向用户申请。所有非成功结案（FAILED、INCOMPLETE、UNKNOWN）都必须先经过 L1 明确评估。控制器自动错误及旧预算耗尽只暂停，不生成最终报告。l1_stop 的 reason 使用 templates/l1-closure.example.json 所示 JSON 字符串，记录方案、证据、权限、资源和终止依据；普通理由文本会被拒绝且不结案。成功验收门禁、原始失败、累计消耗和未决操作保护保持有效。详见 docs/guides/l1-closure.md。
+
+3.11.0新增工具需要ABI7主插件包。先读docs/guides/flow-recovery.md与policy/flow-recovery.json。开工前preflight报告与运行后报告都必须l1_submit_report，再workflow_review_report；结案evidence必须指向control内真实记录，不能填写泛泛理由。“用户要求停止”须有真实原生停止记录。历史CLI及已开工旧任务按原收据保留，不伪造先审后规划历史；升级不代替中断恢复或追加授权。

@@ -44,7 +44,14 @@ def bridge(settings):
             if any(t.get('name') == 'propose_plan' for t in payload.get('tools', [])):
                 return delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})
             return delegated.call_response('run_approved_workflow')
-        return ResponsesClient(model, path, envelope, send=send)
+        class FixtureClient(ResponsesClient):
+            def request(self, prompt, **options):
+                if 'Fixture oversized material' in prompt:
+                    # Simulate attached diagnostic material AFTER the exact
+                    # requirements approval, exercising the real unsent guard.
+                    prompt += '\nFIXTURE DIAGNOSTIC MATERIAL:\n' + 'fixture-log\n' * 30000
+                return super().request(prompt, **options)
+        return FixtureClient(model, path, envelope, send=send)
     return Bridge(settings, client_factory=factory, workers=Workers())
 
 

@@ -38,8 +38,8 @@ flowchart TD
 2. 查已有资料和工具证据；确需用户提供的事实可以询问，不把资料澄清变成新的开工审批。用户已提供的事实无需重复问。
 3. 按[事实补充模板](../../templates/fact-supplement.example.json)准备`facts_json`，调用`l1_add_facts`。每项包含名称、实际值、具体来源和影响阶段。支持planning、build、test、documentation、delivery。模板由L1填写，用户无需操作JSON。
 4. 检查`accepted`；拒绝时修正输入或说明边界，不谎称已经记录。原始信息、delegation、开工回执及bridge设置不修改；新记录位于控制目录facts/，以摘要链和索引保留每一版。
-5. 调用`dot_plan`，传入完整更新后的需求。DOT同时收到原环境和全部事实补充，补充内容不得扩大授权或改换明确用户参数。
-6. 未初始化任务：`dot_initialize` → `l1_approve(requirements)` → `l1_approve(plan)`。已初始化且在PLAN_PENDING/DECISION_PENDING暂停：`l1_revise` → 两项独立审查和代理批准。其他执行中/终态不接受事实更新。
+5. 新原生且尚未初始化的任务，先`l1_prepare_requirements`暂存更新需求，`l1_approve(requirements)`重新独立审查，再调用`dot_plan`，传入完整已批准需求。已初始化任务按修订流程处理。DOT同时收到原环境和全部事实补充，补充内容不得扩大授权或改换明确用户参数。
+6. 新原生未初始化任务：需求批准及规划完成后，`dot_initialize`承接需求审核 → `l1_approve(plan)`；历史CLI保留原需求/计划双审顺序。已初始化且在PLAN_PENDING/DECISION_PENDING暂停：`l1_revise` → 两项独立审查和代理批准。其他执行中/终态不接受事实更新。
 7. 独立审查读取原始输入、委托、需求、计划、fact-supplements.json，拒绝冲突、缺乏来源、弱化AC或扩权。补充事实本身不是批准，USER_ATTESTED也不是工具实测。事实摘要进入批准/候选绑定和最终报告。
 
 ## 预算与重新验证

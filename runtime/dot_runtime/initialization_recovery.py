@@ -38,7 +38,18 @@ def records_for_control(root):
 
 def effective_baseline(task, receipt):
     entries = journal(task, receipt)['records']
-    return entries[-1]['baseline_after'] if entries else receipt['baseline']
+    baseline = entries[-1]['baseline_after'] if entries else receipt['baseline']
+    initialization_head = entries[-1]['sha256'] if entries else None
+    # Operation reconciliation may explicitly adopt a changed pre-init project.
+    # Bind it to the initialization journal head instead of comparing wall-clock
+    # timestamps: a later initialization recovery supersedes prior adoptions.
+    from .operation_recovery import records_for_control
+    for entry in records_for_control(task / 'control'):
+        adoption = entry.get('baseline_adoption', {})
+        if (adoption.get('applies_before_initialization') is True
+                and adoption.get('initialization_recovery_sha256') == initialization_head):
+            baseline = adoption['after']
+    return baseline
 
 
 def _files(task):

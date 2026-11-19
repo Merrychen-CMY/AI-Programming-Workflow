@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.10.0",
+  "policy_version": "3.11.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -14,9 +14,9 @@
   ],
   "forward_flow": [
     "L1",
-    "GPT_DOT_plan",
     "independent_requirements_review",
     "L1_delegated_requirements_approval",
+    "GPT_DOT_plan",
     "independent_plan_review",
     "L1_delegated_plan_approval",
     "G1",
@@ -186,5 +186,6 @@
     "automatic_non_success_route": "L1_assessment",
     "assessment_template": "templates/l1-closure.example.json",
     "guide": "docs/guides/l1-closure.md"
-  }
+  },
+  "flow_recovery_policy": "policy/flow-recovery.json"
 }

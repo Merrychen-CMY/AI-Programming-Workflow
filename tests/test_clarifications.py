@@ -169,7 +169,7 @@ class ClarificationTests(unittest.TestCase):
         bridge = self.bridge([delegated.call_response('stop', {'reason': 'Outside authority'})])
         paused = bridge.call('dot_plan', {'requirements': 'x'})
         self.assertIsNone(paused['preflight_report'])
-        bridge.call('l1_stop', {'reason': closure_reason()})
+        bridge.call('l1_stop', {'reason': closure_reason(evidence=['settings-binding.json'])})
         with self.assertRaisesRegex(ValueError, 'no automatic resumption'):
             self.add(bridge)
 

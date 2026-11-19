@@ -5,7 +5,11 @@
   "source_packet_digest_bound": true,
   "existing_record_copy_consumes_revision": false,
   "new_facts_and_baseline_changes_retain_existing_limits": true,
-  "approval_order": ["requirements", "plan", "execution"],
+  "approval_order": [
+    "requirements",
+    "plan",
+    "execution"
+  ],
   "wrong_phase_result": "COMPLETED_REJECTED",
   "wrong_phase_dispatches_worker_or_api": false,
   "wrong_phase_changes_authority_or_usage": false,
@@ -14,5 +18,16 @@
   "record_page_characters": 6000,
   "record_read_clears_unknown": false,
   "reopen_final_report": false,
-  "retain_full_report_and_original_hash": true
+  "retain_full_report_and_original_hash": true,
+  "initial_native_order": [
+    "prepare_requirements",
+    "independent_requirements_review",
+    "l1_requirements_approval",
+    "dot_plan",
+    "dot_initialize",
+    "independent_plan_review",
+    "l1_plan_approval",
+    "execution"
+  ],
+  "preplan_reviews_counted_and_imported": true
 }

@@ -92,12 +92,12 @@ def usage(root, state=None):
     state = state or {}
     ledger = Path(root) / 'api/ledger.json'
     api = read_json(ledger) if ledger.exists() else {'attempts': []}
-    from .clarifications import records
+    from .requirements_review import review_count, revision_count
     return {'implementation_attempts': state.get('implementation_attempts', 0),
             'infrastructure_retries': state.get('infrastructure_retries', 0),
             'same_root_cause_attempts': max(state.get('root_cause_counts', {}).values(), default=0),
-            'l1_reviews': len(state.get('l1_reviews', [])),
-            'revisions': state.get('revision_count', len(records(root))),
+            'l1_reviews': len(state['l1_reviews']) if 'l1_reviews' in state else review_count(root),
+            'revisions': state.get('revision_count', revision_count(root)),
             'api_calls': len(api['attempts']),
             'wall_time_seconds': max(0, time.time() - api['started_at']) if 'started_at' in api else 0}
 

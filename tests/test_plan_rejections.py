@@ -89,7 +89,7 @@ class PlanRejectionTests(unittest.TestCase):
             b.call('l1_approve', {'kind': kind, 'l1_session_id': 'author'})
         c = Controller(b.run_dir)
         self.assertEqual(c.state['approved_plan']['budgets']['implementation_attempts'], 3)
-        c.stop_with_report('Fixture stops before any product execution', l1_assessment=assessment())
+        c.stop_with_report('Fixture stops before any product execution', l1_assessment=assessment(control=True))
         self.assertEqual(len(read_json(b.run_dir / 'final-report.json')['planning_rejections']), 1)
 
     def test_identical_bad_output_and_feedback_does_not_loop_across_restart(self):

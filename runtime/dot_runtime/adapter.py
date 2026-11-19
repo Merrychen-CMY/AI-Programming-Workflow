@@ -44,6 +44,65 @@ RESULT_SCHEMA = {
     "required": ["status", "summary", "evidence", "findings", "root_cause", "root_cause_key"],
 }
 
+# L2 has a stronger contract than implementation/test reports. An inconclusive
+# diagnosis still needs a bounded next investigation, not an empty verdict.
+TRIAGE_ACTIONS = ('repair', 'reverify', 'revise_baseline', 'continue_investigation',
+                  'request_authorization', 'recommend_stop')
+SOLUTION_PROPERTIES = {
+    'description': {'type': 'string'}, 'expected_benefit': {'type': 'string'},
+    'verification_steps': {'type': 'array', 'items': {'type': 'string'}},
+    'required_resources': {'type': 'array', 'items': {'type': 'string'}},
+    'permission_gaps': {'type': 'array', 'items': {'type': 'string'}},
+}
+TRIAGE_PROPERTIES = {
+    'solutions': {'type': 'array', 'items': {'type': 'object', 'additionalProperties': False,
+        'properties': SOLUTION_PROPERTIES, 'required': list(SOLUTION_PROPERTIES)}},
+    'investigation_steps': {'type': 'array', 'items': {'type': 'string'}},
+    'missing_information': {'type': 'array', 'items': {'type': 'string'}},
+    'permission_gaps': {'type': 'array', 'items': {'type': 'string'}},
+    'recommended_action': {'type': 'string', 'enum': list(TRIAGE_ACTIONS)},
+}
+TRIAGE_SCHEMA = {**RESULT_SCHEMA, 'properties': {**RESULT_SCHEMA['properties'], **TRIAGE_PROPERTIES},
+                 'required': RESULT_SCHEMA['required'] + list(TRIAGE_PROPERTIES)}
+
+
+def _nonempty_strings(value, *, required=False):
+    return (isinstance(value, list) and (not required or bool(value))
+            and all(isinstance(item, str) and item.strip() for item in value))
+
+
+def _valid_triage(report):
+    if not isinstance(report, dict) or set(report) != set(TRIAGE_SCHEMA['required']):
+        return False
+    if not _valid_report({key: report[key] for key in RESULT_SCHEMA['required']}):
+        return False
+    if report['recommended_action'] not in TRIAGE_ACTIONS:
+        return False
+    for key in ('investigation_steps', 'missing_information', 'permission_gaps'):
+        if not _nonempty_strings(report[key]):
+            return False
+    solutions = report['solutions']
+    if not isinstance(solutions, list) or not (solutions or report['investigation_steps']):
+        return False
+    for solution in solutions:
+        if not isinstance(solution, dict) or set(solution) != set(SOLUTION_PROPERTIES):
+            return False
+        if any(not isinstance(solution[key], str) or not solution[key].strip()
+               for key in ('description', 'expected_benefit')):
+            return False
+        if not _nonempty_strings(solution['verification_steps'], required=True):
+            return False
+        if any(not _nonempty_strings(solution[key]) for key in ('required_resources', 'permission_gaps')):
+            return False
+    if report['root_cause'] == 'needs_analysis' and not report['investigation_steps']:
+        return False
+    action = report['recommended_action']
+    if action in ('repair', 'reverify'):
+        if (not solutions or report['root_cause'] == 'needs_analysis' or report['permission_gaps']
+                or report['missing_information'] or any(s['permission_gaps'] for s in solutions)):
+            return False
+    return True
+
 
 def _valid_report(report: object) -> bool:
     if not isinstance(report, dict) or set(report) != set(RESULT_SCHEMA["required"]):
@@ -158,7 +217,8 @@ class CodexAdapter:
             raise ValueError("Run output must be fresh; existing evidence must not be overwritten")
         stdout_path, stderr_path, result_path, schema_path, prompt_path = (
             output_dir / name for name in reserved)
-        schema_path.write_text(json.dumps(RESULT_SCHEMA, ensure_ascii=False, indent=2), encoding="utf-8")
+        schema = TRIAGE_SCHEMA if role == 'triage' else RESULT_SCHEMA
+        schema_path.write_text(json.dumps(schema, ensure_ascii=False, indent=2), encoding="utf-8")
         instructions = (
             f"Your delegated responsibility is {role}. Work only on the assigned task below. "
             "Return only the required JSON report. Never invent execution, evidence or approval. "
@@ -175,7 +235,9 @@ class CodexAdapter:
             "colon or slash (3-128 characters). Reuse the same key for the same underlying "
             "cause and distinguish unrelated causes, even when their root_cause categories "
             "match. A category such as implementation is not a concrete cause key. Outside "
-            "triage root_cause_key may be an empty string.\n\n" + prompt
+            "triage root_cause_key may be an empty string. For triage supply solutions with benefit, "
+            "verification steps, resources and permission gaps, plus investigation_steps, missing_information, "
+            "permission_gaps and recommended_action. An unresolved cause requires concrete investigation steps.\n\n" + prompt
         )
         prompt_path.write_text(instructions, encoding="utf-8")
         command = [
@@ -199,13 +261,27 @@ class CodexAdapter:
             with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
                 process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
                                            text=True, encoding="utf-8", cwd=workspace, env=self.environment, **options)
+                from .operation_recovery import record_process_start, record_process_end
+                try:
+                    record_process_start(output_dir, process.pid)
+                except (OSError, ValueError, TypeError) as exc:
+                    _terminate_tree(process, output_dir)
+                    result.update(status='UNKNOWN', summary='Started process could not be recorded: ' + str(exc))
+                    return result
+                tree_stopped = False
                 try:
                     process.communicate(instructions, timeout=timeout_seconds)
                 except subprocess.TimeoutExpired:
                     confirmed = _terminate_tree(process, output_dir)
+                    tree_stopped = confirmed
                     result.update(status="TIMEOUT" if confirmed else "UNKNOWN",
                                   summary="Codex timed out; process tree terminated" if confirmed else
                                   "Codex timed out; process tree termination unconfirmed, reconcile before retry")
+                try:
+                    record_process_end(output_dir, process.pid, tree_stopped=tree_stopped)
+                except (OSError, ValueError, TypeError) as exc:
+                    result.update(status='UNKNOWN', summary='Process outcome record could not be saved: ' + str(exc))
+                    return result
             metadata["process_exit_code"] = process.returncode
         except (OSError, subprocess.SubprocessError) as exc:
             result["summary"] = f"Codex execution failed: {exc}"
@@ -225,7 +301,7 @@ class CodexAdapter:
         except (OSError, UnicodeError, ValueError) as exc:
             result["summary"] = f"Missing or invalid structured report: {exc}"
             return result
-        if not _valid_report(report):
+        if not (_valid_triage(report) if role == 'triage' else _valid_report(report)):
             result["summary"] = "Structured report does not match the required schema"
             return result
         if role == "triage" and report["root_cause"] != "needs_analysis" and report["status"] in ("PASS", "FAIL"):

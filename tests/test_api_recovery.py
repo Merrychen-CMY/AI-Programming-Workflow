@@ -234,7 +234,7 @@ class ApiBridgeTests(unittest.TestCase):
         self.assertFalse((b.run_dir / 'state.json').exists())
         b.call('dot_plan', {'requirements': 'No blind retry'})
         send.assert_called_once()
-        result = b.call('l1_stop', {'reason': closure_reason('Cannot resolve this request')})
+        result = b.call('l1_stop', {'reason': closure_reason('Cannot resolve this request', ['settings-binding.json'])})
         self.assertEqual(result['preflight_report']['outcome'], 'UNKNOWN')
 
     def test_dispatch_api_failure_preserves_approved_work_without_starting_workers(self):

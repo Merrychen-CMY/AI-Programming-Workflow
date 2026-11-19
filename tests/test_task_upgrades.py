@@ -23,6 +23,7 @@ class TaskUpgradeTests(unittest.TestCase):
         onboarding_fixtures.OnboardingTests.setUp(self)
         self.settings['workflow_sha256'] = 'a' * 64
         self.confirm()
+        onboarding_fixtures.pin_legacy_fixture(self.task)
         self.source = {'version': '3.4.1', 'manifest_sha256': 'a' * 64}
         self.run_dir = self.task / 'control/run'
 

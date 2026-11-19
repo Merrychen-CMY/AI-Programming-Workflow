@@ -26,6 +26,7 @@ def diagnosis(cause='task_plan_or_design'):
               'root_cause': cause, 'root_cause_key': 'fixture.led-service.scope',
               'evidence': [{'kind': 'review', 'description': 'Worker reported scope conflict',
                             'command': '', 'output': '', 'exit_code': 0, 'test_count': 0}]}
+    result.update(fixtures.triage_fields(cause))
     return {'id': 'response-triage', 'status': 'completed',
             'output': [{'type': 'message', 'content': [{'type': 'output_text', 'text': json.dumps(result)}]}]}
 

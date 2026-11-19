@@ -32,7 +32,6 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   const invoke = (name, args = {}) => flow.invoke(name, args, exec);
   assert.equal((await invoke('workflow_check_environment')).ready, true);
   const draft = JSON.parse(await readFile(resolve(root, 'templates/harness-start.example.json'), 'utf8'));
-  delete draft.adaptive_limits;
   draft.project = project; draft.raw_input = 'Return 3 from value(). Python-only. No external actions.';
   draft.hard_constraints = ['Only modify value.py; tests must independently pass'];
   draft.allowed_paths = ['value.py']; draft.environment_checks = [{name: 'independent test entry', kind: 'file',
@@ -41,31 +40,50 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   draft.topics = Object.fromEntries(Object.keys(draft.topics).map(k => [k, 'Local Python fixture; return 3; no network or hardware']));
   await invoke('workflow_inspect', {draft_json: JSON.stringify(draft)});
   await invoke('workflow_confirm_start');
-  const oversized = await invoke('dot_plan', {requirements: '中'.repeat(100000)});
+  await invoke('l1_adjust_limits', {proposal_json: JSON.stringify({limits: draft.limits,
+    reason: 'Allocate bounded resources for the complete isolated fixture', evidence: 'Confirmed fixture scope',
+    remaining_work: 'Review, implement and independently verify return 3', expected_benefit: 'Complete the fixture',
+    strategy: 'Use one implementation and independent test/review'})});
+  const unapproved = await invoke('dot_plan', {requirements: draft.raw_input});
+  assert.equal(unapproved.operation_status, 'COMPLETED_REJECTED', JSON.stringify(unapproved));
+  assert.match(unapproved.reason, /requirements approval/);
+  assert.equal(unapproved.input_rejection, undefined);
+  await invoke('l1_prepare_requirements', {requirements: 'Fixture oversized material: ' + draft.raw_input});
+  await invoke('l1_approve', {kind: 'requirements'});
+  const mismatch = await invoke('dot_plan', {requirements: '中'.repeat(100000)});
+  assert.equal(mismatch.operation_status, 'COMPLETED_REJECTED');
+  assert.match(mismatch.reason, /exactly the independently approved requirements/);
+  assert.equal(mismatch.input_rejection, undefined, 'mismatched baseline must be refused before API material sizing');
+  const oversized = await invoke('dot_plan', {requirements: 'Fixture oversized material: ' + draft.raw_input});
   assert.equal(oversized.operation_status, 'COMPLETED_REJECTED');
   assert.equal(oversized.input_rejection.outcome, 'NOT_SENT');
   const earlyTask = resolve(directory, 'tasks', createHash('sha256').update(exec.agent.id).digest('hex'));
   await assert.rejects(readFile(resolve(earlyTask, 'interrupted.json')), /ENOENT/);
-  await assert.rejects(readFile(resolve(earlyTask, 'control/api/ledger.json')), /ENOENT/);
+  assert.equal(JSON.parse(await readFile(resolve(earlyTask, 'control/api/ledger.json'))).attempts.length, 0,
+    'independent requirements review starts the clock; unsent material does not reserve an API call');
+  await invoke('l1_prepare_requirements', {requirements: 'Fixture request L2 assessment'});
+  await invoke('l1_approve', {kind: 'requirements'});
   const l2Pause = await invoke('dot_plan', {requirements: 'Fixture request L2 assessment'});
   assert.equal(l2Pause.operation_status, 'COMPLETED_REJECTED');
   assert.equal(l2Pause.preflight_report, null);
   await assert.rejects(readFile(resolve(earlyTask, 'interrupted.json')), /ENOENT/);
+  await invoke('l1_prepare_requirements', {requirements: draft.raw_input});
+  await invoke('l1_approve', {kind: 'requirements'});
   await invoke('dot_plan', {requirements: draft.raw_input});
-  assert.equal((await invoke('dot_initialize')).state, 'REVIEW_PENDING');
+  assert.equal((await invoke('dot_initialize')).state, 'PLAN_PENDING');
   const task = resolve(directory, 'tasks', createHash('sha256').update(exec.agent.id).digest('hex'));
-  const rejected = await invoke('l1_approve', {kind: 'plan'});
+  const rejected = await invoke('l1_approve', {kind: 'requirements'});
   assert.equal(rejected.operation_status, 'COMPLETED_REJECTED');
   await assert.rejects(readFile(resolve(task, 'interrupted.json')), /ENOENT/);
   const refusedStop = await invoke('l1_stop', {reason: 'Unknown; stop now'});
   assert.equal(refusedStop.operation_status, 'COMPLETED_REJECTED');
   await assert.rejects(readFile(resolve(task, 'control/run/final-report.json')), /ENOENT/);
   await assert.rejects(readFile(resolve(task, 'interrupted.json')), /ENOENT/);
-  assert.equal((await invoke('l1_approve', {kind: 'requirements'})).state, 'PLAN_PENDING');
   assert.equal((await invoke('l1_approve', {kind: 'plan'})).state, 'EXECUTING');
   const result = await invoke('dot_run');
-  assert.equal(result.report.outcome, 'SUCCESS');
-  assert.equal(result.revision_count, 0);
+  const executionState = JSON.parse(await readFile(resolve(task, 'control/run/state.json')));
+  assert.equal(result.report?.outcome, 'SUCCESS', JSON.stringify(executionState.history.slice(-3)));
+  assert.equal(result.revision_count, 2, 'both changed requirement drafts retain cumulative revisions');
   assert.ok(JSON.stringify(result).length < 20000);
   let offset = '0', full = '';
   do {
@@ -73,6 +91,7 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
     full += page.content; offset = page.next_offset === null ? null : String(page.next_offset);
   } while (offset !== null);
   assert.equal(JSON.parse(full).approved_test_commands[0].observed_test_count, 1);
+  assert.equal(JSON.parse(full).l1_reviews.length, 4, 'three pre-plan requirements reviews plus one plan review; no duplicate requirement review after initialization');
   await invoke('l1_submit_report', {summary: 'Local fixture passed. AI simulated; no live Harness/product acceptance.'});
   assert.equal((await invoke('workflow_review_report')).state, 'DELIVERY_READY');
   assert.equal(questions.length, 2, 'startup and final review only');

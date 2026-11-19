@@ -16,7 +16,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-from .adapter import RESULT_SCHEMA, ROOT_CAUSES, _valid_report
+from .adapter import TRIAGE_SCHEMA, ROOT_CAUSES, _valid_triage
 from .controller import atomic_json, read_json, digest
 from .delegation import validate_delegation
 from .project_constraints import prompt as constraints_prompt
@@ -175,9 +175,15 @@ def one_call(response, names):
     return calls[0], arguments
 
 
-def propose_plan(client, requirements, example, context, implementation_used=0):
+def propose_plan(client, requirements, example, context, implementation_used=0, *, controller_state=None):
     operating = resources.effective(client.delegation, getattr(client, 'governance_root', None))
     context += '\nCURRENT OPERATING ALLOCATION AND AUTHORIZED SCOPE:\n' + json.dumps(operating, ensure_ascii=False)
+    if controller_state:
+        context += ('\nRECORDED COMPLETED IMPLEMENTATIONS (controller validates reuse; no new approval):\n'
+            + json.dumps({'completed_tasks': controller_state.get('completed_tasks', []),
+                          'previous_tasks': controller_state.get('approved_plan', {}).get('tasks', [])}, ensure_ascii=False)
+            + '\nPreserve unchanged task IDs, instructions and dependency lists. Do not redispatch completed work. '
+              'Changed tasks and dependents require new dispatches; all revised baselines require independent reverification.')
     response = client.request(L2_GUIDANCE + 'Draft an execution plan JSON for L1 review, not approval. '
         'Use the supplied schema/example shape, replace all placeholders, preserve independent tests/review. '
         'tasks is ONLY the list of L3 implementation dispatches, each with role=implementation. '
@@ -232,10 +238,14 @@ def propose_plan(client, requirements, example, context, implementation_used=0):
     except (ValueError, TypeError, KeyError) as exc:
         raise PlanRejected(str(exc), code='PLAN_JSON', response_id=response['id']) from exc
     try:
-        validate_proposal(plan, operating, implementation_used)
+        from .controller import pending_dispatch_count
+        remaining = pending_dispatch_count(controller_state, requirements, plan)
+        validate_proposal(plan, operating, implementation_used, pending_dispatches=remaining)
     except PlanRejected as exc:
         exc.response_id = response['id']
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        raise PlanRejected(str(exc), code='PLAN_VALIDATION', proposal=plan, response_id=response['id']) from exc
     return plan
 
 
@@ -251,12 +261,15 @@ class DotAdapter:
             response = self.client.request(L2_GUIDANCE + prompt + '\nClassify only from recorded evidence. '
                 'No filesystem/tools are available in this triage call. If evidence is insufficient, use '
                 'root_cause=needs_analysis and state the missing facts, requested permissions and next '
-                'investigation steps for L1. Never use lack of diagnosis as a reason to finalize the task.', schema=RESULT_SCHEMA)
+                'investigation steps for L1. Populate solutions with expected benefit, verification_steps, '
+                'required_resources and permission_gaps; include investigation_steps, missing_information, '
+                'permission_gaps and recommended_action. Unknown causes require concrete bounded steps. '
+                'Never use lack of diagnosis as a reason to finalize the task.', schema=TRIAGE_SCHEMA)
             output_dir.mkdir(parents=True)
             text = ''.join(c.get('text', '') for item in response['output'] if item.get('type') == 'message'
                            for c in item.get('content', []) if c.get('type') == 'output_text')
             result = json.loads(text)
-            if not _valid_report(result):
+            if not _valid_triage(result):
                 raise ValueError('Malformed GPT triage report')
             if result['status'] in ('UNKNOWN', 'TIMEOUT', 'ERROR'):
                 result['findings'].append('L2 response reported ' + result['status'] + '; investigation remains open.')

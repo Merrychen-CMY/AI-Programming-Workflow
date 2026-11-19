@@ -264,3 +264,24 @@ def submit_l1_report(controller, summary, l1_session_id):
         state['report'].update(sha256=file_hash(path), l1_submitted=True, archive=archive.relative_to(controller.run_dir).as_posix())
         controller.save()
         return state
+
+
+def submit_preflight_report(root, summary, l1_session_id):
+    """Use the same L1 submission boundary before a controller exists."""
+    from .controller import atomic_json, file_hash, now, read_json
+    root = Path(root)
+    path = root / 'preflight-report.json'
+    if not path.is_file() or not summary.strip() or not l1_session_id.strip():
+        raise ValueError('L1 must review a pending preflight report before submitting it')
+    if (root.parent / 'preflight-review.json').exists():
+        raise ValueError('A reviewed final report cannot be rewritten')
+    report = read_json(path)
+    if report.get('l1_submission'):
+        raise ValueError('L1 report already submitted; do not replace its original assessment')
+    report['l1_submission'] = {'authority': 'delegated_l1', 'session_id': l1_session_id,
+        'summary': summary, 'outcome': report['outcome'], 'dot_report_sha256': file_hash(path), 'at': now()}
+    archive = root / 'preflight-reports' / ('l1-' + now().replace(':', '-') + '.json')
+    archive.parent.mkdir(exist_ok=True)
+    atomic_json(archive, report)
+    atomic_json(path, report)
+    return report

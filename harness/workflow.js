@@ -5,12 +5,17 @@ import { homedir } from 'node:os';
 import { loadConfig, keyDigest, startSetup } from './setup.js';
 import { pythonCall } from './process.js';
 import { taskRuntime } from './task-runtime.js';
+import { recoverOperation } from './operation-recovery.js';
+import { confirmStop } from './user-stop.js';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
 const exists = async path => { try { await readFile(path); return true; } catch(e) { if(e.code==='ENOENT')return false; throw e; } };
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const save = (path, value) => writeFile(path, JSON.stringify(value, null, 2), { mode: 0o600 });
 const modelTools = {
+  l1_prepare_requirements: ['requirements'],
+  dot_investigate: ['investigation_json'], l1_resume_decision: ['decision_json'],
+  l1_prepare_recovery: ['proposal_json'],
   dot_read_record: ['path', 'offset'],
   l1_review_api: ['proposal_json'],
   l1_adjust_limits: ['proposal_json'], l1_request_authorization: ['proposal_json'],
@@ -150,6 +155,14 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
           environment: await exists(`${task}/environment.json`) ? await json(`${task}/environment.json`) : null };
       }
       if (!receipt) throw new Error('请先完成环境检查和真实用户开工确认');
+      if (name === 'workflow_confirm_stop') {
+        if (Object.keys(args).length) throw new Error('Native stop accepts no model arguments');
+        return await confirmStop({call: (action, payload) => call(settings, action, payload), ctx, exec});
+      }
+      if (name === 'workflow_recover_operation') {
+        if (Object.keys(args).length) throw new Error('Native operation recovery accepts no model arguments');
+        return await recoverOperation({call: (action, payload) => call(settings, action, payload), ctx, exec});
+      }
       if (name === 'workflow_review_api_retry') {
         if (Object.keys(args).length) throw new Error('API retry review accepts no model arguments');
         if (await exists(`${task}/interrupted.json`)) throw new Error('UNKNOWN: API review cannot clear an interrupted host operation');
@@ -202,16 +215,16 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       if (!Object.hasOwn(modelTools, name) || JSON.stringify(Object.keys(args).sort()) !== JSON.stringify([...modelTools[name]].sort()))
         throw new Error('Unknown tool or invalid model arguments');
       const wasInterrupted = await exists(`${task}/interrupted.json`);
-      if (wasInterrupted && !['dot_status','dot_read_record','l1_stop','l1_submit_report'].includes(name))
-        throw new Error('UNKNOWN: 旧操作中断，禁止自动重放。核对旧进程后提交报告；不能新建会话静默重试。');
+      if (wasInterrupted && !['dot_status','dot_read_record','l1_stop','l1_submit_report','l1_prepare_recovery'].includes(name))
+        throw new Error('旧操作结果待核实；先查看记录，由L1调用l1_prepare_recovery提交核实证据，再通过workflow_recover_operation原生审核恢复。禁止自动重放。');
       let key;
-      if (!['dot_status','dot_read_record','l1_stop','l1_submit_report'].includes(name)) {
+      if (!['dot_status','dot_read_record','l1_stop','l1_submit_report','l1_prepare_recovery'].includes(name)) {
         const active = await configured();
         if (JSON.stringify(active.settings) !== JSON.stringify(settings)) throw new Error('本任务模型及执行器已固定；不能中途更换配置');
-        if (['dot_plan','dot_run'].includes(name)) key = active.key;
+        if (['dot_plan','dot_run','dot_investigate'].includes(name)) key = active.key;
       }
       // Persist in-flight before launch so host crashes also block replays on restart.
-      const mutating = !['dot_status', 'dot_read_record'].includes(name);
+      const mutating = !['dot_status', 'dot_read_record', 'l1_prepare_recovery'].includes(name);
       if (mutating && !wasInterrupted) await save(`${task}/interrupted.json`, { name, at: new Date().toISOString(), status: 'UNKNOWN' });
       try {
         const result = await call(settings, 'bridge', { name, arguments: args }, key);
@@ -234,9 +247,16 @@ export const toolFields = {
   workflow_check_environment: {},
   workflow_inspect: { draft_json: 'Complete JSON per templates/harness-start.example.json, prepared by L1 from user facts' },
   workflow_confirm_start: {}, workflow_status: {}, workflow_review_report: {}, workflow_review_authorization: {}, workflow_review_api_retry: {},
+  workflow_recover_operation: {}, workflow_confirm_stop: {},
   ...Object.fromEntries(Object.entries(modelTools).map(([name,fields])=>[name,Object.fromEntries(fields.map(f=>[f,f]))])),
 };
 export const descriptions = {
+  workflow_confirm_stop: 'Pause new dispatch immediately and ask the real user whether to stop this task. Records bound native intent only; L1 must assess final closure. Preserves active operations and usage.',
+  l1_prepare_requirements: 'Stage L1 requirements for independent review before DOT planning. No product dispatch.',
+  dot_investigate: 'L2 continues bounded read-only investigation in DECISION_PENDING; supply question and evidence paths. Never clears interrupted operations.',
+  l1_resume_decision: 'L1 assesses an evidenced L2 proposal and selects repair/reverify/continue_investigation/revise_baseline. Retains budgets and completed work.',
+  l1_prepare_recovery: 'Prepare a verified interruption recovery proposal with real evidence; cannot approve or clear UNKNOWN.',
+  workflow_recover_operation: 'Verify old processes and show the exact recovery proposal for native user approval. Restore review/investigation only, never replay product work.',
   dot_read_record: 'Read a task record by control-relative path and decimal character offset (start with 0). Follow next_offset for full reviews/reports. No replay or API call.',
   l1_review_api: 'Assess API-only failures or set a bounded wait. Read templates/api-review.example.json. Never clears UNKNOWN or reopens final reports.',
   workflow_review_api_retry: 'Show exact API uncertainty, possible duplicate charges and L1 assessment; obtain a native user decision before a replacement request. No model-supplied approval.',

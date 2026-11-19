@@ -12,7 +12,7 @@
 6. 回到 L1，先让它调用 `workflow_check_environment` 检查Python、Git、Codex及登录；此时无需提供项目目录或需求草案。失败/未知时先解决环境缺口，再继续。
 7. 基础环境通过后，沟通原始需求并提供独立产品目录与已有资料。L1 根据九项话题补齐信息，再用 `workflow_inspect` 补查项目特有的编译器、测试入口、设备条件并固定基线。已有信息保留，不必重复提供。新项目目录至少有一份真实输入文件，例如原始需求；不要拿插件目录当产品目录。
 8. 阅读原生提问中完整的开工摘要，确认模型、需求、基线、范围、AC、环境、测试、交付、安全、允许路径、预算和有效期，然后选择 **“确认开工并委托 L1 自动推进”**。不需要再手填需求/委托 JSON。
-9. L1先分配当前额度，在用户总上限内自动调整；需要扩大授权时用原生追加授权界面申请明确决定。随后调用 DOT，独立审核并批准需求和计划，自动运行。最后在同一会话展示 DOT 原始证据报告及 L1 结论，并让你选择 **“已审核此报告”**。失败/UNKNOWN 的确认不会授权重试；成功确认也不执行外部交付。
+9. L1先分配当前额度，在用户总上限内自动调整；需要扩大授权时用原生追加授权界面申请明确决定。随后先暂存需求、独立审查并由L1批准，再调用DOT规划、初始化及独立计划审批，自动运行。最后在同一会话展示 DOT 原始证据报告及 L1 结论，并让你选择 **“已审核此报告”**。失败/UNKNOWN 的确认不会授权重试；成功确认也不执行外部交付。
 
 本版核对的宿主是本机 **DeepSeek Harness 0.2.2-rc.3**，构建提交 `6b729fedde0c8fd03af7afdf5a711aa64fe87c3b`。其他版本需要重新核对扩展接口。安装方式依据宿主随包的 dsh-agent-preset、plugin-manager、dsh-tools、dsh-user-questions、dsh-credentials 说明与源码；上游参考：[项目仓库](https://github.com/deepseek-ai/deepseek-harness)、[插件管理说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/plugin-manager/README.md)。兼容性核对和本地自检不等于已在你的真实 L1 会话中安装或跑通产品任务。
 
@@ -56,7 +56,7 @@ flowchart TD
  P --> U[用户集中确认完整开工摘要]
  U --> C[START_CONFIRMED：固定委托与预算]
  C --> A1[L1分配当前额度]
- A1 --> R[DOT提案 → 初始化 → L1独立审查及代理批准]
+ A1 --> R[暂存需求 → 独立审查及L1批准 → DOT提案 → 初始化 → 独立计划审查及L1批准]
  R --> E[既有运行器执行与回流]
  E -->|当前额度不足| Q[L1评估与调整]
  Q -->|授权内| E
@@ -71,7 +71,7 @@ flowchart TD
 
 配置、基础环境、需求沟通及准备/确认阶段属于开工引导，不替代既有 REVIEW_PENDING、PLAN_PENDING、EXECUTING、VERIFYING 等运行状态。每个 Harness 会话固定一个任务。记录在用户目录 `.ai-programming-workflow/tasks/<会话摘要>/`，与产品和插件代码分离；重启会话沿用记录，不能重置累计消耗。尚未终结的动态任务可申请明确目标变更，批准后重审基线；已终结或旧版任务保留原记录，新任务关联旧报告，不能通过换会话绕过失败或预算。
 
-工具在可能修改状态的操作之前记录 UNKNOWN 标记，收到完整结果才清除。宿主退出、取消、进程失败或结果不明会保留标记；只能查状态或提交停止/最终报告，不自动重放。终止桥进程不证明其所有后代进程已终止，需要核实旧进程和证据。DOT完整返回request_clarification会记录NEEDS_INFO并正常结束这次工具调用，清除本次在途标记；它允许同任务补事实并重新规划。完整模型响应内的草案格式/计划校验失败记录PLAN_REJECTED，返回COMPLETED_REJECTED，允许原预算内修正；管道或API响应未完成、真实异常及旧UNKNOWN不能据此解锁，明确最终报告仍保持终态。详见[事实补充与恢复](clarifications.md)及[计划拒绝指南](plan-rejections.md)。
+工具在可能修改状态的操作之前记录 UNKNOWN 标记，收到完整结果才清除。宿主退出、取消、进程失败或结果不明会保留标记；可查状态、读取证据并准备原生恢复方案；核实旧进程与副作用后须取得原生批准，不能自动重放或直接删标记。终止桥进程不证明其所有后代进程已终止，需要核实旧进程和证据。DOT完整返回request_clarification会记录NEEDS_INFO并正常结束这次工具调用，清除本次在途标记；它允许同任务补事实并重新规划。完整模型响应内的草案格式/计划校验失败记录PLAN_REJECTED，返回COMPLETED_REJECTED，允许原预算内修正；管道或API响应未完成、真实异常及旧UNKNOWN不能据此解锁，明确最终报告仍保持终态。详见[事实补充与恢复](clarifications.md)及[计划拒绝指南](plan-rejections.md)。
 
 开工后不能静默切换模型、Python/Codex 路径、范围或预算。可以在原模型下更换凭据并重新测试 API。用户数据和项目文件变化须按基线规则处理。配置页是会话内临时本机服务，关闭或卸载插件使链接失效；不用于远程服务器上的浏览器配置。
 
@@ -103,10 +103,12 @@ flowchart TD
 
 ## 3.3.0起的动态资源管理
 
-新开工草案启用adaptive_limits:true；用户确认目标、权限、总上限和截止时间后，L1先调用l1_adjust_limits。BUDGET_REVIEW_PENDING不等于失败：L1评估收益，在上限内调整；越界先l1_request_authorization，再由workflow_review_authorization展示准确申请并读取用户批准/拒绝。相关基线变化仍须独立审查。最终报告包含调整前后值、理由、消耗与结果。见[完整规则与字段](adaptive-resources.md)。旧任务不自动改授权，不清除UNKNOWN或最终报告。
+新原生开工草案必须启用adaptive_limits:true；用户确认目标、权限、总上限和截止时间后，L1先调用l1_adjust_limits。BUDGET_REVIEW_PENDING不等于失败：L1评估收益，在上限内调整；越界先l1_request_authorization，再由workflow_review_authorization展示准确申请并读取用户批准/拒绝。相关基线变化仍须独立审查。最终报告包含调整前后值、理由、消耗与结果。见[完整规则与字段](adaptive-resources.md)。旧任务不自动改授权，不清除UNKNOWN或最终报告。
 
 ## 自动更新
 
 3.4.1起默认开启，详见[自动更新与会话连续性](automatic-updates.md)。运行器按内容摘要缓存，当前任务确认后使用原版本；更新器不写任务历史。用户可让L1查询、检查或启停更新。新的兼容版本在未开工会话的下一次调用采用，环境和摘要需重新核对。主版本/工具接口/入口ABI变化，以及3.3.x旧任务缺原运行缓存，均不会自动迁移。
 
 3.6.0增加[初始化恢复入口](initialization-recovery.md)。仅未提交初始化可在原生审核后恢复；基线变化要求明确批准采用并重新规划。安装ABI4入口后才能使用，不能借自动更新清除产品UNKNOWN。
+
+3.11.0新增需求先审后规划、继续调查和通用操作恢复入口，需安装ABI7主包；详见[完整流程与恢复](flow-recovery.md)。
