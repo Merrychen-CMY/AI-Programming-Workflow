@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.16.0",
+  "workflow_version": "3.17.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [

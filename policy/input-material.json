@@ -13,5 +13,7 @@
   "local_rejection_consumes_api_attempt": false,
   "clear_unresolved_product_operation": false,
   "reopen_old_final_report": false,
-  "guide": "docs/guides/investigation.md"
+  "guide": "docs/guides/investigation.md",
+  "api_wire_limit_bytes": 32000000,
+  "image_bytes_count_as_text": false
 }

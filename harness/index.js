@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { ToolExecutionPipeline } from '@deepseek-ai/dsh-tools/pipeline';
+import { dispatchHostTool } from './host-tools.js';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { toolFields, descriptions } from './workflow.js';
 import { createBootstrap, updateFields, updateDescriptions } from './bootstrap.js';
@@ -11,7 +13,8 @@ export const inject = ['tools', 'systemPrompt', 'credentials', 'userQuestions', 
 
 export function apply(ctx) {
   const root = fileURLToPath(new URL('../', import.meta.url));
-  const workflow = createBootstrap({ ctx, root, fields: toolFields, keyRef: credentialRef('AI_WORKFLOW_OPENAI_API_KEY') });
+  const workflow = createBootstrap({ ctx, root, fields: toolFields, keyRef: credentialRef('AI_WORKFLOW_OPENAI_API_KEY'),
+    workflowOptions: { hostDispatch: (host, input) => dispatchHostTool(host, input, ToolExecutionPipeline) } });
   const deliver = reportDelivery(ctx);
   ctx.effect(() => () => workflow.dispose());
   ctx.systemPrompt.section({ name, order: 150, interpolate: false,

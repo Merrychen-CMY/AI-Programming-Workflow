@@ -66,7 +66,7 @@ class LocalTools:
                 'code during planning/triage, run unsolicited tests, install, flash or publish without the '
                 'applicable authorization. Never modify control/approval/history/credentials or read secrets. '
                 'Commands are not an OS sandbox; obey the same scope even when the shell could reach beyond it. '
-                'Use synchronous commands, no detached/background processes. Do not put secrets in arguments, '
+                'local_command is synchronous; use host job tools for managed background processes when available. Do not put secrets in arguments, '
                 'files sent to the model or URLs. Direct results are observations, not acceptance PASS. '
                 'Ordinary tool errors require diagnosis or a different in-scope approach, not final failure. '
                 'For command search use installed rg or native shell search; binary/image/PDF handling can '

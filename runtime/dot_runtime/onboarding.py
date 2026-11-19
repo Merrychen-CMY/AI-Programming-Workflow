@@ -137,7 +137,7 @@ def load_task(request):
     return task
 
 
-def dispatch(request):
+def dispatch(request, host_relay=None):
     action = request['action']
     task = load_task(request)
     with run_lock(task):
@@ -211,6 +211,7 @@ def dispatch(request):
         if receipt['bridge_sha256'] != digest(settings) or receipt['draft_sha256'] != digest(read_json(task / 'draft.json')):
             raise ValueError('Confirmed configuration or draft changed')
         bridge = Bridge(settings)
+        bridge.host_relay = host_relay
         if action == 'bridge' and request['name'] == 'l1_prepare_recovery':
             arguments = request['arguments']
             if set(arguments) != {'proposal_json'}:

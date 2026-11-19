@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -93,7 +93,7 @@ def validate_review_handoff_policy(value):
             'stages': ['requirements_review', 'execution_plan_review', 'final_success_or_failure_including_preflight'],
             'format': 'markdown', 'metadata_field': 'report_files', 'original_json_retained': True,
             'immutable_content_addressed_files': True, 'new_report_returned_once_per_operation': True,
-            'chat_delivery': 'host_deliverables_presented_event', 'host_bootstrap_abi': 10,
+            'chat_delivery': 'host_deliverables_presented_event', 'host_bootstrap_abi': 11,
             'final_confirmation_checks_markdown_digest': True, 'adds_user_approval_checkpoint': False,
             'delivery_failure_replays_review_or_execution': False}}
     if not isinstance(value, dict) or set(value) != set(expected):
@@ -112,7 +112,7 @@ def validate_closure_policy(value):
 
 
 def validate_flow_recovery(value):
-    expected = {'schema_version': 1, 'guide': 'docs/guides/flow-recovery.md', 'bootstrap_abi': 10,
+    expected = {'schema_version': 1, 'guide': 'docs/guides/flow-recovery.md', 'bootstrap_abi': 11,
         'completed_preflight_review_recovery_requires_native_attestation': True,
         'completed_review_recovery_preserves_valid_approval': True, 'maintenance_recovery_changes_pinned_runtime': False,
         'new_native_adaptive_limits_required': True, 'requirements_review_before_initial_planning': True,
@@ -151,6 +151,7 @@ def validate_execution_scope(value):
 
 def validate_input_material_policy(value):
     expected = {'schema_version': 1, 'api_input_limit_bytes': 250000,
+        'api_wire_limit_bytes': 32000000, 'image_bytes_count_as_text': False,
         'triage_view_target_bytes': 60000, 'local_rejection_outcome': 'NOT_SENT',
         'local_rejection_operation_status': 'COMPLETED_REJECTED', 'investigation_owner': 'L2',
         'escalation_owner': 'L1', 'unclassified_route': 'needs_analysis',
@@ -181,7 +182,7 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0'],
                 'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
@@ -198,7 +199,7 @@ def validate_initialization_recovery_policy(value):
 def validate_update_policy(value):
     expected = {
         'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
-        'channel': 'github_stable_releases', 'bootstrap_abi': 10,
+        'channel': 'github_stable_releases', 'bootstrap_abi': 11,
         'default_enabled': True, 'check_interval_seconds': 21600,
         'checks_on_tool_activity_only': True, 'network_sends_project_or_gpt_credentials': False,
         'private_repository_auth': 'existing_local_git_credential_no_interactive_prompt',
@@ -690,7 +691,7 @@ def validate_repository(root):
     errors.extend(validate_closure_policy(documents.get('policy/closure.json')))
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):
         errors.extend(validate_closure_policy(documents[key].get('non_success_closure')))
-    if package.get('reqpilot', {}).get('bootstrap_abi') != 10:
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 11:
         errors.append('Native plugin requires the reviewed bootstrap ABI')
     for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
         if documents[key].get('execution_scope_policy') != 'policy/execution-scope.json':

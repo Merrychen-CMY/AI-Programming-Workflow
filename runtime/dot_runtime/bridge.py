@@ -79,6 +79,9 @@ class Bridge:
             state=read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None)
         from .local_tools import LocalTools
         client.local_tools = LocalTools(self.settings, client, self.worker_environment)
+        from .host_tools import HostTools
+        relay = getattr(self, 'host_relay', None)
+        client.host_tools = HostTools(self.settings, client, relay) if relay else None
         return client
 
     def status(self):

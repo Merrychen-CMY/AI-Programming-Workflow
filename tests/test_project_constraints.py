@@ -167,7 +167,7 @@ class RuntimePropagationTests(unittest.TestCase):
     def test_gpt_plan_receives_rules_without_local_file_access(self):
         raw = self.root / 'raw.md'
         raw.write_text('Implement fixture value', encoding='utf-8')
-        client = Mock(local_tools=None, research=None, governance_root=None)
+        client = Mock(local_tools=None, host_tools=None, research=None, governance_root=None)
         client.delegation = delegation(raw)
         client.request.return_value = call_response('propose_plan', {'plan_json': json.dumps(fixtures.fixture_plan())})
         propose_plan(client, 'Known requirements', fixtures.fixture_plan(), 'Known environment')

@@ -97,7 +97,7 @@ test('unknown legacy task cannot silently use installed or newest code', async t
   await assert.rejects(f.updates.forTask(f.task),/TASK_RUNTIME_MISSING/); assert.equal(f.calls.length,0);
 });
 
-for (const abi of [1, 2, 3, 4, 5, 6, 7, 8, 9]) test(`ABI10 bootstrap retains an already-confirmed ABI${abi} cache without migration`,async t=>{
+for (const abi of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) test(`ABI11 bootstrap retains an already-confirmed ABI${abi} cache without migration`,async t=>{
   const f=await fixture(t);await f.updates.setEnabled(false);
   const old=release(abi === 7 ? '3.11.0' : '3.4.0',files=>files,abi), hash=old.metadata.manifest_sha256;
   await put(resolve(f.directory,'updates/runtimes',hash),old.files);
@@ -220,7 +220,7 @@ test('snapshot loader executes the actual Python status pipe without network or 
   await updates.setEnabled(false);
   const bootstrap=createBootstrap({root,directory,fields:actualFields,ctx:{},updates});t.after(()=>bootstrap.dispose());
   const result=await bootstrap.invoke('workflow_status',{}, {agent:{id:'真实管道只读会话'}});
-  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.16.0');
+  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.17.0');
   assert.equal(result.workflow_runtime.task_pinned,false);assert.equal(result.workflow_runtime.updates.enabled,false);
 });
 
@@ -228,7 +228,7 @@ test('compatible update invalidates prepared environment and prevents approval o
   const f=await fixture(t);const actualRoot=fileURLToPath(new URL('../../',import.meta.url));
   const target=release('3.4.1',files=>files); // synthetic release uses the actual engine below
   const content={...target.files};delete content['MANIFEST.json'];
-  for(const path of ['harness/workflow.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js','harness/operation-recovery.js','harness/user-stop.js'])
+  for(const path of ['harness/workflow.js','harness/host-tools.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js','harness/operation-recovery.js','harness/user-stop.js'])
     content[path]=await readFile(resolve(actualRoot,path));
   content['MANIFEST.json']=Buffer.from(JSON.stringify({schema_version:1,workflow_version:'3.4.1',
     files:Object.fromEntries(Object.entries(content).map(([p,data])=>[p,sha(data)]))}));

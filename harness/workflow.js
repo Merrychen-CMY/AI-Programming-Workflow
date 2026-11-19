@@ -4,6 +4,7 @@ import { resolve, relative, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { loadConfig, keyDigest, startSetup } from './setup.js';
 import { pythonCall } from './process.js';
+import { hostTools } from './host-tools.js';
 import { taskRuntime } from './task-runtime.js';
 import { recoverOperation } from './operation-recovery.js';
 import { confirmStop } from './user-stop.js';
@@ -39,7 +40,7 @@ export function startupSummary(draft, settings, inspection, digest) {
 }
 
 export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(), '.ai-programming-workflow'),
-                                 runner = pythonCall, setupFactory = startSetup, protectedRoots = [root] }) {
+                                 runner = pythonCall, setupFactory = startSetup, protectedRoots = [root], hostDispatch }) {
   const busy = new Set();
   let setup, setupPending;
   const script = resolve(root, 'scripts/harness_workflow.py');
@@ -102,7 +103,9 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       const task = resolve(directory, 'tasks', sha(session));
       await mkdir(task, { recursive: true, mode: 0o700 });
       const call = (settings, action, payload = {}, key) => runner(settings.python, script,
-        { action, task, session, ...payload }, { signal: exec.signal, key });
+        { action, task, session, ...payload }, { signal: exec.signal, key,
+          ...(action === 'bridge' && ctx.tools?.schemas ? { hostRelay: hostTools(ctx, exec,
+            { dispatch: hostDispatch, controlTools: [...Object.keys(toolFields), 'workflow_updates'] }) } : {}) });
       if (name === 'workflow_check_environment') {
         if (Object.keys(args).length) throw new Error('Environment check accepts no model arguments');
         if (await exists(`${task}/confirmation.json`)) throw new Error('任务已确认；请用 workflow_status 查看状态，不能重置开工流程');

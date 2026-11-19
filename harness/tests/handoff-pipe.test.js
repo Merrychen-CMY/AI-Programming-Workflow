@@ -21,18 +21,27 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   await saveConfig(directory, {model: 'fixture-model', python, codex: 'fixture-codex',
     probe: {status: 'PASS', model: 'fixture-model', credential_sha256: keyDigest(key)}});
   const questions = [], calls = [];
-  const ctx = {credentials: {resolve: async () => ({value: key})}, userQuestions: {ask: async q => {
+  const ctx = {tools: {schemas: () => [{name: 'fixture_read', description: 'Read isolated fixture',
+    parameters: {type: 'object', properties: {path: {type: 'string'}}, required: ['path']}}]},
+    credentials: {resolve: async () => ({value: key})}, userQuestions: {ask: async q => {
     questions.push(q); return {answers: [{id: q.questions[0].id, selected: [q.questions[0].options[0].label]}]};
   }}};
-  const flow = createWorkflow({ctx, root, directory, keyRef: 'fixture', runner: (exe, _script, request, opts) => {
-    calls.push(request); return pythonCall(exe, resolve(root, 'tests/harness_handoff_fixture.py'), request, opts);
+  const flow = createWorkflow({ctx, root, directory, keyRef: 'fixture', hostDispatch: async (_ctx, input) => {
+    assert.equal(input.name, 'fixture_read'); assert.equal(input.arguments.path, 'test_value.py');
+    return {isError: false, content: [{type: 'text', text: 'HOST_FILE_OBSERVED:' + await readFile(resolve(project, 'test_value.py'), 'utf8')}]};
+  }, runner: (exe, _script, request, opts) => {
+    calls.push(request);
+    if (request.action === 'bridge') {
+      assert.equal(typeof opts.hostRelay, 'function', 'workflow must wire native host relay');
+    }
+    return pythonCall(exe, resolve(root, 'tests/harness_handoff_fixture.py'), request, opts);
   }});
   t.after(() => flow.dispose());
   const exec = {agent: {id: 'normal-path-fixture'}, signal: new AbortController().signal};
   const invoke = (name, args = {}) => flow.invoke(name, args, exec);
   assert.equal((await invoke('workflow_check_environment')).ready, true);
   const draft = JSON.parse(await readFile(resolve(root, 'templates/harness-start.example.json'), 'utf8'));
-  draft.project = project; draft.raw_input = 'Fixture research before planning. Fixture direct tools before planning: Return 3 from value(). Python-only. No external actions.';
+  draft.project = project; draft.raw_input = 'Fixture research before planning. Fixture direct tools before planning. Fixture host tools before planning: Return 3 from value(). Python-only. No external actions.';
   draft.hard_constraints = ['Only modify value.py; tests must independently pass'];
   draft.allowed_paths = ['value.py']; draft.environment_checks = [{name: 'independent test entry', kind: 'file',
     path: resolve(project, 'test_value.py'), required: true, evidence: 'Fixture test entry exists; execution remains pending'}];
@@ -81,6 +90,7 @@ test('normal host lifecycle survives a wrong-phase request and produces a real t
   const observed = await invoke('dot_status');
   assert.ok(observed.research.some(x => x.question === 'local_command' && x.summary.includes('DIRECT_PYTHON_OBSERVED:')),
     'DOT receives a real direct command result before planning; no extra Codex worker required');
+  assert.ok(observed.research.some(x => x.question === 'host_call'), 'host calls enter the same evidence ledger');
   assert.equal((await invoke('dot_initialize')).state, 'PLAN_PENDING');
   const task = resolve(directory, 'tasks', createHash('sha256').update(exec.agent.id).digest('hex'));
   const rejected = await invoke('l1_approve', {kind: 'requirements'});

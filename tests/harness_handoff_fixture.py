@@ -66,6 +66,10 @@ def bridge(settings):
                         return delegated.call_response('local_command', {
                             'argv': [sys.executable, '-c', 'import sys; print("DIRECT_PYTHON_OBSERVED:"+sys.version)'],
                             'cwd': settings['project'], 'timeout_seconds': 10})
+                if 'Fixture host tools before planning' in text:
+                    if 'HOST_FILE_OBSERVED:' not in text:
+                        return delegated.call_response('host_call', {
+                            'name': 'fixture_read', 'arguments_json': json.dumps({'path': 'test_value.py'})})
                 return delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)})
             return delegated.call_response('run_approved_workflow')
         class FixtureClient(ResponsesClient):
@@ -81,7 +85,10 @@ def bridge(settings):
 
 if __name__ == '__main__':
     sys.stdin.reconfigure(encoding='utf-8'); sys.stdout.reconfigure(encoding='utf-8')
-    request = json.load(sys.stdin)
+    import os
+    from dot_runtime.host_tools import pipe_relay
+    relay = os.environ.get('REQPILOT_HOST_RELAY') == '1'
+    request = json.loads(sys.stdin.readline()) if relay else json.load(sys.stdin)
     try:
         from tempfile import gettempdir
         task = Path(request['task']).resolve()
@@ -90,7 +97,7 @@ if __name__ == '__main__':
             raise ValueError('Fixture driver only accepts its isolated temporary test directory')
         with patch.object(onboarding, 'Bridge', side_effect=bridge), patch.object(onboarding, 'tool_check',
                 return_value={'status': 'PASS', 'exit_code': 0}):
-            result = onboarding.dispatch(request)
+            result = onboarding.dispatch(request, host_relay=pipe_relay(sys.stdin, sys.stdout) if relay else None)
         if request['action'] in ('bridge', 'status', 'report_confirm'):
             result = compact(result)
         print(json.dumps({'ok': True, 'result': result}, ensure_ascii=False))
