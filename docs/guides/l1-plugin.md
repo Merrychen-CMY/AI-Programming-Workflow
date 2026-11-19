@@ -4,9 +4,9 @@
 
 ## 安装和首次使用
 
-1. 获取本仓库 3.3.0 安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
+1. 从[正式发布](https://github.com/Merrychen-CMY/ReqPilot/releases/latest)获取本仓库安装包，或完整仓库目录。保留 `package.json`、`harness/` 以及运行器、策略、模板、规范目录，不要只复制一份提示词。
 2. 在 DeepSeek Harness 的插件管理中添加本地插件包/目录。也可让 Harness 自身有插件管理能力的 Agent 使用 `plugin_manager install_bundle` 安装本地来源；实际参数以宿主工具声明为准。本仓库不直接修改你的 Harness 配置文件。
-3. 创建新会话，选择 **ReqPilot · 需求领航**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。旧会话可能仍保留旧 preset，不能用来判断新插件是否生效。
+3. 创建新会话，选择 **ReqPilot · 需求领航**。安装包添加独立 preset，不替换默认 Agent，也不修改 dsh-spec-collab 的 Ready 规则。首次引入更新器或入口接口变化时，旧会话可能保留旧preset，需要宿主重新加载；已具备3.4.0稳定入口后，兼容工作流更新按[自动更新规则](automatic-updates.md)在同一会话生效。
 4. 对 L1 说：**“开始一个项目，请按配置模型和密钥、检查环境、沟通需求的顺序引导我，再集中确认开工。”** L1 会提供本机配置页链接。在页面填写 GPT API 模型 ID、密钥及 Python/Codex 可执行文件路径。这里的 GPT 就是 DOT，不是另一个人工操作入口；L1 自己的模型仍由 Harness 设置。
 5. 点击保存，再点击“测试 API”。测试发出两次可能计费的固定示例请求，核对工具调用和结构化输出兼容性，不发送项目内容。不在安装、打开页面或启动聊天时自动调用付费 API。
 6. 回到 L1，先让它调用 `workflow_check_environment` 检查Python、Git、Codex及登录；此时无需提供项目目录或需求草案。失败/未知时先解决环境缺口，再继续。
@@ -26,7 +26,7 @@
 
 ### 配置或API测试失败
 
-3.3.0配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
+3.4.0配置页顶部显示版本号，失败提示包含固定错误编号、测试阶段及适用的HTTP状态。保存配置不调用API；测试API不运行Python/Codex，后者属于下一步基础环境检查。旧版统一提示不能用来判断密钥错误或额度不足。
 
 | 错误编号 | 含义与处理 |
 | --- | --- |
@@ -45,7 +45,7 @@
 
 错误分类依据[官方错误码](https://developers.openai.com/api/docs/guides/error-codes)与[推理输出限制](https://developers.openai.com/api/docs/guides/reasoning?api-mode=responses)。提示只包含本地固定文字、白名单分类及数字状态，不回显API错误正文、凭据服务异常、模型返回内容或请求头。每次点击最多两次请求、每次2048输出token和45秒超时；遇到失败立即停止，不自动重试、不切换模型、不扩大预算。
 
-尚未开工的旧版用户可安装新版插件并重新加载宿主、新建AI编程L1会话和配置页。确认顶部版本后，保留已有配置，手动点击一次测试，把显示的错误编号与阶段交给维护者。正常升级保留宿主密钥和设置文件；不要删除配置或运行记录。已开工任务遵循下述固定版本与恢复规则。
+尚未具备自动更新器的旧版用户，需要首次安装新版并按宿主要求重新加载插件入口；之后兼容更新无需每次重开会话。确认顶部版本后，保留已有配置，手动点击一次测试，把显示的错误编号与阶段交给维护者。正常升级保留宿主密钥和设置文件；不要删除配置或运行记录。已开工任务遵循下述固定版本与恢复规则。
 
 ```mermaid
 flowchart TD
@@ -91,7 +91,7 @@ flowchart TD
 
 插件入口为 `harness/index.js`，打包根为仓库根。`harness/cordis.patch.yml` 声明专用 L1 preset。`workflow_reference` 提供受限只读规则读取；内部 Python 管道不直接暴露给模型。开工和最终确认来自 `ctx.userQuestions` 的原生人类答复，模型无法传入 `confirmed=true`。
 
-运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.3.0.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.3.0验证记录](../reports/3.3.0-validation.md)。
+运行 `node --test harness/tests/*.test.js`、`python -m unittest discover -s tests -v` 与 `python scripts/validate_repo.py`。打包用 `python scripts/package_harness.py --output <仓库外目录>/reqpilot-3.4.0.tgz`，只收录校验通过的MANIFEST文件，避免目录打包夹带Python缓存；无安装脚本，无额外第三方运行依赖，宿主提供 DSH 服务接口。禁止把本机密钥、配置、运行记录或缓存打包提交。验证边界见[3.4.0验证记录](../reports/3.4.0-validation.md)。
 
 ## 开工后发现资料缺口
 
@@ -99,8 +99,12 @@ flowchart TD
 
 ## 名称与图标
 
-3.2.1起显示为 ReqPilot · 需求领航，使用透明罗盘图标。内部包名和数据目录沿用旧标识以保持升级兼容；见[名称与兼容说明](branding.md)。更新本地安装后按宿主要求重启，新名称和图标才会显示。
+3.2.1起显示为 ReqPilot · 需求领航，使用透明罗盘图标。内部包名和数据目录沿用旧标识以保持升级兼容；见[名称与兼容说明](branding.md)。名称和图标属于宿主安装信息，变更它们可能需要宿主重新加载；工作流内容的兼容更新使用内置更新器。
 
-## 3.3.0动态资源管理
+## 3.3.0起的动态资源管理
 
 新开工草案启用adaptive_limits:true；用户确认目标、权限、总上限和截止时间后，L1先调用l1_adjust_limits。BUDGET_REVIEW_PENDING不等于失败：L1评估收益，在上限内调整；越界先l1_request_authorization，再由workflow_review_authorization展示准确申请并读取用户批准/拒绝。相关基线变化仍须独立审查。最终报告包含调整前后值、理由、消耗与结果。见[完整规则与字段](adaptive-resources.md)。旧任务不自动改授权，不清除UNKNOWN或最终报告。
+
+## 自动更新
+
+3.4.0起默认开启，详见[自动更新与会话连续性](automatic-updates.md)。运行器按内容摘要缓存，当前任务确认后使用原版本；更新器不写任务历史。用户可让L1查询、检查或启停更新。新的兼容版本在未开工会话的下一次调用采用，环境和摘要需重新核对。主版本/工具接口/入口ABI变化，以及3.3.x旧任务缺原运行缓存，均不会自动迁移。

@@ -59,6 +59,25 @@ def validate_manifest(root, manifest):
     return errors
 
 
+def validate_update_policy(value):
+    expected = {
+        'schema_version': 1, 'repository': 'Merrychen-CMY/ReqPilot',
+        'channel': 'github_stable_releases', 'bootstrap_abi': 1,
+        'default_enabled': True, 'check_interval_seconds': 21600,
+        'checks_on_tool_activity_only': True, 'network_sends_project_or_credentials': False,
+        'paid_api_calls': False, 'confirmed_tasks_pin_manifest': True,
+        'task_history_mutation': False, 'automatic_task_migration': False,
+        'unknown_clear_or_replay': False, 'install_scripts': False,
+        'automatic_host_plugin_replacement': False,
+        'new_tool_or_major_or_abi_change': 'host_install_required',
+        'guide': 'docs/guides/automatic-updates.md',
+    }
+    if not isinstance(value, dict) or set(value) != set(expected):
+        return ['Update policy fields differ from implemented scope']
+    return ['Update boundary drift: ' + key for key, wanted in expected.items()
+            if type(value[key]) is not type(wanted) or value[key] != wanted]
+
+
 def validate_policy(policy):
     errors = []
     expected = {
@@ -506,6 +525,12 @@ def validate_repository(root):
     if onboarding.get('required_topics') != topics or set(documents.get('templates/harness-start.example.json', {}).get('topics', {})) != set(topics):
         errors.append('Onboarding must preserve all nine discovery topics')
     package = documents.get('package.json', {})
+    errors.extend(validate_update_policy(documents.get('policy/updates.json')))
+    if package.get('reqpilot', {}).get('bootstrap_abi') != 1:
+        errors.append('Native plugin requires the reviewed bootstrap ABI')
+    for key in ('policy/simple-flow.json', 'policy/workflow.json', 'policy/onboarding.json', 'INDEX.json'):
+        if documents[key].get('update_policy') != 'policy/updates.json':
+            errors.append('Workflow must reference automatic update policy: ' + key)
     if package.get('version') != version or package.get('dsh', {}).get('bundle', {}).get('patch') != './harness/cordis.patch.yml':
         errors.append('Native plugin package/version mismatch')
     for key in ('policy/simple-flow.json', 'policy/workflow.json'):

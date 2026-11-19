@@ -23,3 +23,5 @@
 完整返回的草案纯校验拒绝使用PLAN_REJECTED/COMPLETED_REJECTED，仅清除当前已完成操作的在途标记。实现次数是全任务L3派工累计上限，初次与修复共同计数；独立验证保持独立。机器约束见[规划策略](../policy/planning.json)，恢复边界见[计划拒绝指南](guides/plan-rejections.md)。
 
 新动态任务以[资源策略](../policy/resources.json)和[实施指南](guides/adaptive-resources.md)为准：用户确认目标/权限/总上限/截止时间，L1管理当前额度。桥层BUDGET_REVIEW_PENDING与AUTHORIZATION_PENDING保留runtime_state；恢复不重置累计消耗，扩大范围须原生用户授权并独立重审。历史固定预算示例不替代当前任务授权。
+
+插件自动更新只改变未开工会话后续选用的兼容运行版本；已确认任务由原MANIFEST摘要固定代码和规则，不能自动迁移、清零消耗或解除UNKNOWN/终态。详见[更新规则](guides/automatic-updates.md)。

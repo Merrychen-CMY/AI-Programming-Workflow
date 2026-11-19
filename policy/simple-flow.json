@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.3.0",
+  "workflow_version": "3.4.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -212,5 +212,6 @@
   },
   "resource_policy": "policy/resources.json",
   "authority_change_requires_user_decision": true,
-  "in_scope_requirement_clarification_requires_user_decision": false
+  "in_scope_requirement_clarification_requires_user_decision": false,
+  "update_policy": "policy/updates.json"
 }

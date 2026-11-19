@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.3.0",
+  "workflow_version": "3.4.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -24,7 +24,8 @@
       "docs/guides/l1-user-expression.md",
       "docs/guides/l1-plugin.md",
       "policy/onboarding.json",
-      "templates/harness-start.example.json"
+      "templates/harness-start.example.json",
+      "docs/guides/automatic-updates.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -175,6 +176,10 @@
       "docs/guides/adaptive-resources.md",
       "templates/resource-allocation.example.json",
       "templates/authorization-request.example.json"
+    ],
+    "plugin_update": [
+      "policy/updates.json",
+      "docs/guides/automatic-updates.md"
     ]
   },
   "full_reference": [
@@ -346,11 +351,12 @@
     "approval_trust_model": "local_delegated_l1_and_final_human_no_authenticated_service",
     "external_delivery_implemented": false,
     "codex_end_to_end_verified": false,
-    "validation_record": "docs/reports/3.3.0-validation.md",
+    "validation_record": "docs/reports/3.4.0-validation.md",
     "l1_entrypoint": "scripts/l1_bridge.py",
     "live_api_verified": false,
     "harness_plugin_installed": false,
     "harness_plugin_entrypoint": "harness/index.js"
   },
-  "resource_policy": "policy/resources.json"
+  "resource_policy": "policy/resources.json",
+  "update_policy": "policy/updates.json"
 }

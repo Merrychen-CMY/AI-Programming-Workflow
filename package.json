@@ -1,6 +1,6 @@
 {
   "name": "ai-programming-workflow",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "private": true,
   "type": "module",
   "description": "ReqPilot: requirements-led AI development for DeepSeek Harness, with GPT/DOT orchestration, independent Codex execution and evidence-based reports.",
@@ -28,5 +28,8 @@
   },
   "scripts": {
     "test": "node --test harness/tests/*.test.js"
+  },
+  "reqpilot": {
+    "bootstrap_abi": 1
   }
 }

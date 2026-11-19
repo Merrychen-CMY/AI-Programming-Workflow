@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.3.0",
+  "policy_version": "3.4.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -168,5 +168,6 @@
     "guide": "docs/guides/clarifications.md"
   },
   "resource_policy": "policy/resources.json",
-  "budgets_scope": "Legacy fixed examples; adaptive task ceilings and current allocations are governed by policy/resources.json"
+  "budgets_scope": "Legacy fixed examples; adaptive task ceilings and current allocations are governed by policy/resources.json",
+  "update_policy": "policy/updates.json"
 }

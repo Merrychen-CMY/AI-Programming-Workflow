@@ -14,7 +14,7 @@
   "derived_files": [
     {
       "path": "standards/embedded-c/v1.3/doxygen/adoption.json",
-      "repository_sha256": "f7fea383116cc684691b68b4f2fd0578f72b5b93d542df7345390949dcaed3f3"
+      "repository_sha256": "ca3c70911599c8428a4e386cced2bfb8282c297c908fec83aab1ecc47873c37d"
     },
     {
       "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.c",

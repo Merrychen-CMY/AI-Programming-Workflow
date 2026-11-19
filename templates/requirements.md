@@ -77,3 +77,7 @@ Doxygen补充：引用[DOX采用清单](../standards/embedded-c/v1.3/doxygen/REA
 引用[事实补充模板](fact-supplement.example.json)，记录各版来源、影响阶段、差异和摘要；原始确认保留。缺口可补齐时进入NEEDS_INFO，同任务在原预算内推进。审查原要求与新事实是否冲突；不得将补充当成扩大授权。
 
 完整计划的纯校验拒绝为PLAN_REJECTED，由L1/DOT在原授权内修正草案后重审，不能因拒绝扩大预算、删减AC或清除真实中断。规则见[计划拒绝指南](../docs/guides/plan-rejections.md)。
+
+## 运行版本
+
+记录workflow_runtime中的实际版本和MANIFEST摘要；已开工任务使用确认时版本。说明已下载但未应用的更新，不把更新状态写成产品验收结果，不因更新重置授权、消耗或失败证据。

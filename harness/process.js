@@ -6,6 +6,7 @@ export function pythonCall(executable, script, request, { key, signal, spawnImpl
     const env = Object.fromEntries(Object.entries(process.env).filter(([k]) =>
       !['OPENAI_API_KEY', 'AI_WORKFLOW_OPENAI_API_KEY'].includes(k.toUpperCase())));
     env.PYTHONIOENCODING = 'utf-8';
+    env.PYTHONDONTWRITEBYTECODE = '1';
     if (key) env.OPENAI_API_KEY = key;
     const child = spawnImpl(executable, [script], { env, shell: false, windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'] });
