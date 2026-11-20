@@ -39,6 +39,7 @@ class WorkerScopeTests(unittest.TestCase):
                 self.assertEqual(self.run_adapter(role)['status'], 'PASS')
                 self.assertEqual(self.inputs[-1].count(scope_constraints.MINIMUM_CHANGE), 1)
                 self.assertIn(scope_constraints.ROLE_RULES[role], self.inputs[-1])
+                self.assertEqual(self.inputs[-1].count(scope_constraints.BLOCKER_RECOVERY), 1)
                 self.assertIn('allowed objects/paths', self.inputs[-1])
                 self.assertIn('smallest relevant lookup', self.inputs[-1])
                 self.assertIn('Stop when the assigned acceptance conditions are met', self.inputs[-1])
@@ -60,7 +61,9 @@ class WorkerScopeTests(unittest.TestCase):
     def test_test_assignment_keeps_authorized_verification_without_extra_work(self):
         self.run_adapter('test')
         self.assertIn('Run only the tests and commands authorized by the approved verification plan', self.inputs[0])
-        self.assertIn('Do not add tests, change product code or repair failures', self.inputs[0])
+        self.assertIn('Do not add tests, change product code or repair product failures', self.inputs[0])
+        self.assertIn('setup/recovery already explicitly included in this assignment', self.inputs[0])
+        self.assertIn('Preserve the initial failed result', self.inputs[0])
         self.assertNotIn('Do not run tests merely because the reviewed plan lists them', self.inputs[0])
 
     def test_nonblocking_observations_do_not_authorize_repairs_or_weaken_failure_gate(self):
@@ -72,6 +75,26 @@ class WorkerScopeTests(unittest.TestCase):
         self.output = self.root / 'runs' / 'failure'
         self.report['findings'] = ['Required AC does not hold']
         self.assertEqual(self.run_adapter('implementation')['status'], 'ERROR')
+
+    def test_unresolved_worker_blocker_preserves_failure_and_attempted_actions(self):
+        self.report.update(status='FAIL', root_cause='test_infrastructure',
+            summary='Located SDK configuration; recorded version mismatch. No install authorized. '
+                    'Propose L2 coordinate the approved SDK; verify its version before retry.',
+            findings=['Required SDK version absent; installation permission needed'])
+        result = self.run_adapter('test')
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['summary'], self.report['summary'])
+        self.assertEqual(result['findings'], self.report['findings'])
+        self.assertEqual(len(self.sessions), 1)  # Recovery guidance must not auto-replay a worker.
+        self.assertIn('Never replay an unresolved operation', self.inputs[0])
+
+    def test_recovery_does_not_turn_independent_review_into_execution(self):
+        self.run_adapter('review')
+        content = self.inputs[0]
+        self.assertIn('First locate and inspect available sources or paged evidence', content)
+        self.assertIn('do not edit code, run builds or run tests', content)
+        self.assertIn('If no corrective action is authorized', content)
+        self.assertIn('actions tried (or why none was authorized)', content)
 
 
 def captured_review_session(captured):
@@ -142,6 +165,8 @@ class PlanAndApiScopeTests(unittest.TestCase):
         payload = send.call_args.args[0]
         self.assertEqual(payload['input'][0]['role'], 'developer')
         self.assertIn(scope_constraints.prompt('dot'), payload['input'][0]['content'])
+        self.assertEqual(payload['input'][0]['content'].count(scope_constraints.BLOCKER_RECOVERY), 1)
+        self.assertIn('L5 resolves report assembly', payload['input'][0]['content'])
         self.assertEqual(payload['input'][0]['content'].count(scope_constraints.MINIMUM_CHANGE), 1)
         self.assertIn('Keep explanation/diagnosis/review assignments read-only', payload['input'][0]['content'])
         self.assertIn('Implement the specified value only', payload['input'][1]['content'])

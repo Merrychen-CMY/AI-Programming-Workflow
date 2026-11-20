@@ -20,6 +20,19 @@ class PolicyTests(unittest.TestCase):
     def test_valid_reference_policy(self):
         self.assertEqual(validate_policy(self.policy), [])
 
+    def test_blocker_recovery_policy_rejects_authority_expansion_and_lost_handoff(self):
+        from validate_repo import validate_execution_scope
+        policy = json.loads((ROOT / 'policy/execution-scope.json').read_text(encoding='utf-8'))
+        self.assertEqual(validate_execution_scope(policy), [])
+        for key in ('unchanged_blind_retry', 'expands_assignment_authority',
+                    'replays_unresolved_operations', 'resets_usage_or_reopens_final_report'):
+            invalid = copy.deepcopy(policy)
+            invalid['blocker_recovery'][key] = True
+            self.assertTrue(validate_execution_scope(invalid), key)
+        invalid = copy.deepcopy(policy)
+        invalid['blocker_recovery']['handoff_fields'].remove('actual_results')
+        self.assertTrue(validate_execution_scope(invalid))
+
     def test_missing_release_notes_is_rejected_before_packaging(self):
         from validate_repo import validate_repository
         notes = ROOT / 'docs/releases' / ((ROOT / 'VERSION').read_text().strip() + '.md')

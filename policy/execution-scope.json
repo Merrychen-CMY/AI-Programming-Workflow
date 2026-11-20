@@ -36,5 +36,32 @@
     "starts_new_turn_or_replays_work": false,
     "extends_permissions_budget_or_deadline": false,
     "scope": "active_codex_workers_only_L5_summary_remains_DOT"
+  },
+  "blocker_recovery": {
+    "applies_to": [
+      "L1",
+      "L1-V",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "first_action": "inspect_and_resolve_within_current_assignment",
+    "handoff_fields": [
+      "blocker",
+      "attempted_actions_or_reason_not_authorized",
+      "actual_results",
+      "evidence_references",
+      "smallest_solution",
+      "verification_method",
+      "required_decision"
+    ],
+    "unresolved_execution_blockers_owner": "L2",
+    "remaining_authority_resource_baseline_decisions_owner": "L1",
+    "unchanged_blind_retry": false,
+    "expands_assignment_authority": false,
+    "replays_unresolved_operations": false,
+    "resets_usage_or_reopens_final_report": false,
+    "non_success_requires_l1_assessment": true
   }
 }

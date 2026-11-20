@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0', '3.19.1'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -146,6 +146,16 @@ def validate_execution_scope(value):
             'requests_private_chain_of_thought': False, 'starts_new_turn_or_replays_work': False,
             'extends_permissions_budget_or_deadline': False,
             'scope': 'active_codex_workers_only_L5_summary_remains_DOT'}}
+    expected['blocker_recovery'] = {
+        'applies_to': ['L1', 'L1-V', 'L2', 'L3', 'L4', 'L5'],
+        'first_action': 'inspect_and_resolve_within_current_assignment',
+        'handoff_fields': ['blocker', 'attempted_actions_or_reason_not_authorized', 'actual_results',
+                           'evidence_references', 'smallest_solution', 'verification_method', 'required_decision'],
+        'unresolved_execution_blockers_owner': 'L2',
+        'remaining_authority_resource_baseline_decisions_owner': 'L1',
+        'unchanged_blind_retry': False, 'expands_assignment_authority': False,
+        'replays_unresolved_operations': False, 'resets_usage_or_reopens_final_report': False,
+        'non_success_requires_l1_assessment': True}
     return [] if value == expected else ['Execution scope or progress check policy differs from implemented boundaries']
 
 
@@ -183,7 +193,7 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0', '3.19.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0', '3.19.1', '3.19.2'],
                 'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,

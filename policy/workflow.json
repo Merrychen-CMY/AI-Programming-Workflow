@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.19.1",
+  "policy_version": "3.19.2",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -198,5 +198,6 @@
     "facility_actions": "L2_selects_baseline_approved_actions_or_requests_L1_review"
   },
   "agent_capability_policy": "policy/agent-capabilities.json",
-  "file_environment_policy": "policy/file-environment.json"
+  "file_environment_policy": "policy/file-environment.json",
+  "blocker_recovery_guide": "docs/guides/execution-scope.md"
 }

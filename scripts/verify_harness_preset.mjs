@@ -54,7 +54,11 @@ try {
   const plugin = await import(new URL('../harness/index.js', import.meta.url));
   await plugin.apply({ tools: { register: definition => registered.push(definition) },
     on: () => {},
-    systemPrompt: { section: section => assert.ok(section.text.includes('L1')) },
+    systemPrompt: { section: section => {
+      assert.ok(section.text.includes('L1'));
+      assert.ok(section.text.includes('各层主动排障：遇到流程阻塞'));
+      assert.ok(section.text.includes('你作为L1收到阻塞后，先读状态、证据和具体恢复入口'));
+    } },
     effect: setup => effects.push(setup()) });
   assert.ok(registered.some(tool => tool.name === 'workflow_updates'));
   assert.ok(registered.some(tool => tool.name === 'dot_plan'));

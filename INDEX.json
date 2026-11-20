@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.19.1",
+  "workflow_version": "3.19.2",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -423,5 +423,6 @@
   "flow_recovery_policy": "policy/flow-recovery.json",
   "execution_scope_policy": "policy/execution-scope.json",
   "agent_capability_policy": "policy/agent-capabilities.json",
-  "file_environment_policy": "policy/file-environment.json"
+  "file_environment_policy": "policy/file-environment.json",
+  "blocker_recovery_guide": "docs/guides/execution-scope.md"
 }
