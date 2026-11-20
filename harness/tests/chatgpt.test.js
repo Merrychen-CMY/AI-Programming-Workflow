@@ -339,3 +339,56 @@ test('real callback page shows safe exchange diagnosis and does not invoke infer
   assert.match(text,/响应类型：html/);assert.ok(!text.includes(secret));assert.ok(!text.includes('private-authorization-code'));
   assert.equal(inference,0);assert.equal(f.requests.length,1);
 });
+
+test('large streamed model catalog reaches local picker with only visible IDs and names',async t=>{
+  const f=await fixture(t),flow=await f.login();await f.auth.callback(flow.callback);
+  const before=f.vault.get('FIXTURE_CHATGPT');
+  const body=Buffer.from(JSON.stringify({models:[
+    {slug:'first',display_name:'首选模型',visibility:'list',metadata:'中文'.repeat(150000)},
+    {slug:'hidden',visibility:'hidden'},
+    {slug:'second',display_name:'第二模型',visibility:'list'}]}));
+  assert.ok(body.length>500000 && body.length<8*1024*1024);
+  f.control.reply={path:'/models',response:()=>new Response(new ReadableStream({
+    start(c){for(let offset=0;offset<body.length;offset+=65536)c.enqueue(body.subarray(offset,offset+65536));c.close();}
+  }),{headers:{'Content-Type':'application/json'}})};
+  let inference=0;
+  const page=await startSetup({directory:f.directory,credentials:f.credentials,keyRef:'FIXTURE',html:'',auth:f.auth,
+    probe:async()=>{inference++;}});t.after(()=>page.close());
+  const u=new URL(page.url),count=f.requests.length;
+  const response=await fetch(u.origin+'/chatgpt/models',{method:'POST',headers:{Origin:u.origin,
+    'X-Workflow-Token':u.hash.slice(1),'Content-Type':'application/json'},body:JSON.stringify({profile:client})});
+  assert.equal(response.status,200);
+  assert.deepEqual(await response.json(),{models:[{id:'first',name:'首选模型'},{id:'second',name:'第二模型'}]});
+  assert.equal(f.requests.length,count+1);assert.equal(inference,0);
+  assert.equal(f.vault.get('FIXTURE_CHATGPT'),before);
+});
+
+test('model response limit counts streamed bytes, cancels overflow and retains credentials',async t=>{
+  const f=await fixture(t),flow=await f.login();await f.auth.callback(flow.callback);
+  const before=f.vault.get('FIXTURE_CHATGPT');let cancelled=0;
+  const prefix=Buffer.from(JSON.stringify({models:[{slug:'boundary',visibility:'list'}]}));
+  f.control.reply={path:'/models',response:()=>new Response(Buffer.concat([prefix,Buffer.alloc(8*1024*1024-prefix.length,32)]))};
+  assert.deepEqual(await f.auth.models(client),[{id:'boundary',name:'boundary'}]);
+  f.control.reply={path:'/models',response:()=>new Response(new ReadableStream({
+    start(c){c.enqueue(new Uint8Array(8*1024*1024));c.enqueue(new Uint8Array(1));},cancel(){cancelled++;}
+  }))};
+  await assert.rejects(f.auth.models(client),error=>{
+    const d=setupDiagnostic(error);return d.code==='CHATGPT_MODELS_SIZE' && d.stage==='auth_models' && d.http_status===200;
+  });
+  assert.equal(cancelled,1);assert.equal(f.vault.get('FIXTURE_CHATGPT'),before);
+});
+
+for(const models of [[],[{slug:'hidden',visibility:'hidden'}],[null,{slug:'',visibility:'list'}]])
+  test('empty or wholly unselectable catalog reports explicit failure without inventing models',async t=>{
+    const f=await fixture(t),flow=await f.login();await f.auth.callback(flow.callback);
+    const before=f.vault.get('FIXTURE_CHATGPT');f.control.reply={path:'/models',response:()=>json({models})};
+    await assert.rejects(f.auth.models(client),{code:'CHATGPT_MODELS_EMPTY',stage:'auth_models',httpStatus:200});
+    assert.equal(f.vault.get('FIXTURE_CHATGPT'),before);
+  });
+
+test('model catalog increase does not enlarge OAuth response limit',async t=>{
+  const f=await fixture(t),flow=await f.login();
+  f.control.reply={path:'/oauth/token',response:()=>new Response(' '.repeat(500001))};
+  await assert.rejects(f.auth.callback(flow.callback),{code:'API_RESPONSE_SIZE',stage:'auth_exchange',httpStatus:200});
+  assert.equal((await f.auth.status()).active,null);
+});

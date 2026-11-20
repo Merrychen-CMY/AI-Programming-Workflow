@@ -6,6 +6,8 @@ import { SetupError, networkFailure, chatgptAuthFailure } from './diagnostics.js
 const ISSUER = 'https://auth.openai.com';
 const TOKEN = `${ISSUER}/api/accounts/oauth/token`;
 const RESOURCE = 'https://api.openai.com/v1';
+// Model catalogs include metadata far larger than OAuth token responses.
+const MODEL_CATALOG_MAX_BYTES = 8 * 1024 * 1024;
 const scopes = 'openid profile email offline_access resource.invoke chatgpt.tokens.use.direct';
 export const profileDigest = profile => createHash('sha256').update(`${profile.client_id}:${profile.subject}`).digest('hex');
 
@@ -14,13 +16,16 @@ async function jsonFetch(fetchImpl, url, stage, options = {}) {
   try { response = await fetchImpl(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(20000) }); }
   catch (error) { throw networkFailure(error, stage); }
   const reader = response.body?.getReader();
+  const modelCatalog = stage === 'auth_models' && response.ok;
+  const maxBytes = modelCatalog ? MODEL_CATALOG_MAX_BYTES : 500000;
   const chunks = []; let size = 0;
   const details = { request_id: response.headers.get('x-request-id') };
   const challenge = response.headers.get('cf-mitigated') === 'challenge';
   try {
     while (reader) {
       const { done, value } = await reader.read(); if (done) break;
-      if ((size += value.byteLength) > 500000) throw new SetupError('API_RESPONSE_SIZE', stage, response.status);
+      if ((size += value.byteLength) > maxBytes)
+        throw new SetupError(modelCatalog ? 'CHATGPT_MODELS_SIZE' : 'API_RESPONSE_SIZE', stage, response.status);
       chunks.push(Buffer.from(value));
     }
   } catch (error) {
@@ -172,8 +177,10 @@ export function createChatGPTAuth({ directory, credentials, keyRef, fetchImpl = 
     const { token } = await access(client);
     const data = await jsonFetch(fetchImpl, `${RESOURCE}/models`, 'auth_models', { headers: { Authorization: `Bearer ${token}` } });
     if (!Array.isArray(data.models)) throw new SetupError('CHATGPT_MODELS', 'auth_models');
-    return data.models.filter(m => m.visibility === 'list' && typeof m.slug === 'string')
+    const listed = data.models.filter(m => m && m.visibility === 'list' && typeof m.slug === 'string' && m.slug.trim())
       .map(m => ({ id: m.slug, name: m.display_name || m.slug }));
+    if (!listed.length) throw new SetupError('CHATGPT_MODELS_EMPTY', 'auth_models', 200);
+    return listed;
   }
   async function logout(client) {
     return locked(async () => {

@@ -20,6 +20,8 @@ const messages = {
   CHATGPT_LOGIN_REQUIRED: '请先登录所选ChatGPT账户并授权订阅用量。',
   CHATGPT_BUSY: '另一项登录或续期正在处理；请稍后重试。若宿主曾中断，请核实旧进程后处理chatgpt-auth.lock。',
   CHATGPT_MODELS: '无法取得所选账户的模型清单，请重新登录并检查账户权限。',
+  CHATGPT_MODELS_SIZE: '模型目录响应超过8 MiB读取上限，已停止读取；登录凭据保留。请反馈此诊断以排查目录大小，无需重新登录或充值。',
+  CHATGPT_MODELS_EMPTY: '模型目录请求成功，但未返回可供选择的模型。请核对当前账户及应用权限；这不等于登录失效，不要猜填模型ID。',
   CHATGPT_TOOLS: '当前工具类型不支持会员接口，未发送请求。',
   CHATGPT_LIMIT: 'ChatGPT订阅用量或速率限制已触发。请在ChatGPT设置中查看用量；不会切换到付费API。',
   SETUP_INTERNAL: '本地配置操作失败，请重新打开配置页；若仍失败，检查插件与Harness凭据服务。',
