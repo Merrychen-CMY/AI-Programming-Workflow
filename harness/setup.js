@@ -3,6 +3,8 @@ import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { readFile, writeFile, rename } from './file-access.js';
 import { SetupError, setupDiagnostic, httpFailure, networkFailure } from './diagnostics.js';
+import { createChatGPTAuth } from './chatgpt-auth.js';
+import { chatgptRequest } from './chatgpt-response.js';
 
 export const keyDigest = key => createHash('sha256').update(key).digest('hex');
 
@@ -32,8 +34,13 @@ function expectedBoolean(text) {
   catch { return false; }
 }
 
-export async function probeModel(key, model, fetchImpl = fetch) {
+export async function probeModel(key, model, fetchImpl = fetch, { chatgpt = false } = {}) {
   const request = async (payload, stage) => {
+    if (chatgpt) {
+      const result = await chatgptRequest(key, { model, ...payload }, 45, { fetchImpl });
+      if (result.status !== 'completed' || !Array.isArray(result.output)) throw new SetupError('API_INCOMPLETE', stage);
+      return result;
+    }
     let response;
     try {
       response = await fetchImpl('https://api.openai.com/v1/responses', {
@@ -73,7 +80,7 @@ export async function probeModel(key, model, fetchImpl = fetch) {
 export async function loadConfig(directory) {
   try { return JSON.parse(await readFile(`${directory}/settings.json`, 'utf8')); }
   catch (error) { if (error.code !== 'ENOENT') throw new SetupError('CONFIG_READ'); }
-  return { model: '', python: 'python', codex: 'codex', probe: null };
+  return { model: '', python: 'python', codex: 'codex', auth_mode: 'chatgpt', probe: null };
 }
 
 export async function saveConfig(directory, config) {
@@ -90,7 +97,8 @@ async function credentialOperation(code, operation) {
   catch { throw new SetupError(code, 'credentials'); }
 }
 
-export async function startSetup({ directory, credentials, keyRef, html, probe = probeModel }) {
+export async function startSetup({ directory, credentials, keyRef, html, probe = probeModel, auth: suppliedAuth }) {
+  const auth = suppliedAuth || createChatGPTAuth({ directory, credentials, keyRef });
   const token = randomBytes(32).toString('hex');
   let origin, busy = false;
   const server = createServer(async (req, res) => {
@@ -102,6 +110,16 @@ export async function startSetup({ directory, credentials, keyRef, html, probe =
     if (req.headers.host !== new URL(origin).host) return respond(403, { error: 'Invalid host' });
     if (req.method === 'GET' && req.url === '/') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(html); return;
+    }
+    if (req.method === 'GET' && req.url.startsWith('/auth/callback?')) {
+      try {
+        await auth.callback(new URL(req.url, origin));
+        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('ChatGPT登录完成。请关闭本页，回到ReqPilot配置页刷新账户并选择模型、保存和测试连接。');
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(setupDiagnostic(error).error);
+      }
+      return;
     }
     const supplied = req.headers['x-workflow-token'];
     if (req.headers.origin !== origin || typeof supplied !== 'string' || supplied.length !== token.length ||
@@ -117,21 +135,47 @@ export async function startSetup({ directory, credentials, keyRef, html, probe =
       if (req.url === '/status') {
         const configured = Boolean(await credentialOperation('CREDENTIAL_READ', () => credentials.resolve(keyRef)));
         return respond(200, { model:config.model, python:config.python, codex:config.codex,
+          auth_mode: config.auth_mode || 'api_key', chatgpt_profile: config.chatgpt_profile || null,
+          chatgpt: await auth.status(),
           probe: config.probe ? { status: config.probe.status, at: config.probe.at } : null, configured });
       }
+      if (req.url === '/chatgpt/login') return respond(200, { url: await auth.begin(`${origin}/auth/callback`, input.profile) });
+      if (req.url === '/chatgpt/models') return respond(200, { models: await auth.models(input.profile) });
+      if (req.url === '/chatgpt/logout') {
+        const result = await auth.logout(input.profile);
+        if (config.chatgpt_profile === input.profile) await saveConfig(directory, { ...config, probe: null });
+        return respond(200, result);
+      }
       if (req.url === '/save') {
-        if (Object.keys(input).some(k => !['model', 'python', 'codex', 'key'].includes(k)) ||
+        const mode = input.auth_mode || 'api_key';
+        if (!['chatgpt', 'api_key'].includes(mode)) throw new SetupError('CONFIG_INVALID');
+        if (mode === 'chatgpt') await auth.identity(input.chatgpt_profile);
+        if (Object.keys(input).some(k => !['model', 'python', 'codex', 'key', 'auth_mode', 'chatgpt_profile'].includes(k)) ||
             ['model', 'python', 'codex'].some(k => typeof input[k] !== 'string' || !input[k].trim() || /[\r\n\0]/.test(input[k])) ||
             !/^[A-Za-z0-9][A-Za-z0-9:._-]{0,127}$/.test(input.model.trim()) || input.model.trim().startsWith('sk-'))
           throw new SetupError('CONFIG_INVALID');
-        if (input.key) {
+        if (input.key && mode === 'api_key') {
           if (typeof input.key !== 'string' || /\s/.test(input.key) || input.key.length > 1024) throw new SetupError('KEY_FORMAT');
           await credentialOperation('CREDENTIAL_WRITE', () => credentials.set(keyRef, input.key));
         }
-        await saveConfig(directory, { model: input.model.trim(), python: input.python.trim(), codex: input.codex.trim(), probe: null });
+        await saveConfig(directory, { model: input.model.trim(), python: input.python.trim(), codex: input.codex.trim(),
+          auth_mode: mode, ...(mode === 'chatgpt' ? { chatgpt_profile: input.chatgpt_profile } : {}), probe: null });
         return respond(200, { saved: true, next: 'Run the explicit API compatibility test' });
       }
       if (req.url === '/probe') {
+        if (input.auth_mode !== undefined && (input.auth_mode !== (config.auth_mode || 'api_key')
+          || input.model !== config.model || (input.auth_mode === 'chatgpt' && input.chatgpt_profile !== config.chatgpt_profile)))
+          throw new SetupError('CONFIG_UNSAVED');
+        if (config.auth_mode === 'chatgpt') {
+          if (!config.model) throw new SetupError('CONFIG_INVALID');
+          await saveConfig(directory, { ...config, probe: null });
+          const { token, identity } = await auth.access(config.chatgpt_profile);
+          const catalog = await auth.models(config.chatgpt_profile);
+          if (!catalog.some(m => m.id === config.model)) throw new SetupError('CHATGPT_MODELS');
+          const result = await probe(token, config.model, fetch, { chatgpt: true });
+          await saveConfig(directory, { ...config, probe: { ...result, credential_sha256: identity, auth_mode: 'chatgpt' } });
+          return respond(200, { status: result.status, api_calls: result.api_calls, auth_mode: 'chatgpt' });
+        }
         const resolved = await credentialOperation('CREDENTIAL_READ', () => credentials.resolve(keyRef));
         if (!resolved || !config.model) throw new SetupError('SETUP_REQUIRED');
         await saveConfig(directory, { ...config, probe: null });
@@ -148,5 +192,5 @@ export async function startSetup({ directory, credentials, keyRef, html, probe =
   server.headersTimeout = 15000;
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${server.address().port}`;
-  return { url: `${origin}/#${token}`, close: () => server.close(), server };
+  return { url: `${origin}/#${token}`, close: () => { auth.cancel(); server.close(); }, server };
 }

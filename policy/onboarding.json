@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.21.0",
+  "workflow_version": "3.22.0",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -84,5 +84,16 @@
   "flow_recovery_policy": "policy/flow-recovery.json",
   "execution_scope_policy": "policy/execution-scope.json",
   "agent_capability_policy": "policy/agent-capabilities.json",
-  "file_environment_policy": "policy/file-environment.json"
+  "file_environment_policy": "policy/file-environment.json",
+  "authentication": {
+    "modes": [
+      "chatgpt",
+      "api_key"
+    ],
+    "default_new_install": "chatgpt",
+    "legacy_config_default": "api_key",
+    "automatic_paid_fallback": false,
+    "task_pins_source_and_identity": true,
+    "guide": "docs/guides/chatgpt-login.md"
+  }
 }

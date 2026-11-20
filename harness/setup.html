@@ -1,6 +1,7 @@
 <!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ReqPilot · 需求领航 · 首次配置</title>
 <style>body{font:17px/1.65 system-ui,sans-serif;color:#203234;background:#f3f7f7;margin:0}main{max-width:720px;margin:40px auto;padding:32px;background:white;border-radius:18px}.brand{display:flex;align-items:center;gap:12px}.brand svg{width:48px;height:48px;flex:none}.brand strong{font-size:20px}h1{line-height:1.3}label{display:block;margin:18px 0 4px}input{box-sizing:border-box;width:100%;padding:11px;border:1px solid #a6b7ba;border-radius:6px;font:inherit}button{padding:12px 18px;border:0;border-radius:6px;background:#145e69;color:white;font:inherit;margin:20px 8px 0 0;cursor:pointer}button:disabled{opacity:.5}small{color:#53676a}#status{white-space:pre-wrap;background:#edf4f4;padding:16px}a{color:#145e69}</style>
+<style>select{box-sizing:border-box;width:100%;padding:11px;border:1px solid #a6b7ba;border-radius:6px;font:inherit;background:white}section[hidden]{display:none}button:focus-visible,a:focus-visible{outline:3px solid #258794;outline-offset:3px}@media(max-width:600px){main{margin:12px;padding:20px}button{width:100%;margin-right:0}}</style>
 <main><div class="brand">
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" role="img" aria-labelledby="reqpilot-title">
   <title id="reqpilot-title">ReqPilot</title>
@@ -9,17 +10,26 @@
   <path d="M10.5 25.5 15 15 21 21Z" fill="#45AA9D"/>
   <circle cx="18" cy="18" r="1.5" fill="#E8F6F4"/>
 </svg>
-<div><strong>ReqPilot · 需求领航</strong><br><small>L1 / GPT · DOT · 3.5.0</small></div></div><h1>连接你的 GPT / DOT</h1>
-<p>这里只配置负责统筹工作的 GPT。L1 继续使用你在 DeepSeek Harness 中选择的模型。密钥存入 Harness 凭据服务，不进入聊天、项目仓库或工作会话。</p>
-<label for="model">GPT API 模型 ID</label><input id="model" autocomplete="off" placeholder="填写你的 API 账户可用且支持 Responses 的模型 ID">
-<label for="key">OpenAI API 密钥</label><input id="key" type="password" autocomplete="new-password" placeholder="已配置时可留空，保留原密钥">
-<small>密钥不会回显。本版仅连接 https://api.openai.com/v1/responses。</small>
+<div><strong>ReqPilot · 需求领航</strong><br><small>L1 / GPT · DOT</small></div></div><h1>连接你的 GPT / DOT</h1>
+<p>这里只配置负责统筹工作的 GPT。L1 继续使用你在 DeepSeek Harness 中选择的模型。登录凭据和密钥存入 Harness 凭据服务。</p>
+<label for="mode">用量来源</label><select id="mode"><option value="chatgpt">ChatGPT 会员登录</option><option value="api_key">API Key（单独计费）</option></select>
+<section id="membership">
+<p>使用符合条件的 ChatGPT 订阅用量；实际可用模型和限额由账户决定。额度不足时暂停，不自动切换到付费 API。</p>
+<label for="account">ChatGPT 账户 / 注册连接</label><select id="account"></select>
+<button id="login">Continue with ChatGPT</button><button id="refresh">刷新账户和模型</button><button id="logout">退出所选账户</button>
+<p><a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">管理订阅用量与应用权限</a>。如不希望使用额外积分，请在官方设置中关闭该应用超额使用积分。</p>
+<label for="models">账户可用模型</label><select id="models"><option value="">登录后刷新模型清单</option></select>
+<small>登录会打开官方网页；授权完成后回到本页刷新。此接入不读取你的 ChatGPT 聊天记录。</small>
+</section>
+<label for="model">GPT / DOT 模型 ID</label><input id="model" autocomplete="off" placeholder="会员模式从账户模型清单选择；API模式填写模型ID">
+<section id="api"><label for="key">OpenAI API 密钥</label><input id="key" type="password" autocomplete="new-password" placeholder="已配置时可留空，保留原密钥">
+<small>API Key 模式单独计费；密钥不会回显。</small></section>
 <label for="python">Python 3.11+ 可执行文件</label><input id="python" autocomplete="off" placeholder="python 或完整 python.exe 路径">
 <label for="codex">Codex 可执行文件</label><input id="codex" autocomplete="off" placeholder="codex 或完整 codex.exe 路径">
 <p><small>填写可执行文件本身，不附带参数。Codex 需要另行完成本机登录。凭据保存方式由 Harness 当前凭据服务决定，本插件不声称采用操作系统加密。</small></p>
-<button id="save">保存配置</button><button id="probe">测试 API（两次小额计费请求）</button>
+<button id="save">保存配置</button><button id="probe">测试连接（使用所选来源的两次请求）</button>
 <p id="status" role="status">读取配置状态…</p>
-<p><small>API测试只检查模型接口，不运行Python或Codex。失败时请保留方括号中的错误编号、测试阶段和HTTP状态；无需提供密钥。</small></p>
+<p><small>测试连接会消耗所选来源的用量，仅检查模型接口，不运行Python或Codex。登录、刷新模型和打开页面不执行模型推理。失败时保留错误编号即可，不要提供凭据。</small></p>
 <p>测试只发送固定示例，不发送项目文件。测试通过后回到 L1，先检查基础环境；通过后再沟通原始需求，随后集中确认开工，由 L1 自动推进，最后由你审核报告。</p>
 <p><small>配置页仅监听本机，安装插件不会自动调用付费 API。会话被宿主释放或卸载插件后链接失效。不要分享本页链接。</small></p></main>
 <script>
@@ -29,9 +39,18 @@ async function call(path, body) {
   const response = await fetch(path, {method:'POST',headers:{'Content-Type':'application/json','X-Workflow-Token':token},body:JSON.stringify(body)});
   const value = await response.json(); if (!response.ok) throw new Error(value.error); return value;
 }
-async function run(action) { el('save').disabled=el('probe').disabled=true; el('status').textContent='处理中…';
- try {el('status').textContent=await action();} catch(e){el('status').textContent=e.message;} finally{el('save').disabled=el('probe').disabled=false;} }
-el('save').onclick=()=>run(async()=>{const value={model:el('model').value,python:el('python').value,codex:el('codex').value,key:el('key').value}; el('key').value=''; await call('/save',value);return '配置已保存。请点击 API 测试，检查模型是否支持工具调用和结构化输出。';});
-el('probe').onclick=()=>run(async()=>{await call('/probe',{});return 'API 兼容性检查通过。请返回 L1 先检查基础环境；通过后再沟通原始需求。';});
-run(async()=>{const data=await call('/status',{}); for(const id of ['model','python','codex'])el(id).value=data[id]; return `密钥：${data.configured?'已配置':'未配置'}\nAPI 检查：${data.probe?.status||'尚未执行'}`;});
+async function run(action) { document.querySelectorAll('button').forEach(b=>b.disabled=true); el('status').textContent='处理中…';
+ try {el('status').textContent=await action();} catch(e){el('status').textContent=e.message;} finally{document.querySelectorAll('button').forEach(b=>b.disabled=false);} }
+function modeView(){el('membership').hidden=el('mode').value!=='chatgpt';el('api').hidden=el('mode').value!=='api_key';el('model').readOnly=el('mode').value==='chatgpt';}
+el('mode').onchange=modeView;
+el('models').onchange=()=>{el('model').value=el('models').value;};
+async function accounts(data){el('account').replaceChildren(new Option('添加另一个账户 / 首次登录',''));for(const p of data.chatgpt.profiles)el('account').add(new Option(p.label+(p.connected?'（已连接）':'（需登录）'),p.id));el('account').value=data.chatgpt.active||data.chatgpt_profile||'';}
+async function models(){const id=el('account').value;el('models').replaceChildren(new Option('请选择模型',''));if(!id)return;const data=await call('/chatgpt/models',{profile:id});for(const m of data.models)el('models').add(new Option(m.name,m.id));el('models').value=el('model').value;}
+el('account').onchange=()=>run(async()=>{el('model').value='';await models();return '账户已选择。请选模型、保存并测试连接。';});
+el('login').onclick=()=>{const win=window.open('about:blank','_blank');if(win)win.opener=null;run(async()=>{try{if(!win)throw new Error('浏览器阻止了登录窗口，请允许本页弹出窗口后重新登录。');const data=await call('/chatgpt/login',{profile:el('account').value||null});win.location=data.url;return '请在官方登录页完成授权，再返回本页点击刷新账户和模型。';}catch(e){win?.close();throw e;}});};
+el('refresh').onclick=()=>run(async()=>{await accounts(await call('/status',{}));await models();return '账户已刷新。选择模型后保存并测试连接。';});
+el('logout').onclick=()=>run(async()=>{const result=await call('/chatgpt/logout',{profile:el('account').value});await accounts(await call('/status',{}));return result.revoked?'已退出，远端会话已撤销。':'已在本地退出；远端撤销未确认，请在ChatGPT设置中断开此应用。';});
+el('save').onclick=()=>run(async()=>{const value={model:el('model').value,python:el('python').value,codex:el('codex').value,key:el('mode').value==='api_key'?el('key').value:'',auth_mode:el('mode').value,chatgpt_profile:el('account').value}; el('key').value=''; await call('/save',value);return '配置已保存。请测试连接。已确认任务固定原账户和接入方式，不能通过本页静默切换。';});
+el('probe').onclick=()=>run(async()=>{await call('/probe',{auth_mode:el('mode').value,model:el('model').value,chatgpt_profile:el('account').value});return '连接检查通过。请返回 L1 先检查基础环境；通过后再沟通原始需求。';});
+run(async()=>{const data=await call('/status',{}); for(const id of ['model','python','codex'])el(id).value=data[id];el('mode').value=data.auth_mode;modeView();await accounts(data);return `用量来源：${data.auth_mode==='chatgpt'?'ChatGPT订阅':'API Key（单独计费）'}\n连接检查：${data.probe?.status||'尚未执行'}`;});
 </script></html>

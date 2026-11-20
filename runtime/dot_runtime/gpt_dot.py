@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+import sys
 
 from .adapter import TRIAGE_SCHEMA, ROOT_CAUSES, _valid_triage
 from .controller import atomic_json, read_json, digest
@@ -37,6 +38,18 @@ def function(name, properties):
 
 
 def transport(payload, timeout):
+    if os.environ.get('REQPILOT_AUTH_MODE', 'api_key') not in ('chatgpt', 'api_key'):
+        raise api_recovery.ApiReview({'version': 1, 'code': 'AUTH_MODE_INVALID', 'outcome': 'NOT_SENT'})
+    if os.environ.get('REQPILOT_AUTH_MODE') == 'chatgpt':
+        if os.environ.get('REQPILOT_HOST_RELAY') != '1':
+            raise api_recovery.ApiReview({'version': 1, 'code': 'CHATGPT_HOST_REQUIRED', 'outcome': 'NOT_SENT'})
+        from .host_tools import pipe_relay
+        reply = pipe_relay(sys.stdin, sys.stdout)({'operation': 'chatgpt_response',
+            'arguments': {'payload': payload}, 'timeout_seconds': timeout})
+        if reply.get('status') != 'PASS':
+            raise api_recovery.ApiReview(reply.get('diagnostic') or
+                {'version': 1, 'code': 'CHATGPT_CONNECTION', 'outcome': 'UNKNOWN'})
+        return reply['response']
     key = os.environ.get('OPENAI_API_KEY', '')
     if not key:
         raise api_recovery.ApiReview({'version': 1, 'code': 'API_KEY_MISSING', 'outcome': 'NOT_SENT'})
@@ -152,6 +165,7 @@ class ResponsesClient:
         if elapsed >= limits['wall_time_seconds'] or len(ledger['attempts']) >= limits['api_calls']:
             raise ValueError('Delegated API/time budget exhausted')
         item = {'id': uuid.uuid4().hex, 'status': 'RESERVED', 'started_at': time.time(),
+                'auth_mode': os.environ.get('REQPILOT_AUTH_MODE', 'api_key'),
                 'input_material': {'original_text_bytes': original_input_bytes,
                     'sent_text_bytes': len(material), 'history_bytes': len(encoded(text_material(history))),
                     'prompt_bytes': len(prompt.encode('utf-8')), 'developer_bytes': len(developer_message.encode('utf-8'))}}
@@ -165,6 +179,13 @@ class ResponsesClient:
             payload.update(tools=tools, parallel_tool_calls=False, tool_choice='auto' if schema else 'required')
         if schema:
             payload['text'] = {'format': {'type': 'json_schema', 'name': 'dot_result', 'strict': True, 'schema': schema}}
+        if os.environ.get('REQPILOT_AUTH_MODE') == 'chatgpt':
+            payload.pop('max_output_tokens')
+            payload['stream'] = True
+            if tools:
+                payload['tools'] = [{'type': 'namespace', 'name': 'reqpilot',
+                    'description': 'ReqPilot workflow tools', 'tools': tools}]
+            item['output_limit_enforcement'] = 'provider_managed; SIWC does not support max_output_tokens'
         atomic_json(self.root / (item['id'] + '-request.json'), payload)
         try:
             remaining = min(limits['wall_time_seconds'] - elapsed,

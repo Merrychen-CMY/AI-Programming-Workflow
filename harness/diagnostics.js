@@ -1,5 +1,15 @@
 // Only fixed messages and allowlisted metadata cross the local setup boundary.
 const messages = {
+  CONFIG_UNSAVED: '页面中的接入方式、账户或模型尚未保存，请先保存再测试，未发送模型请求。',
+  CHATGPT_AUTH: 'ChatGPT授权或续期失败，请重新登录；不会切换到付费API。',
+  CHATGPT_IDENTITY: 'ChatGPT登录身份校验失败，未保存本次凭据。',
+  CHATGPT_STATE: '登录回调已过期、已使用或不匹配，请重新发起登录。',
+  CHATGPT_CONSENT: '尚未获得使用ChatGPT订阅的授权，请在官方登录页确认账户资格与权限。',
+  CHATGPT_LOGIN_REQUIRED: '请先登录所选ChatGPT账户并授权订阅用量。',
+  CHATGPT_BUSY: '另一项登录或续期正在处理；请稍后重试。若宿主曾中断，请核实旧进程后处理chatgpt-auth.lock。',
+  CHATGPT_MODELS: '无法取得所选账户的模型清单，请重新登录并检查账户权限。',
+  CHATGPT_TOOLS: '当前工具类型不支持会员接口，未发送请求。',
+  CHATGPT_LIMIT: 'ChatGPT订阅用量或速率限制已触发。请在ChatGPT设置中查看用量；不会切换到付费API。',
   SETUP_INTERNAL: '本地配置操作失败，请重新打开配置页；若仍失败，检查插件与Harness凭据服务。',
   CONFIG_INVALID: '模型ID及Python/Codex路径不能为空；模型栏只能填写模型ID，路径栏不附带命令参数。',
   KEY_FORMAT: '密钥格式不正确：请完整粘贴API密钥，移除首尾空格和换行。',

@@ -309,6 +309,9 @@ def report(root, original, state=None):
             'user_authority': authority(original, root), 'operating_limits': journal['current'],
             'actual_usage': usage(root, state), 'history': journal['events'],
             'dot_api_reported_usage': token_usage,
+            'dot_usage_sources': sorted({a.get('auth_mode', 'api_key') for a in attempts}),
+            'membership_output_limit': 'provider_managed; no max_output_tokens hard cap' if any(
+                a.get('auth_mode') == 'chatgpt' for a in attempts) else None,
             'pending_authorization': journal['pending'], 'budget_review': journal['pause'],
             'cost_accounting': 'Counts, elapsed time and reported DOT API tokens; unreported usage is unknown. '
                                'No unified L1/Codex/DOT token or monetary hard cap.'}

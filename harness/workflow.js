@@ -10,6 +10,8 @@ import { hostTools } from './host-tools.js';
 import { taskRuntime } from './task-runtime.js';
 import { recoverOperation } from './operation-recovery.js';
 import { confirmStop } from './user-stop.js';
+import { createChatGPTAuth } from './chatgpt-auth.js';
+import { chatgptRelay } from './chatgpt-response.js';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
 const exists = async path => { try { await readFile(path); return true; } catch(e) { if(e.code==='ENOENT')return false; throw e; } };
@@ -31,19 +33,22 @@ const labels = { requirements: '需求目标', baseline: '现有基线', scope: 
   acceptance: '验收标准', test_environment: '测试环境', test_plan: '测试方案', delivery: '交付要求', safety: '安全与数据边界' };
 
 export function startupSummary(draft, settings, inspection, digest) {
-  return `开工前集中确认\n项目：${draft.project}\nGPT/DOT 模型：${settings.model}\nPython：${settings.python}\nCodex：${settings.codex}\n工作流版本摘要：${settings.workflow_sha256}\n项目指纹：${inspection.baseline.id}\n摘要编号：${digest}\n\n`
+  const membership = settings.auth_mode === 'chatgpt';
+  return `开工前集中确认\n项目：${draft.project}\nGPT/DOT 模型：${settings.model}\n用量来源：${membership ? 'ChatGPT订阅（不自动切换API Key）' : 'API Key（单独计费）'}\nPython：${settings.python}\nCodex：${settings.codex}\n工作流版本摘要：${settings.workflow_sha256}\n项目指纹：${inspection.baseline.id}\n摘要编号：${digest}\n\n`
     + Object.entries(labels).map(([key,label])=>`${label}：${draft.topics[key]}`).join('\n\n')
     + `\n\n资源管理方式：${draft.adaptive_limits === true ? '资源额度由L1制定、评估和批准追加，无需用户逐项审批' : '旧版固定额度；本任务未启用动态管理'}\n`
     + `\n\n原始信息与澄清记录：\n${draft.raw_input}\n\n不可降低的约束：\n${draft.hard_constraints.join('\n')}\n允许修改路径：${JSON.stringify(draft.allowed_paths)}\n`
     + `到期时间：${draft.expires_at}\n执行预算（次数、秒数和输出 token 上限）：\n${JSON.stringify(draft.limits,null,2)}\n环境检查：\n${JSON.stringify(inspection.checks,null,2)}\n${inspection.limits}\n\n`
     + '上述资源值是L1制定的初始额度。达到额度后由L1评估并自行批准增加次数、API输出、单次等待和总执行时长，无需用户审批资源追加。目标、验收标准、操作范围及用户明确的最终截止时间仍按原授权执行，变更这些事项须用户确认。每次调整与累计消耗均进入最终报告，不清零历史。\n\n'
     + 'implementation_attempts 是全任务初次实现和修复的累计 L3 派工次数；独立构建、Doxygen、测试和审核仍须完整安排。timeout_seconds同时约束单次API等待和工作会话；L1可在当前额度内调整API等待，仍受总时间及截止时间限制。API调用和时间另计，当前没有统一货币硬限额。\n\n'
-    + '确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的付费 API 调用和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。当前资源额度不足由L1评估并批准追加；目标、验收和操作权限变更须你明确批准；无可行方案或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。';
+    + (membership ? '会员接口不支持单次max_output_tokens参数，该数值不是会员请求的硬上限；实际输出由服务决定，插件仍执行次数、时间和截止时间限制并记录返回用量。可在ChatGPT设置管理应用限额和是否允许使用额外积分。\n' : '')
+    + `确认表示：允许 L1 在上述边界内自动生成、独立审核并批准需求/计划，允许 GPT/DOT 的${membership ? 'ChatGPT订阅用量请求' : '付费 API 调用'}和独立 Codex 执行/测试；中途不再逐项审批。需求、计划及执行证据会发送给配置的模型服务。当前资源额度不足由L1评估并批准追加；目标、验收和操作权限变更须你明确批准；无可行方案或无法核实则停止报告。最终成功/失败报告仍由你审核。本版不执行外部合并、发布、部署或生产刷写。环境中的 USER_ATTESTED 是你提供的说明，不是工具实测通过。`;
 }
 
 export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(), '.ai-programming-workflow'),
-                                 runner = pythonCall, setupFactory = startSetup, protectedRoots = [root], hostDispatch }) {
+                                 runner = pythonCall, setupFactory = startSetup, protectedRoots = [root], hostDispatch, chatgptAuth }) {
   const busy = new Set();
+  const auth = chatgptAuth || createChatGPTAuth({ directory, credentials: ctx.credentials, keyRef });
   let setup, setupPending;
   const script = resolve(root, 'scripts/harness_workflow.py');
   async function credential() {
@@ -52,6 +57,17 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
   }
   async function configured() {
     const config = await loadConfig(directory);
+    if (config.auth_mode && !['chatgpt', 'api_key'].includes(config.auth_mode))
+      throw new Error('接入方式无效，请在配置页重新选择；未调用API');
+    if (config.auth_mode === 'chatgpt') {
+      const identity = await auth.identity(config.chatgpt_profile);
+      if (!config.model || config.probe?.status !== 'PASS' || config.probe.model !== config.model
+        || config.probe.auth_mode !== 'chatgpt' || config.probe.credential_sha256 !== identity)
+        throw new Error('请在workflow_setup中完成ChatGPT登录、模型选择与连接测试');
+      return { settings: { model: config.model, python: config.python, codex: config.codex,
+        workflow_sha256: sha(await readFile(resolve(root, 'MANIFEST.json'))), auth_mode: 'chatgpt',
+        chatgpt_profile: config.chatgpt_profile, chatgpt_identity: identity } };
+    }
     const key = await credential();
     if (!config.model || !key || config.probe?.status !== 'PASS' || config.probe.model !== config.model ||
         config.probe.credential_sha256 !== keyDigest(key.value))
@@ -83,13 +99,14 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
     busy.add(session);
     try {
       if (name === 'workflow_setup') {
-        if (!setupPending) setupPending = setupFactory({ directory, credentials: ctx.credentials, keyRef,
+        if (!setupPending) setupPending = setupFactory({ directory, credentials: ctx.credentials, keyRef, auth,
           html: await readFile(resolve(root, 'harness/setup.html'), 'utf8') }).then(value => setup = value)
           .catch(error => { setupPending = undefined; throw error; });
         const page = await setupPending;
         const config = await loadConfig(directory);
         return { url: page.url, model: config.model, credential_configured: Boolean(await credential()),
-          instruction: '先完成模型和密钥配置及API测试，再调用 workflow_check_environment；通过后再沟通原始需求。勿在聊天中索取密钥。安装和打开页面不调用付费 API。' };
+          auth_mode: config.auth_mode || 'api_key',
+          instruction: '先选择ChatGPT会员登录或API Key，配置模型并完成连接测试，再调用workflow_check_environment。不要在聊天中索取凭据；打开页面不产生模型调用，会员模式不自动切换付费API。' };
       }
       if (name === 'workflow_reference') {
         if (Object.keys(args).some(k => !['path','offset'].includes(k)) || typeof args.path !== 'string' ||
@@ -106,8 +123,17 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
       await mkdir(task, { recursive: true, mode: 0o700 });
       const call = (settings, action, payload = {}, key) => runner(settings.python, script,
         { action, task, session, ...payload }, { signal: exec.signal, key,
-          ...(action === 'bridge' && ctx.tools?.schemas ? { hostRelay: hostTools(ctx, exec,
-            { dispatch: hostDispatch, controlTools: [...Object.keys(toolFields), 'workflow_updates'] }) } : {}) });
+          ...(action === 'bridge' && (ctx.tools?.schemas || settings.auth_mode === 'chatgpt') ? {
+            authMode: settings.auth_mode || 'api_key',
+            hostRelay: async (frame, signal) => {
+              if (frame.operation === 'chatgpt_response') {
+                if (settings.auth_mode !== 'chatgpt' || !['dot_plan','dot_run','dot_investigate'].includes(payload.name))
+                  return { status: 'FAIL', diagnostic: {version:1,code:'CHATGPT_NOT_AUTHORIZED',outcome:'NOT_SENT'} };
+                return chatgptRelay(auth, settings.chatgpt_profile)(frame, signal);
+              }
+              return hostTools(ctx, exec, { dispatch: hostDispatch,
+                controlTools: [...Object.keys(toolFields), 'workflow_updates'] })(frame, signal);
+            } } : {}) });
       if (name === 'workflow_check_environment') {
         if (Object.keys(args).length) throw new Error('Environment check accepts no model arguments');
         if (await exists(`${task}/confirmation.json`)) throw new Error('任务已确认；请用 workflow_status 查看状态，不能重置开工流程');

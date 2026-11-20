@@ -4,15 +4,16 @@ import { readFileSync, writeFileSync, renameSync } from './file-access.js';
 import { resolve as resolvePath } from 'node:path';
 
 /** No shell, no credential arguments, bounded capture; cancellation is UNKNOWN. */
-export function pythonCall(executable, script, request, { key, signal, hostRelay, spawnImpl = spawn } = {}) {
+export function pythonCall(executable, script, request, { key, signal, hostRelay, authMode, spawnImpl = spawn } = {}) {
   return new Promise((resolve, reject) => {
     const env = Object.fromEntries(Object.entries(process.env).filter(([k]) =>
-      !['OPENAI_API_KEY', 'AI_WORKFLOW_OPENAI_API_KEY'].includes(k.toUpperCase())));
+      !['OPENAI_API_KEY', 'AI_WORKFLOW_OPENAI_API_KEY', 'REQPILOT_AUTH_MODE', 'AI_WORKFLOW_OPENAI_API_KEY_CHATGPT'].includes(k.toUpperCase())));
     env.PYTHONIOENCODING = 'utf-8';
     env.PYTHONDONTWRITEBYTECODE = '1';
     delete env.REQPILOT_HOST_RELAY;
     if (hostRelay) env.REQPILOT_HOST_RELAY = '1';
-    if (key) env.OPENAI_API_KEY = key;
+    if (key && authMode !== 'chatgpt') env.OPENAI_API_KEY = key;
+    if (authMode === 'chatgpt') env.REQPILOT_AUTH_MODE = 'chatgpt';
     const child = spawnImpl(executable, [script], { env, shell: false, windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'] });
     const tracked = request.action === 'bridge' && !['dot_status', 'dot_read_record',

@@ -247,7 +247,8 @@ test('compatible update invalidates prepared environment and prevents approval o
   const f=await fixture(t);const actualRoot=fileURLToPath(new URL('../../',import.meta.url));
   const target=release('3.4.1',files=>files); // synthetic release uses the actual engine below
   const content={...target.files};delete content['MANIFEST.json'];
-  for(const path of ['harness/workflow.js','harness/file-access.js','harness/host-tools.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js','harness/operation-recovery.js','harness/user-stop.js'])
+  const vendorPaths = Object.keys(JSON.parse(await readFile(resolve(actualRoot,'MANIFEST.json'),'utf8')).files).filter(p=>p.startsWith('harness/vendor/'));
+  for(const path of ['harness/workflow.js','harness/file-access.js','harness/host-tools.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js','harness/operation-recovery.js','harness/user-stop.js','harness/chatgpt-auth.js','harness/chatgpt-response.js',...vendorPaths])
     content[path]=await readFile(resolve(actualRoot,path));
   content['MANIFEST.json']=Buffer.from(JSON.stringify({schema_version:1,workflow_version:'3.4.1',
     files:Object.fromEntries(Object.entries(content).map(([p,data])=>[p,sha(data)]))}));
