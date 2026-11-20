@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { generateKeyPair, exportJWK, SignJWT } from '../vendor/jose/dist/webapi/index.js';
 import { createChatGPTAuth } from '../chatgpt-auth.js';
+import { setupDiagnostic } from '../diagnostics.js';
 import { chatgptPayload, chatgptRequest, chatgptRelay, streamResponse } from '../chatgpt-response.js';
 import { probeModel, saveConfig, startSetup } from '../setup.js';
 import { createWorkflow } from '../workflow.js';
@@ -25,6 +26,7 @@ async function fixture(t) {
     set: async (key, value) => vault.set(key, value) };
   const fetchImpl = async (url, options = {}) => {
     requests.push({ url, options });
+    if (control.reply && url.endsWith(control.reply.path)) return control.reply.response();
     if (url.endsWith('openid-configuration')) return json({ issuer, jwks_uri: `${issuer}/jwks`, revocation_endpoint: `${issuer}/revoke` });
     if (url.endsWith('/jwks')) return json({ keys: [jwk] });
     if (url.endsWith('/revoke')) return new Response(null, { status: 200 });
@@ -219,4 +221,121 @@ test('unsaved membership selection cannot accidentally run a paid API probe', as
     'X-Workflow-Token': u.hash.slice(1), 'Content-Type': 'application/json' },
     body: JSON.stringify({ auth_mode: 'chatgpt', model: 'fixture-model', chatgpt_profile: client }) });
   assert.equal(response.status, 400); assert.equal((await response.json()).code, 'CONFIG_UNSAVED'); assert.equal(calls, 0);
+});
+
+for (const [status, body, expected] of [
+  [403, '<html>blocked fixture-oauth-access-secret</html>', 'CHATGPT_ACCESS_HTML'],
+  [403, {error: {code:'unsupported_country_region_territory'}}, 'CHATGPT_REGION'],
+  [403, {error: {code:'subscription_sharing_user_not_eligible'}}, 'CHATGPT_INELIGIBLE'],
+  [403, {error: {code:'chatpass_v2_scope_not_authorized'}}, 'CHATGPT_PERMISSION'],
+  [403, {detail:secret}, 'CHATGPT_ACCESS'],
+  [403, {error: {code:secret, message:secret}}, 'CHATGPT_ACCESS'],
+  [400, {error:'invalid_grant', error_description:secret}, 'CHATGPT_CODE_EXPIRED'],
+  [401, {error:'invalid_client', error_description:secret}, 'CHATGPT_CLIENT'],
+  [400, {error:'invalid_scope'}, 'CHATGPT_CLIENT'],
+  [401, {}, 'CHATGPT_AUTH'],
+  [429, {}, 'CHATGPT_RATE'],
+  [503, {}, 'CHATGPT_SERVICE'],
+  [200, '<html>unexpected</html>', 'CHATGPT_RESPONSE'],
+]) test(`login exchange distinguishes ${status}/${expected}, retains registration and never replays code`, async t => {
+  const f = await fixture(t), flow = await f.login();
+  f.control.reply = {path:'/oauth/token', response:()=>new Response(typeof body === 'string' ? body : JSON.stringify(body),
+    {status, headers:{'x-request-id':secret}})};
+  await assert.rejects(f.auth.callback(flow.callback), error => {
+    const diagnostic=setupDiagnostic(error);
+    assert.equal(diagnostic.code,expected); assert.equal(diagnostic.stage,'auth_exchange');
+    assert.equal(diagnostic.http_status,status);
+    assert.equal(diagnostic.endpoint,`${issuer}/api/accounts/oauth/token`);
+    assert.ok(!JSON.stringify(diagnostic).includes(secret));
+    assert.match(diagnostic.error,/浏览器已返回本机/);
+    return true;
+  });
+  assert.equal(f.requests.length,1);
+  assert.equal((await f.auth.status()).active,null);
+  assert.equal(JSON.parse(f.vault.get('FIXTURE_CHATGPT')).profiles[0].client_id,client);
+  await assert.rejects(f.auth.callback(flow.callback),{code:'CHATGPT_STATE'});
+  assert.equal(f.requests.length,1);
+  assert.equal(new URL(await f.auth.begin('http://127.0.0.1:12345/auth/callback',client)).searchParams.get('client_id'),client);
+});
+
+for (const [path,stage] of [['openid-configuration','auth_discovery'],['/jwks','auth_jwks']])
+  test(`identity verification preserves ${stage} HTTP failure instead of reporting signature failure`,async t=>{
+    const f=await fixture(t),flow=await f.login();
+    f.control.reply={path,response:()=>new Response('<html>fixture</html>',{status:403})};
+    await assert.rejects(f.auth.callback(flow.callback),error=>error.code==='CHATGPT_ACCESS_HTML' && error.stage===stage && error.httpStatus===403);
+    assert.equal((await f.auth.status()).active,null);
+    assert.ok(!f.vault.get('FIXTURE_CHATGPT').includes(secret));
+  });
+
+test('models permission failure retains connected credentials and reports the model endpoint',async t=>{
+  const f=await fixture(t),flow=await f.login(); await f.auth.callback(flow.callback);
+  const before=f.vault.get('FIXTURE_CHATGPT');
+  f.control.reply={path:'/models',response:()=>new Response(JSON.stringify({error:{code:'chatpass_v2_invalid_authorization_context'}}),{status:403})};
+  await assert.rejects(f.auth.models(client),error=>{
+    const d=setupDiagnostic(error);assert.equal(d.stage,'auth_models');assert.equal(d.code,'CHATGPT_PERMISSION');
+    assert.equal(d.response_kind,'json');assert.equal(d.endpoint,'https://api.openai.com/v1/models');return true;
+  });
+  assert.equal(f.vault.get('FIXTURE_CHATGPT'),before);
+});
+
+for (const terminal of [false,true]) test(`refresh ${terminal?'terminal grant failure clears only unusable tokens':'temporary 403 preserves credentials'}`,async t=>{
+  const f=await fixture(t),flow=await f.login(); await f.auth.callback(flow.callback);
+  const state=JSON.parse(f.vault.get('FIXTURE_CHATGPT')); state.profiles[0].expires_at=0;
+  f.vault.set('FIXTURE_CHATGPT',JSON.stringify(state)); const before=f.vault.get('FIXTURE_CHATGPT');
+  f.control.reply={path:'/oauth/token',response:()=>new Response(terminal ? JSON.stringify({error:'invalid_grant'}) : '<html>blocked</html>',{status:terminal?400:403})};
+  const start=f.requests.length;
+  await assert.rejects(f.auth.access(client),error=>error.stage==='auth_refresh' && error.code===(terminal?'CHATGPT_REFRESH_INVALID':'CHATGPT_ACCESS_HTML'));
+  assert.equal(f.requests.length,start+1);
+  if (!terminal) assert.equal(f.vault.get('FIXTURE_CHATGPT'),before);
+  else {
+    const after=JSON.parse(f.vault.get('FIXTURE_CHATGPT'));
+    assert.equal(after.host_id,state.host_id);assert.equal(after.active,state.active);
+    assert.equal(after.profiles[0].client_id,client);assert.equal(after.profiles[0].subject,state.profiles[0].subject);
+    assert.equal(after.profiles[0].refresh_token,undefined);assert.equal(after.profiles[0].access_token,undefined);
+    await assert.rejects(f.auth.access(client),{code:'CHATGPT_LOGIN_REQUIRED'});assert.equal(f.requests.length,start+1);
+  }
+});
+
+test('challenge and known request ID are safe; raw header, body and errors are never echoed',async t=>{
+  const f=await fixture(t),flow=await f.login(),requestId='req_'+'a'.repeat(32);
+  f.control.reply={path:'/oauth/token',response:()=>new Response(secret,{status:403,headers:{'cf-mitigated':'challenge','x-request-id':requestId}})};
+  await assert.rejects(f.auth.callback(flow.callback),error=>{
+    const d=setupDiagnostic(error);assert.equal(d.code,'CHATGPT_CHALLENGE');assert.equal(d.request_id,requestId);
+    error.details={request_id:secret,provider_code:secret,response_kind:secret};error.message=secret;
+    assert.ok(!JSON.stringify(setupDiagnostic(error)).includes(secret));return true;
+  });
+});
+
+test('exchange response reader is bounded, cancelled and a broken error body still retains HTTP status',async t=>{
+  const f=await fixture(t); let cancelled=0;
+  f.control.reply={path:'/oauth/token',response:()=>new Response(new ReadableStream({
+    start(c){c.enqueue(new Uint8Array(500001));},cancel(){cancelled++;}
+  }),{status:403})};
+  await assert.rejects(f.auth.callback((await f.login()).callback),error=>{
+    const d=setupDiagnostic(error);return d.code==='CHATGPT_ACCESS' && d.http_status===403 && d.response_kind==='unreadable';
+  });
+  assert.equal(cancelled,1);
+});
+
+test('DNS error during exchange reports the exchange stage without secret exception content',async t=>{
+  const f=await fixture(t),flow=await f.login();
+  f.control.reply={path:'/oauth/token',response:()=>{throw Object.assign(new Error(secret),{cause:{code:'ENOTFOUND'}});}};
+  await assert.rejects(f.auth.callback(flow.callback),error=>{
+    const d=setupDiagnostic(error);assert.equal(d.code,'NETWORK_DNS');assert.equal(d.stage,'auth_exchange');
+    assert.ok(!JSON.stringify(d).includes(secret));return true;
+  });
+});
+
+test('real callback page shows safe exchange diagnosis and does not invoke inference',async t=>{
+  const f=await fixture(t);let inference=0;
+  f.control.reply={path:'/oauth/token',response:()=>new Response(`<html>${secret}</html>`,{status:403})};
+  const page=await startSetup({directory:f.directory,credentials:f.credentials,keyRef:'FIXTURE',html:'',auth:f.auth,
+    probe:async()=>{inference++;}});t.after(()=>page.close());
+  const u=new URL(page.url), login=new URL(await f.auth.begin(u.origin+'/auth/callback'));
+  const cb=new URL(login.searchParams.get('redirect_uri'));
+  cb.search=new URLSearchParams({state:login.searchParams.get('state'),code:'private-authorization-code',client_id:client});
+  const response=await fetch(cb),text=await response.text();
+  assert.equal(response.status,400);assert.match(text,/CHATGPT_ACCESS_HTML/);assert.match(text,/后台兑换登录凭据/);
+  assert.match(text,/响应类型：html/);assert.ok(!text.includes(secret));assert.ok(!text.includes('private-authorization-code'));
+  assert.equal(inference,0);assert.equal(f.requests.length,1);
 });

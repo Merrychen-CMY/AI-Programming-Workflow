@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdir, rmdir } from 'node:fs/promises';
 import { jwtVerify, createLocalJWKSet } from './vendor/jose/dist/webapi/index.js';
-import { SetupError, networkFailure } from './diagnostics.js';
+import { SetupError, networkFailure, chatgptAuthFailure } from './diagnostics.js';
 
 const ISSUER = 'https://auth.openai.com';
 const TOKEN = `${ISSUER}/api/accounts/oauth/token`;
@@ -9,23 +9,32 @@ const RESOURCE = 'https://api.openai.com/v1';
 const scopes = 'openid profile email offline_access resource.invoke chatgpt.tokens.use.direct';
 export const profileDigest = profile => createHash('sha256').update(`${profile.client_id}:${profile.subject}`).digest('hex');
 
-async function jsonFetch(fetchImpl, url, options = {}) {
+async function jsonFetch(fetchImpl, url, stage, options = {}) {
   let response;
   try { response = await fetchImpl(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(20000) }); }
-  catch (error) { throw networkFailure(error, 'credentials'); }
-  if (!response.ok) throw new SetupError('CHATGPT_AUTH', 'credentials', response.status);
+  catch (error) { throw networkFailure(error, stage); }
   const reader = response.body?.getReader();
-  if (!reader) throw new SetupError('CHATGPT_AUTH');
   const chunks = []; let size = 0;
+  const details = { request_id: response.headers.get('x-request-id') };
+  const challenge = response.headers.get('cf-mitigated') === 'challenge';
   try {
-    while (true) {
+    while (reader) {
       const { done, value } = await reader.read(); if (done) break;
-      if ((size += value.byteLength) > 500000) throw new SetupError('API_RESPONSE_SIZE');
+      if ((size += value.byteLength) > 500000) throw new SetupError('API_RESPONSE_SIZE', stage, response.status);
       chunks.push(Buffer.from(value));
     }
-  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+  } catch (error) {
+    if (!response.ok) throw chatgptAuthFailure(response.status, null, stage, { ...details, response_kind: 'unreadable' }, challenge);
+    throw error instanceof SetupError ? error : networkFailure(error, stage);
+  } finally { if (reader) { await reader.cancel().catch(() => {}); reader.releaseLock(); } }
   const text = Buffer.concat(chunks).toString('utf8');
-  try { return JSON.parse(text); } catch { throw new SetupError('CHATGPT_AUTH'); }
+  let data;
+  try { data = JSON.parse(text); } catch { /* Classify shape, never expose the body. */ }
+  details.response_kind = !text ? 'empty' : data !== undefined ? 'json'
+    : /text\/html/i.test(response.headers.get('content-type') || '') || /^\s*(?:<!doctype html|<html)/i.test(text) ? 'html' : 'text';
+  if (!response.ok) throw chatgptAuthFailure(response.status, data, stage, details, challenge);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new SetupError('CHATGPT_RESPONSE', stage, response.status, details);
+  return data;
 }
 
 /** All renewable credentials stay in the host vault, never in task files or worker environments. */
@@ -76,11 +85,11 @@ export function createChatGPTAuth({ directory, credentials, keyRef, fetchImpl = 
     });
   }
   async function discovery() {
-    const data = await jsonFetch(fetchImpl, `${ISSUER}/.well-known/openid-configuration`);
-    if (data.issuer !== ISSUER) throw new SetupError('CHATGPT_AUTH');
+    const data = await jsonFetch(fetchImpl, `${ISSUER}/.well-known/openid-configuration`, 'auth_discovery');
+    if (data.issuer !== ISSUER) throw new SetupError('CHATGPT_IDENTITY', 'auth_discovery');
     const endpoint = key => {
       const url = new URL(data[key]);
-      if (url.origin !== ISSUER || url.username || url.password || url.hash) throw new SetupError('CHATGPT_AUTH');
+      if (url.origin !== ISSUER || url.username || url.password || url.hash) throw new SetupError('CHATGPT_IDENTITY', 'auth_discovery');
       return url.href;
     };
     return { jwks: endpoint('jwks_uri'), revoke: data.revocation_endpoint ? endpoint('revocation_endpoint') : null };
@@ -88,13 +97,13 @@ export function createChatGPTAuth({ directory, credentials, keyRef, fetchImpl = 
   async function validateIdentity(token, client, nonce, subject) {
     try {
       const doc = await discovery();
-      const jwks = createLocalJWKSet(await jsonFetch(fetchImpl, doc.jwks));
+      const jwks = createLocalJWKSet(await jsonFetch(fetchImpl, doc.jwks, 'auth_jwks'));
       const { payload } = await jwtVerify(token, jwks, { issuer: ISSUER, audience: client,
         algorithms: ['RS256', 'ES256'], requiredClaims: ['sub', 'exp', 'iat'], clockTolerance: 5 });
       if (!payload.sub || (nonce && payload.nonce !== nonce) || (subject && payload.sub !== subject))
         throw new Error('Invalid identity');
       return payload;
-    } catch { throw new SetupError('CHATGPT_IDENTITY'); }
+    } catch (error) { throw error instanceof SetupError ? error : new SetupError('CHATGPT_IDENTITY', 'auth_identity'); }
   }
   function tokenSet(tokens, previous = {}) {
     const granted = typeof tokens.scope === 'string' ? tokens.scope.split(/\s+/) : previous.scopes || [];
@@ -106,7 +115,8 @@ export function createChatGPTAuth({ directory, credentials, keyRef, fetchImpl = 
       id_token: tokens.id_token || previous.id_token, scopes: granted, expires_at: Date.now() + tokens.expires_in * 1000 };
   }
   async function exchange(fields) {
-    return jsonFetch(fetchImpl, TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    return jsonFetch(fetchImpl, TOKEN, fields.grant_type === 'refresh_token' ? 'auth_refresh' : 'auth_exchange',
+      { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ ...fields, resource: RESOURCE }) });
   }
   async function callback(url) {
@@ -137,7 +147,15 @@ export function createChatGPTAuth({ directory, credentials, keyRef, fetchImpl = 
       if (!profile?.subject || !profile.access_token) throw new SetupError('CHATGPT_LOGIN_REQUIRED');
       if (profile.expires_at <= Date.now() + 60000) {
         if (!profile.refresh_token) throw new SetupError('CHATGPT_LOGIN_REQUIRED');
-        const tokens = await exchange({ grant_type: 'refresh_token', client_id: client, refresh_token: profile.refresh_token });
+        let tokens;
+        try { tokens = await exchange({ grant_type: 'refresh_token', client_id: client, refresh_token: profile.refresh_token }); }
+        catch (error) {
+          if (error instanceof SetupError && error.code === 'CHATGPT_REFRESH_INVALID') {
+            for (const key of ['access_token', 'refresh_token', 'id_token', 'expires_at', 'scopes']) delete profile[key];
+            await write(state);
+          }
+          throw error;
+        }
         if (tokens.id_token) await validateIdentity(tokens.id_token, client, null, profile.subject);
         Object.assign(profile, tokenSet(tokens, profile)); await write(state);
       }
@@ -152,8 +170,8 @@ export function createChatGPTAuth({ directory, credentials, keyRef, fetchImpl = 
   }
   async function models(client) {
     const { token } = await access(client);
-    const data = await jsonFetch(fetchImpl, `${RESOURCE}/models`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!Array.isArray(data.models)) throw new SetupError('CHATGPT_MODELS');
+    const data = await jsonFetch(fetchImpl, `${RESOURCE}/models`, 'auth_models', { headers: { Authorization: `Bearer ${token}` } });
+    if (!Array.isArray(data.models)) throw new SetupError('CHATGPT_MODELS', 'auth_models');
     return data.models.filter(m => m.visibility === 'list' && typeof m.slug === 'string')
       .map(m => ({ id: m.slug, name: m.display_name || m.slug }));
   }

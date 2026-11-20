@@ -19,9 +19,28 @@ ReqPilot 3.22.0新增官方 Sign in with ChatGPT（SIWC）接入，保留 L1、D
 - 会员请求不会读取普通API Key。出现429后保留账本，进入现有L1 API评估路径；不得为了继续执行改用付费API。
 - 在[ChatGPT用量设置](https://chatgpt.com/settings/usage)管理应用用量及额外积分。应用获准使用额外积分与Platform API余额不是同一回事；如仅使用订阅内用量，请关闭官方设置中的超额积分权限。本插件不代用户更改该选项。
 - 会员接口目前不支持 `max_output_tokens`。该配置值在会员模式不是服务端硬上限；保留调用次数、等待时间、总时间、截止时间和实际token记录。开工摘要与资源报告明确显示这一限制，不宣称实现货币硬限额。
-- 401/授权失效：在配置页对原账户重新登录并检查权限；续期只处理OAuth凭据，不重放模型请求。429：查看官方用量/速率限制；L1提出等待或其他可行方案。响应未收到终止事件时如实保留未决结果，不能说请求未发送或自动重试。
+- 已确认的授权/续期失效：在配置页对原账户重新登录；不能仅凭401/403认定登录过期。续期只处理OAuth凭据，不重放模型请求。模型调用429：查看官方用量/速率限制；L1提出等待或其他可行方案。响应未收到终止事件时如实保留未决结果，不能说请求未发送或自动重试。
 - 本地退出会尝试撤销远端会话并清除本地Token，保留账户注册及主机ID。若远端撤销未确认，提示用户在官方设置断开应用。
 - 多个会话/进程的续期由同一目录锁串行保护。`CHATGPT_BUSY`通常意味着续期中；宿主崩溃遗留锁时先核实没有运行中的登录/续期进程，再由允许的本地维护处理锁，不能重复使用旧刷新Token猜测成功。
+
+## 登录失败如何处理（3.23.2）
+
+浏览器地址变为 `127.0.0.1:<端口>/auth/callback`，说明已经返回本机。此时“后台兑换登录凭据 / HTTP 403”发生在Harness向OpenAI兑换授权码的请求，不是仍停在OpenAI登录页。浏览器能登录不证明Harness后台能访问相同服务。
+
+诊断显示失败阶段、固定接口、HTTP状态、响应类型及允许公开的官方错误码；请求编号仅接受已知格式。不会输出响应正文、授权码、Token、任意服务端消息或带查询参数的回调地址。只复制页面正文，勿分享含授权码的地址栏。
+
+| 诊断 | 处理方式 |
+| --- | --- |
+| `CHATGPT_ACCESS_HTML` / `CHATGPT_CHALLENGE` | 收到HTML拒绝页或明确的浏览器挑战；检查Harness后台的网络、代理和访问策略，不能据此断言账户或密钥失效。 |
+| `CHATGPT_ACCESS` | 403尚无可识别的具体原因；根据阶段、响应类型与请求编号继续排查，不能直接认定是网络问题。 |
+| `CHATGPT_CODE_EXPIRED` | 授权码无效；在配置页选原账户重新发起登录，不刷新旧回调页。 |
+| `CHATGPT_REFRESH_INVALID` | 服务明确拒绝续期凭据；清除不可用Token，保留客户端注册与账户身份，重新登录原账户。 |
+| `CHATGPT_CLIENT` / `CHATGPT_PERMISSION` | 核对客户端配置或授权范围；反复登录不能替代配置修复。 |
+| `CHATGPT_INELIGIBLE` / `CHATGPT_REGION` | 核对官方账户资格、工作区策略或支持地区；不重复相同授权，不切换计费来源。 |
+| `CHATGPT_RATE` / `CHATGPT_SERVICE` | 登录或模型目录限流/服务故障，保留凭据，稍后手动重试；旧授权码不得重放。 |
+| `auth_discovery` / `auth_jwks` 阶段HTTP失败 | 身份配置或签名公钥获取失败，保留原HTTP分类；不再误报为JWT签名校验失败。 |
+
+首次兑换失败仍保留OpenAI已签发的客户端ID，下次选原账户发起登录；临时403、HTML或网络故障不清除已有凭据。修复包只改诊断与明确失效凭据的恢复处理，不能保证外部403已消失。真实登录由用户发起；安装检查不会发送付费模型请求。
 
 ## 凭据与接入边界
 
@@ -37,6 +56,7 @@ OAuth采用回环回调、state、nonce、PKCE，并用固定版本jose验证签
 - [注册及登录](https://developers.openai.com/siwc/token-sharing-open-source/sign-in)
 - [账户与续期](https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions)
 - [模型与调用](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)
+- [错误与恢复](https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery)
 - [当前限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)
 
 自测使用真实JWT签名验证、本地HTTP回调与真实Python管道，OAuth服务和模型响应为模拟；不据此声称你的账户已获准或已真实完成会员模型请求。首次真实授权必须由用户在官方页面完成，连接测试的额度消耗须由用户点击触发。

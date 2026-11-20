@@ -1,7 +1,19 @@
 // Only fixed messages and allowlisted metadata cross the local setup boundary.
 const messages = {
   CONFIG_UNSAVED: '页面中的接入方式、账户或模型尚未保存，请先保存再测试，未发送模型请求。',
-  CHATGPT_AUTH: 'ChatGPT授权或续期失败，请重新登录；不会切换到付费API。',
+  CHATGPT_AUTH: 'ChatGPT请求未获授权，请核对所选账户和授权范围；不能仅凭状态码认定登录过期。不会切换到付费API。',
+  CHATGPT_ACCESS_HTML: '接口返回了HTML访问拒绝页面，尚未取得OAuth错误码。请检查Harness后台到该接口的网络、代理及访问策略；浏览器登录成功不代表后台可访问。不会自动重试或切换付费API。',
+  CHATGPT_CHALLENGE: '接口要求浏览器验证，Harness后台无法在此请求中完成。请检查访问策略；不会绕过验证、自动重试或切换付费API。',
+  CHATGPT_ACCESS: 'OpenAI接口拒绝访问。请根据错误码核对账户权限、集成配置及访问策略；不要反复登录或改用付费API碰运气。',
+  CHATGPT_CODE_EXPIRED: '本次授权码已失效或不被接受。请回配置页选原账户重新发起登录；不得刷新回调页重用旧授权码。',
+  CHATGPT_REFRESH_INVALID: 'OpenAI确认续期凭据不可用，请对原账户重新登录；保留账户注册，不重复使用旧续期凭据。',
+  CHATGPT_CLIENT: 'OpenAI拒绝客户端或授权参数，请核对插件的客户端注册和请求配置；重复登录不能替代配置修复。',
+  CHATGPT_REGION: 'OpenAI返回访问地区限制，请核对官方支持地区和当前访问条件；不会切换计费来源。',
+  CHATGPT_INELIGIBLE: '当前账户、工作区或策略不允许此应用使用订阅额度。请核对官方账户资格与应用权限，不重复发起相同授权。',
+  CHATGPT_PERMISSION: '当前授权未允许此操作，请核对客户端及授权范围；不会自动更换账户或计费来源。',
+  CHATGPT_RATE: '登录或模型目录请求受到速率限制，请稍后手动重试；不能据此认定会员额度耗尽。',
+  CHATGPT_SERVICE: 'OpenAI登录或模型目录服务暂时不可用，已保留凭据。请稍后手动重试；不重放旧授权码。',
+  CHATGPT_RESPONSE: '接口响应不符合预期，无法完成当前步骤；请核对响应类型及Harness网络，不据此清除登录凭据。',
   CHATGPT_IDENTITY: 'ChatGPT登录身份校验失败，未保存本次凭据。',
   CHATGPT_STATE: '登录回调已过期、已使用或不匹配，请重新发起登录。',
   CHATGPT_CONSENT: '尚未获得使用ChatGPT订阅的授权，请在官方登录页确认账户资格与权限。',
@@ -40,22 +52,71 @@ const messages = {
   API_TOOL_FORMAT: '模型没有返回预期的工具调用，未通过工具调用兼容性检查。',
   API_JSON_FORMAT: '模型没有返回预期的JSON对象，未通过结构化输出兼容性检查。',
 };
-const stages = { configuration:'配置', credentials:'凭据服务', function_call:'工具调用测试', structured_output:'结构化输出测试' };
+const stages = { configuration:'配置', credentials:'凭据服务', function_call:'工具调用测试', structured_output:'结构化输出测试',
+  auth_exchange:'浏览器已返回本机 → 后台兑换登录凭据', auth_refresh:'后台续期登录凭据',
+  auth_discovery:'获取OpenAI登录配置', auth_jwks:'获取身份签名公钥', auth_identity:'验证登录身份',
+  auth_models:'获取账户模型列表' };
+const endpoints = {
+  auth_exchange:'https://auth.openai.com/api/accounts/oauth/token',
+  auth_refresh:'https://auth.openai.com/api/accounts/oauth/token',
+  auth_discovery:'https://auth.openai.com/.well-known/openid-configuration',
+  auth_jwks:'https://auth.openai.com（登录配置指定的签名公钥接口）',
+  auth_models:'https://api.openai.com/v1/models',
+};
+const authCodes = new Set(['invalid_grant', 'invalid_refresh_token', 'token_expired', 'refresh_token_expired',
+  'refresh_token_invalidated', 'refresh_token_reused', 'invalid_client', 'unauthorized_client', 'invalid_scope',
+  'unsupported_country_region_territory', 'subscription_sharing_user_not_eligible',
+  'subscription_sharing_route_not_supported', 'chatpass_v2_scope_not_authorized',
+  'chatpass_v2_invalid_authorization_context', 'subscription_sharing_invalid_user',
+  'subscription_sharing_user_unavailable', 'subscription_sharing_usage_unavailable']);
+function safeAuthDetails(details) {
+  const result = {};
+  if (authCodes.has(details?.provider_code)) result.provider_code = details.provider_code;
+  if (['json', 'html', 'text', 'empty', 'unreadable'].includes(details?.response_kind)) result.response_kind = details.response_kind;
+  // Accept only the known hexadecimal request-ID shape, never arbitrary header text.
+  if (typeof details?.request_id === 'string' && /^req_[a-f0-9]{32}$/.test(details.request_id)) result.request_id = details.request_id;
+  return result;
+}
 
 export class SetupError extends Error {
-  constructor(code, stage = 'configuration', httpStatus) {
+  constructor(code, stage = 'configuration', httpStatus, details) {
     const safeCode = Object.hasOwn(messages, code) ? code : 'SETUP_INTERNAL';
     super(messages[safeCode]);
     this.code = safeCode;
     this.stage = Object.hasOwn(stages, stage) ? stage : 'configuration';
     this.httpStatus = Number.isInteger(httpStatus) && httpStatus >= 100 && httpStatus <= 599 ? httpStatus : undefined;
+    if (details) this.details = safeAuthDetails(details);
   }
 }
 
 export function setupDiagnostic(error) {
-  const safe = error instanceof SetupError ? new SetupError(error.code, error.stage, error.httpStatus) : new SetupError('SETUP_INTERNAL');
+  const safe = error instanceof SetupError ? new SetupError(error.code, error.stage, error.httpStatus, error.details) : new SetupError('SETUP_INTERNAL');
+  const details = safe.details || {};
+  const evidence = [endpoints[safe.stage] && `接口：${endpoints[safe.stage]}`,
+    details.response_kind && `响应类型：${details.response_kind}`, details.provider_code && `错误码：${details.provider_code}`,
+    details.request_id && `请求编号：${details.request_id}`].filter(Boolean).join('；');
   return { code: safe.code, stage: safe.stage, ...(safe.httpStatus ? {http_status:safe.httpStatus} : {}),
-    error: `[${safe.code}] ${stages[safe.stage]}${safe.httpStatus ? ` / HTTP ${safe.httpStatus}` : ''}：${safe.message} 未启动产品任务。` };
+    ...(endpoints[safe.stage] ? {endpoint:endpoints[safe.stage]} : {}), ...details,
+    error: `[${safe.code}] ${stages[safe.stage]}${safe.httpStatus ? ` / HTTP ${safe.httpStatus}` : ''}：${safe.message}${evidence ? `\n${evidence}。` : ''} 未启动产品任务。` };
+}
+
+export function chatgptAuthFailure(status, result, stage, details = {}, challenge = false) {
+  const supplied = typeof result?.error === 'string' ? result.error : result?.error?.code;
+  const code = authCodes.has(supplied) ? supplied : undefined;
+  let category = 'CHATGPT_AUTH';
+  if (challenge) category = 'CHATGPT_CHALLENGE';
+  else if (status === 403 && details.response_kind === 'html') category = 'CHATGPT_ACCESS_HTML';
+  else if (code === 'invalid_grant' && stage === 'auth_exchange') category = 'CHATGPT_CODE_EXPIRED';
+  else if (stage === 'auth_refresh' && ['invalid_grant', 'invalid_refresh_token', 'token_expired',
+    'refresh_token_expired', 'refresh_token_invalidated', 'refresh_token_reused'].includes(code)) category = 'CHATGPT_REFRESH_INVALID';
+  else if (['invalid_client', 'unauthorized_client', 'invalid_scope', 'subscription_sharing_route_not_supported'].includes(code)) category = 'CHATGPT_CLIENT';
+  else if (code === 'unsupported_country_region_territory') category = 'CHATGPT_REGION';
+  else if (code === 'subscription_sharing_user_not_eligible') category = 'CHATGPT_INELIGIBLE';
+  else if (['chatpass_v2_scope_not_authorized', 'chatpass_v2_invalid_authorization_context'].includes(code)) category = 'CHATGPT_PERMISSION';
+  else if (status === 403) category = 'CHATGPT_ACCESS';
+  else if (status === 429) category = 'CHATGPT_RATE';
+  else if (status >= 500) category = 'CHATGPT_SERVICE';
+  return new SetupError(category, stage, status, { ...details, provider_code: code });
 }
 
 export function httpFailure(status, result, stage) {
