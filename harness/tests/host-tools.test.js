@@ -21,6 +21,14 @@ function fixture(dispatch) {
 }
 const call = (name, args = {}) => ({ operation: 'call', arguments: { name, arguments_json: JSON.stringify(args) } });
 
+test('encrypted host output is not accepted as readable source and is not replayed',async()=>{
+  let calls=0;
+  const f=fixture(async()=>{calls++;return {content:[{type:'text',text:'%ONEDLP_HEADER%opaque'}]};});
+  const result=await f.relay(call('pwsh'));
+  assert.equal(result.status,'FAIL');assert.equal(result.error_code,'FILE_ENCRYPTED_VIEW');
+  assert.equal(calls,1);assert.deepEqual(result.content,[]);
+});
+
 test('discover scoped tools dynamically; governance is excluded but general workflows remain', async () => {
   let invoked = false;
   const f = fixture(async () => { invoked = true; });

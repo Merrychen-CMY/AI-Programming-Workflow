@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
-import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from './file-access.js';
 import { resolve as resolvePath } from 'node:path';
 
 /** No shell, no credential arguments, bounded capture; cancellation is UNKNOWN. */
@@ -85,7 +86,11 @@ export function pythonCall(executable, script, request, { key, signal, hostRelay
             result = await hostRelay(frame, timeout.signal);
             saveHost({ ...hostRecord, status: 'RETURNED', result, ended_at: new Date().toISOString() });
           }
-          catch { result = { status: 'UNKNOWN', summary: 'Host call did not return a confirmed result; reconcile before retry' }; }
+          catch(error) { result = { status: 'UNKNOWN',
+            ...(error.code?.startsWith('FILE_') ? {error_code:error.code} : {}),
+            summary: error.code?.startsWith('FILE_')
+              ? `${error.code}: host receipt commit failed; retain staged evidence and reconcile, do not replay the host call`
+              : 'Host call did not return a confirmed result; reconcile before retry' }; }
           finally { clearTimeout(wait); hostAbort.signal.removeEventListener('abort', abortHost); }
           result = { ...result, host_receipt: `host-tool-calls/${frame.host_request}.json` };
           let reply = JSON.stringify({ host_response: frame.host_request, result });
@@ -106,8 +111,9 @@ export function pythonCall(executable, script, request, { key, signal, hostRelay
           saveProcess({ ...record, status: 'EXITED', exit_code: code, ended_at: new Date().toISOString() });
         const value = hostRelay ? finalReply : JSON.parse(stdout);
         if (value.ok && code === 0) finish(null, value.result);
-        else finish(new Error(key ? String(value.error).replaceAll(key, '[REDACTED]') : value.error || 'Runner failed'));
-      } catch { finish(new Error('UNKNOWN: runner ended without a valid result; do not replay')); }
+        else finish(Object.assign(new Error(key ? String(value.error).replaceAll(key, '[REDACTED]') : value.error || 'Runner failed'),
+          value.error_code?.startsWith('FILE_') ? {code:value.error_code} : {}));
+      } catch(error) { finish(error.code?.startsWith('FILE_') ? error : new Error('UNKNOWN: runner ended without a valid result; do not replay')); }
     });
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) abort();

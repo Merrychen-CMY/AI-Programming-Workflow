@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "guide": "docs/guides/encrypted-environment.md",
+  "bootstrap_abi": 12,
+  "scope": "all_workflow_file_content_not_two_example_paths",
+  "read_provider": "native_then_same_account_configured_python",
+  "expected_hashes_must_match": true,
+  "disable_or_bypass_encryption_policy": false,
+  "consumer_access_requires_separate_evidence": true,
+  "replace_attempts": 6,
+  "retry_only_same_local_commit": true,
+  "retain_failed_commit_staging": true,
+  "automatic_operation_replay": false,
+  "automatic_non_success_closure": false,
+  "recovery_requires_native_confirmation": true,
+  "unknown_record_is_not_promoted_to_pass": true
+}

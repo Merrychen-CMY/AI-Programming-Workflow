@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile } from './file-access.js';
 import { resolve } from 'node:path';
 import { pythonCall } from './process.js';
 import { loadEngine } from './updates.js';

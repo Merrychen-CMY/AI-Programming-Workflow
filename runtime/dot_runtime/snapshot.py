@@ -75,6 +75,7 @@ def _files(root: Path):
 
 
 def _stable_digest(source: Path, destination: Path | None = None) -> str:
+    from .file_access import check_content
     before = _reject_link(source)
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
     descriptor = os.open(_filesystem_path(source), flags)
@@ -90,7 +91,11 @@ def _stable_digest(source: Path, destination: Path | None = None) -> str:
                 _filesystem_path(destination.parent).mkdir(parents=True, exist_ok=True)
                 output = _filesystem_path(destination).open("xb")
             digest = hashlib.sha256()
+            first_chunk = True
             while chunk := stream.read(CHUNK_SIZE):
+                if first_chunk:
+                    check_content(chunk, source)
+                    first_chunk = False
                 digest.update(chunk)
                 if output is not None:
                     output.write(chunk)
@@ -98,13 +103,22 @@ def _stable_digest(source: Path, destination: Path | None = None) -> str:
             current = _reject_link(source)
             identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns,
                                   stat.S_IMODE(s.st_mode))
-            if identity(opened) != identity(after) or identity(after) != identity(current):
+            # Compare each observation method with itself: Windows synthesizes
+            # executable bits for path stat; filters may expose physical/logical sizes.
+            if (identity(opened) != identity(after) or identity(before) != identity(current)
+                    or (after.st_dev, after.st_ino) != (current.st_dev, current.st_ino)):
                 raise ValueError(f"Candidate input changed while reading: {source}")
+            stream.seek(0)
+            repeated = hashlib.sha256()
+            while chunk := stream.read(CHUNK_SIZE):
+                repeated.update(chunk)
+            if repeated.digest() != digest.digest() or identity(after) != identity(os.fstat(stream.fileno())):
+                raise ValueError(f"Candidate input changed while rereading: {source}")
     finally:
         if output is not None:
             output.close()
     if destination is not None:
-        os.chmod(_filesystem_path(destination), stat.S_IMODE(opened.st_mode))
+        os.chmod(_filesystem_path(destination), stat.S_IMODE(before.st_mode))
     return digest.hexdigest()
 
 

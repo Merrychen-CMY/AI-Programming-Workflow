@@ -187,6 +187,9 @@ def dispatch(request, host_relay=None):
         if action not in ('status', 'report_preview', 'report_confirm') and not (
                 action == 'bridge' and request.get('name') in ('dot_status', 'dot_read_record', 'l1_stop', 'l1_submit_report')):
             require_not_paused(task / 'control')
+        if action == 'operation_prepare':
+            from .operation_recovery import prepare as prepare_recovery
+            return prepare_recovery(task, receipt, request['session'], json.loads(request['proposal_json']))
         if action in ('operation_preview', 'operation_commit', 'operation_finish'):
             from .operation_recovery import dispatch as recover_operation
             return recover_operation(task, receipt, request)

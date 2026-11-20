@@ -63,7 +63,7 @@
     "invoke": "host_call",
     "scope": "current_host_agent_admitted_tools",
     "dispatch": "host_shared_policy_pipeline",
-    "bootstrap_abi": 11,
+    "bootstrap_abi": 12,
     "exclude": "ReqPilot_control_and_L1_identity_tools",
     "background_jobs": "native_host_managed",
     "images": "verified_attachment_bytes_to_Responses_input_image",

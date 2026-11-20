@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.17.1",
+  "workflow_version": "3.18.0",
   "host": "DeepSeek Harness",
   "verified_source_version": "0.2.2-rc.3",
   "verified_source_commit": "6b729fedde0c8fd03af7afdf5a711aa64fe87c3b",
@@ -83,5 +83,6 @@
   "new_native_tasks_require_adaptive_limits": true,
   "flow_recovery_policy": "policy/flow-recovery.json",
   "execution_scope_policy": "policy/execution-scope.json",
-  "agent_capability_policy": "policy/agent-capabilities.json"
+  "agent_capability_policy": "policy/agent-capabilities.json",
+  "file_environment_policy": "policy/file-environment.json"
 }

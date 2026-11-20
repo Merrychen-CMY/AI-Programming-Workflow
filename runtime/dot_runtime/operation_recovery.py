@@ -398,6 +398,20 @@ def process_status(task, settings, state, marker, *, preflight_active=None, rese
         activities.append(('preflight_requirements_review', preflight))
     activities += [('research', item) for item in investigations]
     for name, activity in activities:
+        if name == 'research':
+            path = _path(task, 'control/' + activity['path'])
+            stored = read_json(path)
+            direct = stored.get('record', {})
+            args = direct.get('arguments', {})
+            # Registry discovery is an in-process read, not a dispatched job.
+            # Do not invent a missing worker PID or promote an uncommitted .tmp to PASS.
+            if (stored.get('sha256') == activity['sha256'] == digest(direct)
+                    and direct.get('source') == 'direct_l2_tool' and direct.get('question') == 'host_tools'
+                    and isinstance(args, dict) and set(args) == {'query', 'offset'}
+                    and isinstance(args['query'], str) and type(args['offset']) is int and args['offset'] >= 0):
+                checks.append({'operation': name, 'status': 'STOPPED', 'record_sha256': stored['sha256'],
+                               'reason': 'Verified host_tools registry discovery cannot dispatch a tool, job or product action; result remains unconfirmed until native reconciliation'})
+                continue
         record = activity.get('process')
         if not record and name == 'host' and (task / 'host-process.json').exists():
             stored = read_json(task / 'host-process.json')

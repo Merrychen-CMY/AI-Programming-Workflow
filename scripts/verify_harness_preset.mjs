@@ -52,7 +52,7 @@ const hook = registerHooks({ resolve(specifier, context, next) {
 const registered = [], effects = [];
 try {
   const plugin = await import(new URL('../harness/index.js', import.meta.url));
-  plugin.apply({ tools: { register: definition => registered.push(definition) },
+  await plugin.apply({ tools: { register: definition => registered.push(definition) },
     on: () => {},
     systemPrompt: { section: section => assert.ok(section.text.includes('L1')) },
     effect: setup => effects.push(setup()) });

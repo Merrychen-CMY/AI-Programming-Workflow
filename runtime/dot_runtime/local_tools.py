@@ -182,6 +182,8 @@ class LocalTools:
                 else:
                     content = args['text']
                 path.write_text(content, encoding='utf-8', newline='')
+                from .file_access import verify_written
+                verify_written(path, content.encode('utf-8'))
                 result.update(before_sha256=old_hash, sha256=file_hash(path))
             result['path'] = str(path)
         elif name == 'local_command':

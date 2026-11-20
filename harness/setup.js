@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
+import { readFile, writeFile, rename } from './file-access.js';
 import { SetupError, setupDiagnostic, httpFailure, networkFailure } from './diagnostics.js';
 
 export const keyDigest = key => createHash('sha256').update(key).digest('hex');

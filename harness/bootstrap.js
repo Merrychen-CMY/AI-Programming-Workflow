@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile } from './file-access.js';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
@@ -7,8 +7,10 @@ import { upgradeTask } from './task-upgrades.js';
 import { recoverInitialization } from './initialization-recovery.js';
 import { recoverOperation } from './operation-recovery.js';
 import { pythonCall } from './process.js';
+import { configuredAccess, accessReport, probeFiles } from './file-access.js';
+import { mkdir } from 'node:fs/promises';
 
-export const updateFields = { workflow_updates: { action: 'status | check | enable | disable | upgrade_preview | upgrade | upgrade_recover | initialization_preview | initialization_recover | initialization_finish. Initialization recovery supports only an uncommitted local initialization and requires exact native approval; no API, product action or usage reset. Enable/disable only at user request.' } };
+export const updateFields = { workflow_updates: { action: 'status | check | diagnose | enable | disable | upgrade_preview | upgrade | upgrade_recover | initialization_preview | initialization_recover | initialization_finish. diagnose checks inert scratch file views without product execution, API or resetting a task. Initialization recovery requires exact native approval. Enable/disable only at user request.' } };
 export const updateDescriptions = { workflow_updates: 'Check releases, review task upgrades, or review a failed initialization. Previews are read-only; native approval is mandatory for recovery and baseline adoption. finish only completes recorded authorized local writes. Product UNKNOWN and final reports cannot reopen.' };
 
 /** Stable host tool surface. Only the versioned workflow engine changes between invocations. */
@@ -16,13 +18,19 @@ export function createBootstrap({ ctx, root, keyRef, fields,
   directory = resolve(homedir(), '.ai-programming-workflow'), updates: suppliedUpdates, workflowOptions = {} }) {
   const updates = suppliedUpdates || createUpdates({ root, directory, fields });
   const engines = new Map(), busy = new Set(), seen = new Map();
-  async function invoke(name, args, exec) {
+  async function invokeScoped(name, args, exec) {
     if (!exec.agent?.id || typeof exec.agent.id !== 'string') throw new Error('L1 host session identity is required');
     const session = exec.agent.id;
     if (busy.has(session)) throw new Error('当前会话已有工作流操作；请等待结果，不要并发启动');
     busy.add(session);
     try {
       const task = resolve(directory, 'tasks', createHash('sha256').update(session).digest('hex'));
+      if (name === 'workflow_updates' && args.action === 'diagnose') {
+        if (Object.keys(args).join() !== 'action') throw new Error('Update action is invalid');
+        await mkdir(directory, { recursive: true });
+        return { status: 'FILE_ENVIRONMENT_DIAGNOSIS', file_environment: await probeFiles(directory),
+          task, task_changed: false, next: 'L2 analyzes concrete file/provider failures; L1 coordinates. No API or product action.' };
+      }
       if (name === 'workflow_updates') {
         if (Object.keys(args).join() !== 'action' || !['status', 'check', 'enable', 'disable', 'upgrade_preview', 'upgrade', 'upgrade_recover', 'initialization_preview', 'initialization_recover', 'initialization_finish'].includes(args.action))
           throw new Error('Update action is invalid');
@@ -42,15 +50,17 @@ export function createBootstrap({ ctx, root, keyRef, fields,
         return { ...result, instruction: '更新不调用GPT、不启动任务。READY指新版已就绪；已确认任务保持原版本，直到upgrade预检及原生确认通过。不能清除UNKNOWN、最终报告或预算。' };
       }
       const runtime = await updates.forTask(task);
-      if (name === 'workflow_recover_operation') {
-        if (Object.keys(args).length) throw new Error('Operation recovery accepts no model arguments');
+      if (['workflow_recover_operation','l1_prepare_recovery'].includes(name)) {
+        if (name === 'workflow_recover_operation' ? Object.keys(args).length
+          : Object.keys(args).join() !== 'proposal_json' || typeof args.proposal_json !== 'string')
+          throw new Error('Invalid operation recovery arguments');
         const optional = async name => { try { return JSON.parse(await readFile(resolve(task, name), 'utf8')); }
           catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
         const marker = await optional('interrupted.json');
         const pending = await optional('operation-recovery-pending.json');
         // A verified maintenance runtime may reconcile a completed pre-plan
         // review. Ordinary task tools still use the original pinned runtime.
-        if (pending?.entry?.maintenance_runtime || (marker?.name === 'l1_approve' && !await optional('control/run/state.json'))) {
+        if (pending?.entry?.maintenance_runtime || ((name === 'l1_prepare_recovery' || ['l1_approve','dot_plan','dot_research'].includes(marker?.name)) && !await optional('control/run/state.json'))) {
           const target = await updates.operationRecoveryTarget(task);
           await loadEngine(target.root, fields);
           const compatibility = JSON.parse(await readFile(resolve(target.root, 'policy/task-upgrades.json'), 'utf8'));
@@ -58,9 +68,11 @@ export function createBootstrap({ ctx, root, keyRef, fields,
             throw new Error('Unsupported source runtime for maintenance recovery; task remains pinned');
           const receipt = await optional('confirmation.json');
           const runner = workflowOptions.runner || pythonCall;
-          const result = await recoverOperation({ ctx, exec, call: (action, payload = {}) =>
-            runner(receipt.settings.python, resolve(target.root, 'scripts/harness_workflow.py'),
-              { action, task, session, ...payload }, { signal: exec.signal }) });
+          const call = (action, payload = {}) => runner(receipt.settings.python, resolve(target.root, 'scripts/harness_workflow.py'),
+              { action, task, session, ...payload }, { signal: exec.signal });
+          const result = name === 'l1_prepare_recovery'
+            ? await call('operation_prepare', {proposal_json:args.proposal_json})
+            : await recoverOperation({ ctx, exec, call });
           if (result.status === 'OPERATION_RECONCILED' && target.manifest_sha256 !== runtime.manifest_sha256
               && !result.record?.api_review?.unresolved?.length && !result.record?.api_review?.pending)
             result.next = 'workflow_updates action=upgrade_preview, then native upgrade approval before resuming planning. '
@@ -85,10 +97,25 @@ export function createBootstrap({ ctx, root, keyRef, fields,
       }
       let result;
       try { result = await engines.get(runtime.manifest_sha256).invoke(name, args, exec); }
-      catch (error) { result = { error: error.message, executed_successfully: false }; }
+      catch (error) { if (error.code?.startsWith('FILE_')) throw error;
+        result = { error: error.message, executed_successfully: false }; }
       seen.set(session, runtime.manifest_sha256);
       return { ...result, workflow_runtime: details };
+    } catch(error) {
+      if(error.code?.startsWith('FILE_') || /RUNTIME_INTEGRITY/.test(error.message))
+        return {status:'FILE_ENVIRONMENT_BLOCKED', error:error.message, file_environment:accessReport(),
+          task_status_verified:false, executed_successfully:false,
+          next:'Preserve the task and receipts. Run workflow_updates action=diagnose. L2 investigates file access; L1 evaluates recovery. Do not replay or finalize automatically.'};
+      throw error;
     } finally { busy.delete(session); }
   }
+  const invoke = async (name,args,exec) => {
+    try { return await configuredAccess(directory, () => invokeScoped(name,args,exec)); }
+    catch (error) {
+      if (!error.code?.startsWith('FILE_')) throw error;
+      return { status: 'FILE_ENVIRONMENT_BLOCKED', error: error.message, task_status_verified: false,
+        executed_successfully: false, next: 'Configuration file access failed. Preserve settings and task records; L2 investigates the permitted reader and L1 coordinates. No automatic replay or closure.' };
+    }
+  };
   return { invoke, dispose: () => { updates.dispose(); for (const workflow of engines.values()) workflow.dispose(); } };
 }

@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { reportDelivery } from '../report-delivery.js';
+import {withFileAccess} from '../file-access.js';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
 async function fixture(t) {
@@ -36,6 +37,15 @@ test('successful tool result presents the verified Markdown in its owning chat',
   } }]);
   f.handlers['tools/result'](f.exec, { isError: false });
   assert.equal(f.events.length, 1);
+});
+
+test('report alternate view must match its original hash before registering the chat card',async t=>{
+  const f=await fixture(t);
+  await withFileAccess({nativeRead:async()=>Buffer.from('vendor envelope'),
+    bridge:async request=>request.paths.map(()=>Buffer.from(f.text).toString('base64'))},async()=>{
+      const result=await f.deliver(f.value,f.exec);assert.equal(result.report_delivery.status,'READY');
+    });
+  f.handlers['tools/result'](f.exec,{isError:false});assert.equal(f.events.length,1);
 });
 
 test('status without new reports does not resend history, failed tools do not declare delivery', async t => {

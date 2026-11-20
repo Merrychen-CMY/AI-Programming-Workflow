@@ -53,6 +53,10 @@ export function hostTools(ctx, exec, { dispatch, controlTools = [] } = {}) {
         } catch { warnings.push('Image bytes unavailable; do not claim to have seen this image'); }
       } else content.push(block);
     }
+    if (content.some(block => block.type === 'text' && block.text?.startsWith('%ONEDLP_HEADER%')))
+      return {status: code === 'ABORTED' ? 'UNKNOWN' : 'FAIL', error_code:'FILE_ENCRYPTED_VIEW',
+        summary:'Host tool returned an encrypted file view. L2 must investigate this reader; do not treat it as source or replay a write. L1 evaluates recovery.',
+        content:[], images:[], warnings, concludes_turn:Boolean(result.concludesTurn)};
     return { status: code === 'ABORTED' ? 'UNKNOWN' : result.isError ? 'FAIL' : 'PASS',
       summary: content.filter(block => block.type === 'text').map(block => block.text).join('\n').slice(0, 12000),
       content, images, warnings, host_contexts: result.additionalContexts || [],

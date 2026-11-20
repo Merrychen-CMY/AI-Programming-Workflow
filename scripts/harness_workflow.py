@@ -22,7 +22,8 @@ def main():
             result = compact(result)
         print(json.dumps({'ok': True, 'result': result}, ensure_ascii=False))
     except (ValueError, OSError, KeyError, TypeError, AttributeError) as exc:
-        print(json.dumps({'ok': False, 'error': str(exc)}, ensure_ascii=False))
+        print(json.dumps({'ok': False, 'error': str(exc),
+                          **({'error_code': exc.code} if str(getattr(exc, 'code', '')).startswith('FILE_') else {})}, ensure_ascii=False))
         sys.exit(1)
 
 

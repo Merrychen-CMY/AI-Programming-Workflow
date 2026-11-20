@@ -83,10 +83,14 @@ print(json.dumps({'directory':str(x.base),'task':str(x.task)}))
       calls.push(request.action); assert.equal(options.key, undefined); return pythonCall(exe, script, request, options);
     }}});
   t.after(() => bootstrap.dispose());
+  const proposal=JSON.parse(await readFile(resolve(created.task,'control/operation-recovery-proposal.json'),'utf8')).proposal;
+  const prepared=await bootstrap.invoke('l1_prepare_recovery',{proposal_json:JSON.stringify(proposal)},{agent:{id:'native-l1-session'}});
+  assert.equal(prepared.status,'RECOVERY_PROPOSED');assert.equal(prepared.task_runtime_changed,false);
+  assert.equal(questions.length,0);
   const result = await bootstrap.invoke('workflow_recover_operation', {}, {agent: {id: 'native-l1-session'}});
   assert.equal(result.status, 'OPERATION_RECONCILED', JSON.stringify(result));
   assert.equal(result.task_runtime_changed, false);
-  assert.deepEqual(calls, ['operation_preview', 'operation_commit']);
+  assert.deepEqual(calls, ['operation_prepare', 'operation_preview', 'operation_commit']);
   assert.equal(questions.length, 1);
   assert.match(questions[0].question, /不重复审查/);
   assert.deepEqual(await readFile(resolve(created.task, 'confirmation.json')), before);

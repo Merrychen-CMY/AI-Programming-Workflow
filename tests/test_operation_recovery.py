@@ -395,6 +395,27 @@ class OperationRecoveryTests(unittest.TestCase):
 
 
 class ProcessProbeTests(unittest.TestCase):
+    def test_registry_discovery_needs_no_worker_but_host_calls_still_do(self):
+        with tempfile.TemporaryDirectory() as directory:
+            task = Path(directory)
+            folder = task / 'control/research/fixture'; folder.mkdir(parents=True)
+            record = {'source':'direct_l2_tool', 'question':'host_tools',
+                      'arguments':{'query':'', 'offset':0}, 'result':{'status':'UNKNOWN'}, 'evidence_files':[]}
+            def probe(marker=None):
+                atomic_json(folder / 'record.json', {'record':record, 'sha256':digest(record)})
+                activity = {'path':'research/fixture/record.json', 'sha256':digest(record), 'output':str(folder/'worker')}
+                with patch.object(r, 'independent_process_check', return_value={'status':'UNKNOWN', 'reason':'fixture unavailable'}):
+                    return r.process_status(task, {}, None, marker, research_active=[activity])
+            result = probe()
+            self.assertEqual(result['status'], 'STOPPED')
+            self.assertEqual(result['checks'][0]['record_sha256'],digest(record))
+            with patch.object(r, 'pid_status', return_value='ACTIVE'), patch.object(r, 'boot_identity', return_value='same'):
+                result = probe({'name':'dot_plan', 'process':{'pid':123, 'boot_id':'same'}})
+                self.assertEqual(result['status'],'ACTIVE')
+            record['question']='host_call'
+            record['arguments']={'name':'command', 'arguments_json':'{}'}
+            self.assertNotEqual(probe()['status'],'STOPPED')
+
     def test_real_self_process_is_active(self):
         self.assertEqual(r.pid_status(os.getpid()), 'ACTIVE')
 

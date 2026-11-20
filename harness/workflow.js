@@ -1,4 +1,6 @@
-import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
+import { mkdir, realpath } from 'node:fs/promises';
+import { readFile, writeFile } from './file-access.js';
+import { probeFiles, accessReport } from './file-access.js';
 import { createHash } from 'node:crypto';
 import { resolve, relative, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
@@ -114,8 +116,18 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
         let result = { ready: false, checks: [{ name: 'Python runner', required: true, status: 'UNKNOWN' }],
           limits: '基础运行器尚未完成检查。请核对配置页中的Python 3.11+路径，再重新检查环境。' };
         await save(`${task}/environment.json`, { settings, ...result });
-        try { result = await call(settings, 'environment', { settings }); }
-        catch { /* Read-only probe failure stays UNKNOWN; never infer execution or readiness. */ }
+        try {
+          result = await call(settings, 'environment', { settings });
+          const files = await probeFiles(task);
+          result.file_environment = files;
+          result.checks.push({name:'Workflow file read/copy/replace', required:true, status:files.ready?'PASS':'FAIL'});
+          result.ready = result.ready && files.ready;
+        }
+        catch(error) {
+          result.ready = false;
+          result.checks.push({name:'Environment probe', required:true, status:'FAIL', code:error.code || 'ENVIRONMENT_PROBE_FAILED'});
+          result.limits = 'Probe did not complete. L2 investigates the concrete environment failure; no product task was started.';
+        }
         const record = { settings, ...result, checked_at: new Date().toISOString() };
         await save(`${task}/environment.json`, record);
         return { ...record, next: record.ready ? '沟通原始需求，再用 workflow_inspect 复核项目特有环境并准备开工摘要'
@@ -136,6 +148,9 @@ export function createWorkflow({ ctx, root, keyRef, directory = resolve(homedir(
             throw new Error('Use a separate product directory, not the plugin installation or private runtime data');
         }
         const result = await call(settings, 'inspect', { draft, settings });
+        result.file_environment = { ...accessReport(), project_content_provider:'python',
+          consumer_checks_required:['Codex read/edit','compiler actual build','test actual run','documentation actual generation when applicable'],
+          instruction:'A Python snapshot does not prove other programs see the same bytes. L2 must investigate consumer failures with actual tool outputs; never remove project files to bypass a snapshot error.' };
         await save(`${task}/prepared.json`, { draft, settings, ...result });
         return result;
       }

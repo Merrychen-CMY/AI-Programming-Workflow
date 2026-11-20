@@ -21,6 +21,7 @@ from .documentation import CHECKER as DOXYGEN_CHECKER, REFERENCE as DOXYGEN_REFE
 from .documentation import validate_settings as validate_doxygen_settings, validate_report as validate_doxygen_report
 from .planning import PlanRejected
 from . import resources
+from .file_access import read_content, replace_record, verify_written
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / 'standards/embedded-c/v1.3/huawei/coverage.json'
@@ -35,21 +36,24 @@ def digest(value):
 
 
 def file_hash(path):
-    return hashlib.sha256(_filesystem_path(Path(path)).read_bytes()).hexdigest()
+    return hashlib.sha256(read_content(_filesystem_path(Path(path)))).hexdigest()
 
 
 def read_json(path):
-    return json.loads(_filesystem_path(Path(path)).read_text(encoding='utf-8-sig'))
+    return json.loads(read_content(_filesystem_path(Path(path))).decode('utf-8-sig'))
 
 
 def atomic_json(path, value):
     path = _filesystem_path(Path(path))
     temporary = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
-    with temporary.open('w', encoding='utf-8', newline='\n') as stream:
-        stream.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+    content = (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+    with temporary.open('xb') as stream:
+        stream.write(content)
         stream.flush()
         os.fsync(stream.fileno())
-    os.replace(temporary, path)
+    verify_written(temporary, content)
+    replace_record(temporary, path)
+    verify_written(path, content)
 
 
 def now():

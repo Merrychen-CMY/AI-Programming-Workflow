@@ -77,7 +77,7 @@ policy/resources.json、runtime/dot_runtime/resources.py、原生授权界面与
 
 ## 自动更新维护
 
-遵循policy/updates.json和docs/guides/automatic-updates.md。兼容版本保留ABI11工具名称、宿主服务、参数及授权语义；新增工具或宿主依赖需要更新主包。发布资产通过scripts/package_release.py从清单构建，只有通过全部CI的v版本标签才发布。不得增加任意来源、安装脚本、付费探测或旧任务自动迁移；覆盖离线保留、损坏拒绝、版本固定、重启恢复、摘要过期及路径/重定向反例。
+遵循policy/updates.json和docs/guides/automatic-updates.md。兼容版本保留ABI12工具名称、宿主服务、参数及授权语义；新增工具或宿主依赖需要更新主包。发布资产通过scripts/package_release.py从清单构建，只有通过全部CI的v版本标签才发布。不得增加任意来源、安装脚本、付费探测或旧任务自动迁移；覆盖离线保留、损坏拒绝、版本固定、重启恢复、摘要过期及路径/重定向反例。
 
 任务升级遵循policy/task-upgrades.json和docs/guides/task-upgrades.md。增加受支持源版本必须验证其真实发布包、原生确认、跨进程互斥、准确快照、历史消耗不变、已完成任务不重派、独立复核与完整重测、迁移中断恢复及UNKNOWN/终态拒绝。不可改写原confirmation.json。
 
@@ -86,3 +86,6 @@ policy/resources.json、runtime/dot_runtime/resources.py、原生授权界面与
 API异常维护：policy/api-recovery.json与运行器、原生确认、L1提示保持一致。覆盖错误分类脱敏、真实账本、等待上限、过期批准、预算/截止时间、根因分析暂停、历史不变、旧UNKNOWN与终态拒绝；不能把原生同账户记录视为签名服务。
 
 正常开工修复必须覆盖真实JS工具/Python管道/控制器/本地测试进程的集成，注明模型与原生确认是否模拟；不得把该集成称为真实Harness UI或产品验收。独立审查材料自动附控制器原始记录及摘要，避免资料转述循环；分页不得读取任意文件或清除中断。
+
+
+文件环境兼容维护：policy/file-environment.json 与加密环境指南保持一致。覆盖不同进程内容视图、严格摘要拒绝、同一提交重试、失败留存、Windows快照属性差异及真实内容变化、无worker登记查询恢复和有副作用操作拒绝。不得关闭安全软件或把普通文件读取当作解密授权；分别报告模拟验证与用户实机结果。

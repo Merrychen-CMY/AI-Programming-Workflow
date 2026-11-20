@@ -1,4 +1,6 @@
-import { readFile, writeFile, mkdir, mkdtemp, rename, rm, open, lstat } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, open, lstat } from 'node:fs/promises';
+import { readFile, writeFile, rename } from './file-access.js';
+import { verifiedFiles } from './file-access.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,7 +9,7 @@ import { githubCredential } from './github-auth.js';
 import { taskRuntime } from './task-runtime.js';
 
 export const REPOSITORY = 'Merrychen-CMY/ReqPilot';
-export const BOOTSTRAP_ABI = 11;
+export const BOOTSTRAP_ABI = 12;
 export const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const MAX_ARCHIVE = 8_000_000, MAX_EXPANDED = 32_000_000;
 const sha = data => createHash('sha256').update(data).digest('hex');
@@ -26,8 +28,8 @@ async function optional(path) {
 }
 async function atomic(path, value) {
   const temp = `${path}.${randomUUID()}.tmp`;
-  try { await writeFile(temp, JSON.stringify(value, null, 2), { mode: 0o600, flag: 'wx' }); await rename(temp, path); }
-  finally { await rm(temp, { force: true }); }
+  await writeFile(temp, JSON.stringify(value, null, 2), { mode: 0o600, flag: 'wx' });
+  await rename(temp, path); // Failed commits retain staged evidence; never replay the producing operation.
 }
 function safePath(path) {
   if (typeof path !== 'string' || path.length > 240 || /[\\:\x00-\x1f<>"|?*]/.test(path)) return false;
@@ -75,7 +77,11 @@ export function decodeRuntime(archive, metadata) {
 }
 export async function verifyRuntime(root, expected, { pinned = false } = {}) {
   if ((await lstat(root)).isSymbolicLink()) fail('RUNTIME_INTEGRITY');
-  const raw = await readFile(resolve(root, 'MANIFEST.json')), hash = sha(raw);
+  const manifestPath = resolve(root, 'MANIFEST.json');
+  let raw;
+  try { raw = expected ? (await verifiedFiles([manifestPath], [expected]))[0] : await readFile(manifestPath); }
+  catch(error) { if(error.code==='FILE_CONTENT_MISMATCH') error.message='RUNTIME_INTEGRITY: '+error.message; throw error; }
+  const hash = sha(raw);
   if (expected && hash !== expected) fail('RUNTIME_INTEGRITY');
   const manifest = JSON.parse(raw.toString('utf8')), names = inventory(manifest, hash);
   let size = 0;
@@ -87,11 +93,12 @@ export async function verifyRuntime(root, expected, { pinned = false } = {}) {
       if ((await lstat(current)).isSymbolicLink()) fail('RUNTIME_INTEGRITY');
     }
     const stat = await lstat(current);
-    if (!stat.isFile() || (size += stat.size) > MAX_EXPANDED) fail('RUNTIME_INTEGRITY');
-    if (path !== 'MANIFEST.json' && sha(await readFile(current)) !== manifest.files[path]) fail('RUNTIME_INTEGRITY');
+    if (!stat.isFile() || (size += stat.size) > MAX_EXPANDED * 2) fail('RUNTIME_INTEGRITY');
   }
+  try { await verifiedFiles(names.map(path => resolve(root,path)), names.map(path => manifest.files[path])); }
+  catch(error) { if(error.code==='FILE_CONTENT_MISMATCH') error.message='RUNTIME_INTEGRITY: '+error.message; throw error; }
   // Retain old engines until a separately reviewed migration through the stable tool contract.
-  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [BOOTSTRAP_ABI]);
+  packageIdentity(await readFile(resolve(root, 'package.json')), manifest.workflow_version, pinned ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [BOOTSTRAP_ABI]);
   return { version: manifest.workflow_version, manifest_sha256: hash, root };
 }
 /** A GitHub credential is restricted to exact repository API URLs, never redirects/CDN. */
@@ -187,7 +194,9 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
       return await locked(async () => {
         const raw = await readFile(resolve(root, 'MANIFEST.json'));
         const manifest = JSON.parse(raw), files = new Map([['MANIFEST.json', raw]]);
-        for (const path of Object.keys(manifest.files)) files.set(path, await readFile(resolve(root, path)));
+        const names = Object.keys(manifest.files);
+        const contents = await verifiedFiles(names.map(path=>resolve(root,path)), names.map(path=>manifest.files[path]));
+        names.forEach((path,index)=>files.set(path,contents[index]));
         return await store(files, original.manifest_sha256);
       });
     })().catch(error => { bundled = undefined; throw error; });
@@ -278,7 +287,7 @@ export function createUpdates({ root, directory, fields, fetchImpl = fetch, now 
       const hash = await taskRuntime(task, receipt);
       if (!digest(hash)) fail('TASK_RUNTIME_MISSING');
       try { return { ...await verifyRuntime(resolve(cache, hash), hash, { pinned: true }), pinned: true }; }
-      catch { fail('TASK_RUNTIME_MISSING_OR_DAMAGED'); }
+      catch(error) { if(error.code?.startsWith('FILE_')) throw error; fail('TASK_RUNTIME_MISSING_OR_DAMAGED'); }
     }
     // Legacy interrupted tasks without a confirmation must never be switched implicitly.
     if (await optional(resolve(task, 'interrupted.json'))) fail('TASK_RUNTIME_REQUIRES_RECONCILIATION');

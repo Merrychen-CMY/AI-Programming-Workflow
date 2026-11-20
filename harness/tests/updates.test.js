@@ -13,9 +13,24 @@ import { saveConfig, keyDigest } from '../setup.js';
 import { githubCredential } from '../github-auth.js';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
+import {withFileAccess,accessReport} from '../file-access.js';
 
 const sha = data => createHash('sha256').update(data).digest('hex');
 const fields = { workflow_status: {}, workflow_confirm_start: {}, dot_run: {} };
+
+test('whole manifest retains encrypted examples and rejects tampering in the alternate view',async t=>{
+  const directory=await mkdtemp(resolve(tmpdir(),'reqpilot-filter-manifest-'));
+  t.after(()=>rm(directory,{recursive:true,force:true}));
+  const target=release('3.18.0',files=>({...files,'examples/input.c':'original c','examples/input.h':'original h','other.md':'original text'}));
+  await put(directory,target.files);
+  await withFileAccess({nativeRead:async path=>String(path).endsWith('.c') ? Buffer.from('%ONEDLP_HEADER%cipher') : readFile(path),
+    bridge:async request=>Promise.all(request.paths.map(async path=>(await readFile(path)).toString('base64')))},async()=>{
+      const verified=await verifyRuntime(directory,target.metadata.manifest_sha256);
+      assert.equal(verified.version,'3.18.0');assert.equal(accessReport().provider,'configured_python');
+      await writeFile(resolve(directory,'examples/input.h'),'changed');
+      await assert.rejects(verifyRuntime(directory,target.metadata.manifest_sha256),{code:'FILE_CONTENT_MISMATCH'});
+    });
+});
 function release(v = '3.4.1', modify = files => files, abi = BOOTSTRAP_ABI) {
   let files = {
     'package.json': JSON.stringify({ name: 'ai-programming-workflow', version: v, type: 'module', reqpilot: { bootstrap_abi: abi } }),
@@ -97,7 +112,7 @@ test('unknown legacy task cannot silently use installed or newest code', async t
   await assert.rejects(f.updates.forTask(f.task),/TASK_RUNTIME_MISSING/); assert.equal(f.calls.length,0);
 });
 
-for (const abi of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) test(`ABI11 bootstrap retains an already-confirmed ABI${abi} cache without migration`,async t=>{
+for (const abi of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) test(`ABI12 bootstrap retains an already-confirmed ABI${abi} cache without migration`,async t=>{
   const f=await fixture(t);await f.updates.setEnabled(false);
   const old=release(abi === 7 ? '3.11.0' : '3.4.0',files=>files,abi), hash=old.metadata.manifest_sha256;
   await put(resolve(f.directory,'updates/runtimes',hash),old.files);
@@ -112,14 +127,18 @@ test('cached code corruption blocks a pinned task and never falls back to newer 
   const f = await fixture(t); await f.updates.setEnabled(false);
   const info = await f.bootstrap.invoke('workflow_confirm_start',{},f.exec);
   await writeFile(resolve(info.root,'harness/workflow.js'),'corrupted');
-  await assert.rejects(f.bootstrap.invoke('dot_run',{},f.exec),/TASK_RUNTIME_MISSING_OR_DAMAGED/);
+  const blocked=await f.bootstrap.invoke('dot_run',{},f.exec);
+  assert.equal(blocked.status,'FILE_ENVIRONMENT_BLOCKED');assert.equal(blocked.task_status_verified,false);
+  assert.match(blocked.error,/RUNTIME_INTEGRITY/);
 });
 
 test('unconfirmed bundled cache is verified again on each invocation',async t=>{
   const f=await fixture(t);await f.updates.setEnabled(false);
   const info=await f.bootstrap.invoke('workflow_status',{},f.exec);
   await writeFile(resolve(info.root,'L1.md'),'corrupted rules');
-  await assert.rejects(f.bootstrap.invoke('workflow_status',{},f.exec),/RUNTIME_INTEGRITY/);
+  const blocked=await f.bootstrap.invoke('workflow_status',{},f.exec);
+  assert.equal(blocked.status,'FILE_ENVIRONMENT_BLOCKED');assert.equal(blocked.task_status_verified,false);
+  assert.match(blocked.error,/RUNTIME_INTEGRITY/);
 });
 
 test('offline checks preserve selected code and redact raw diagnostics', async t => {
@@ -220,7 +239,7 @@ test('snapshot loader executes the actual Python status pipe without network or 
   await updates.setEnabled(false);
   const bootstrap=createBootstrap({root,directory,fields:actualFields,ctx:{},updates});t.after(()=>bootstrap.dispose());
   const result=await bootstrap.invoke('workflow_status',{}, {agent:{id:'真实管道只读会话'}});
-  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.17.1');
+  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.18.0');
   assert.equal(result.workflow_runtime.task_pinned,false);assert.equal(result.workflow_runtime.updates.enabled,false);
 });
 
@@ -228,7 +247,7 @@ test('compatible update invalidates prepared environment and prevents approval o
   const f=await fixture(t);const actualRoot=fileURLToPath(new URL('../../',import.meta.url));
   const target=release('3.4.1',files=>files); // synthetic release uses the actual engine below
   const content={...target.files};delete content['MANIFEST.json'];
-  for(const path of ['harness/workflow.js','harness/host-tools.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js','harness/operation-recovery.js','harness/user-stop.js'])
+  for(const path of ['harness/workflow.js','harness/file-access.js','harness/host-tools.js','harness/setup.js','harness/diagnostics.js','harness/process.js','harness/task-runtime.js','harness/operation-recovery.js','harness/user-stop.js'])
     content[path]=await readFile(resolve(actualRoot,path));
   content['MANIFEST.json']=Buffer.from(JSON.stringify({schema_version:1,workflow_version:'3.4.1',
     files:Object.fromEntries(Object.entries(content).map(([p,data])=>[p,sha(data)]))}));

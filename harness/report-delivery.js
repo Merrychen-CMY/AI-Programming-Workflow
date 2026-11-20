@@ -1,4 +1,5 @@
-import { readFile, realpath, lstat } from 'node:fs/promises';
+import { realpath, lstat } from 'node:fs/promises';
+import { verifiedFiles } from './file-access.js';
 import { createHash } from 'node:crypto';
 import { resolve, relative, isAbsolute, extname } from 'node:path';
 import { homedir } from 'node:os';
@@ -30,7 +31,7 @@ export function reportDelivery(ctx, directory = resolve(homedir(), '.ai-programm
         if (!rel || rel.split(/[\\/]/)[0] === '..' || isAbsolute(rel) || extname(path) !== '.md'
             || report.mime_type !== 'text/markdown' || (await lstat(report.path)).isSymbolicLink())
           throw new Error('报告文件不在本任务内或不是 Markdown 文件');
-        if (sha(await readFile(path)) !== report.sha256) throw new Error('报告文件已改变，不能交付旧摘要');
+        await verifiedFiles([path], [report.sha256]);
         const target = await ctx.fs.resolve(path, { cwd: task, signal: exec.signal });
         const entry = await ctx.fs.stat(target, exec.signal);
         if (entry?.type !== 'file') throw new Error('聊天文件服务无法读取该报告');

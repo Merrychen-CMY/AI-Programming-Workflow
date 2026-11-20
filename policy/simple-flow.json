@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.17.1",
+  "workflow_version": "3.18.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -255,5 +255,6 @@
     "independent_test_artifacts": "isolated_writable_copy_with_immutable_inputs",
     "facility_actions": "L2_selects_baseline_approved_actions_or_requests_L1_review"
   },
-  "agent_capability_policy": "policy/agent-capabilities.json"
+  "agent_capability_policy": "policy/agent-capabilities.json",
+  "file_environment_policy": "policy/file-environment.json"
 }

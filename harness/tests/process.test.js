@@ -15,6 +15,14 @@ function fakeChild() {
   return child;
 }
 
+test('file commit failure keeps its concrete code across the Python pipe, without a second dispatch',async()=>{
+  const child=fakeChild();let starts=0;
+  const request=pythonCall('fixture','fixture',{}, {spawnImpl:()=>{starts++;return child;}});
+  child.stdout.emit('data',JSON.stringify({ok:false,error:'FILE_REPLACE_BLOCKED: record.json',error_code:'FILE_REPLACE_BLOCKED'}));
+  child.emit('close',1);
+  await assert.rejects(request,{code:'FILE_REPLACE_BLOCKED'});assert.equal(starts,1);
+});
+
 test('output overflow is distinguishable from caller cancellation and never reported as success', async () => {
   const child = fakeChild();
   const request = pythonCall('fixture', 'fixture', {}, { spawnImpl: () => child });

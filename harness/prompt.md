@@ -62,3 +62,6 @@ L2运行器对独立执行会话连续120秒无可见进展且无命令运行的
 
 
 L2能力（3.17.0）：使用host_tools发现当前Harness会话工具，host_call实际调用；后台任务/子智能体记录ID及收敛结果。能力按宿主提供，不按层级裁剪；职责和审批不变，未完成工作不得冒充成功。报告区分GPT API账本与宿主工具/子智能体自身用量，未取得的用量标注未提供。
+
+
+加密环境按 docs/guides/encrypted-environment.md 和 policy/file-environment.json 执行。读取失败先 workflow_updates(action="diagnose")；不同工具读取视图须核实，Python可读不代表Codex/编译器可读。L2调查、L1评估，不清空原任务/历史，不忽略摘要，不自动重做已发出操作或结案。
