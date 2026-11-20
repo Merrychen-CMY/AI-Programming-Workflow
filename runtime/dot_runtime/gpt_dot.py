@@ -224,7 +224,9 @@ def researched_request(client, prompt, *, tools=None, schema=None):
                    'asking L1/user for obtainable technical facts. It is investigation, not product implementation '
                    'or testing. Tool availability does not expand scope. Only unresolved user decisions or '
                    'actual permission/capability gaps need clarification. Full source evidence stays in research records.\n')
-    seen = set()
+    seen = {}
+    repeated_investigations = set()
+    last_failed_call, blocked_repeat = None, False
     history = []
     while True:
         # Preserve every response item and call ID; reduce only already completed tool
@@ -245,7 +247,20 @@ def researched_request(client, prompt, *, tools=None, schema=None):
         if not calls or calls[0].get('name') not in names:
             return response
         call, arguments = one_call(response, names)
-        if call['name'] == 'read_evidence':
+        call_key = encoded({'name': call['name'], 'arguments': arguments})
+        repeat_suppressed = call_key == last_failed_call
+        if repeat_suppressed:
+            if blocked_repeat:
+                raise PlanningNeedsInfo('Repeated unchanged failed tool call; L2 must propose a different solution or obtain new evidence',
+                    [{'name': call['name'], 'reason': 'The failed operation and one no-replay diagnostic are already recorded. '
+                      'Inspect their evidence; change the approach or submit the exact decision needed to L1.',
+                      'stage': 'planning'}], response['id'])
+            blocked_repeat = True
+            observation = {'status': 'FAIL', 'operation_status': 'NOT_EXECUTED',
+                'summary': 'Identical failed call was not replayed. Inspect the prior error and recovery_advice; '
+                           'use a different diagnostic action or provide evidence of changed conditions.',
+                'repeated_failure': True}
+        elif call['name'] == 'read_evidence':
             try:
                 observation = read_evidence(evidence_root, arguments)
             except (OSError, ValueError) as exc:
@@ -254,15 +269,26 @@ def researched_request(client, prompt, *, tools=None, schema=None):
             if set(arguments) != {'question'} or not isinstance(arguments['question'], str):
                 raise ValueError('Invalid investigation request')
             question = arguments['question']
-            if question in seen:
-                raise PlanningNeedsInfo('Repeated investigation did not resolve the gap',
+            if question in repeated_investigations:
+                raise PlanningNeedsInfo('Repeated investigation did not resolve the gap; submit a different sourced solution',
                     [{'name': 'investigation', 'reason': question, 'stage': 'planning'}], response['id'])
-            seen.add(question)
-            observation = research(question)
+            if question in seen:
+                repeated_investigations.add(question)
+                observation = {'status': seen[question]['status'], 'operation_status': 'NOT_EXECUTED',
+                    'previous_observation': seen[question], 'reused_investigation': True,
+                    'summary': 'This is the prior result, not a new measurement. Read its evidence and use the answer '
+                               'if still applicable; for freshness or missing details ask a specific changed question. '
+                               'Do not repeat the same investigation or escalate solely for repetition.'}
+            else:
+                observation = research(question)
+                seen[question] = observation
         elif host and call['name'] in {t['name'] for t in host.tools()}:
             observation = host.run(call['name'], arguments)
         else:
             observation = local.run(call['name'], arguments)
+        if not repeat_suppressed:
+            last_failed_call = call_key if observation.get('status') in ('FAIL', 'ERROR', 'TIMEOUT') else None
+            blocked_repeat = False
         history.extend(response['output'])
         images = observation.get('images', [])
         visible = {key: value for key, value in observation.items() if key != 'images'}

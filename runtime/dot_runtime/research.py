@@ -24,16 +24,22 @@ def records(root):
 
 def context(root):
     # Full evidence is retained on disk; do not copy raw command histories into each API request.
+    from .input_material import bounded_view
     return [{'path': item['path'], 'sha256': item['sha256'],
              'source_sha256': file_hash(Path(root) / item['path']),
              'question': item['record']['question'], 'status': item['record']['result']['status'],
              'summary': item['record']['result'].get('summary', '')[:12000],
+             'observed_at': item['record'].get('finished_at', item['record'].get('at')),
+             'observation': bounded_view({k: v for k, v in item['record']['result'].items()
+                                         if k not in ('evidence', 'images')}, 2400),
+             'freshness': 'Historical evidence, not current environment/website/device state. '
+                          'Reuse unchanged file facts after a current hash check; recheck volatile observations.',
              'evidence_excerpt': [{**{k: e.get(k) for k in ('kind', 'description', 'command', 'exit_code')},
                                    'output': str(e.get('output', ''))[:2000],
                                    'truncated': len(str(e.get('output', ''))) > 2000}
                                   for e in item['record']['result'].get('evidence', [])[:6]],
              'findings': item['record']['result'].get('findings', [])}
-            for item in records(root)]
+            for item in sorted(records(root), key=lambda r: r['record'].get('at', ''), reverse=True)]
 
 
 def active(root):
@@ -68,6 +74,7 @@ def run(settings, workers, question, *, state=None):
                     datetime.fromisoformat(operating['expires_at']).timestamp() - time.time())
     if remaining <= 0:
         raise ValueError('Research has no remaining time; L1 assesses resources')
+    previous_observations = context(root)
     folder = root / 'research' / uuid.uuid4().hex
     folder.mkdir(parents=True)
     before = _inventory(project)
@@ -91,6 +98,9 @@ def run(settings, workers, question, *, state=None):
               + json.dumps(resources.authority(original, root), ensure_ascii=False)
               + '\nORIGINAL INPUT:\n' + Path(settings['raw_input']).read_text(encoding='utf-8')
               + '\nENVIRONMENT:\n' + settings.get('environment_context', '') + '\nQUESTION:\n' + question)
+    from .input_material import material_packet
+    prompt += ('\nPREVIOUS INVESTIGATIONS (reuse relevant sourced facts; recheck changed/volatile conditions):\n'
+               + json.dumps(material_packet(root, previous_observations, 12000), ensure_ascii=False))
     workspace = folder / 'workspace'
     workspace.mkdir()
     result = workers.run('research', prompt, workspace, folder / 'worker',

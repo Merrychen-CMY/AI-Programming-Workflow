@@ -9,6 +9,7 @@ import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { toolFields, descriptions } from './workflow.js';
 import { createBootstrap, updateFields, updateDescriptions } from './bootstrap.js';
 import { reportDelivery } from './report-delivery.js';
+import { composeGuidance } from './guidance.js';
 
 export const name = 'ai-programming-workflow';
 export const inject = ['tools', 'systemPrompt', 'credentials', 'userQuestions', 'agents', 'fs'];
@@ -20,8 +21,11 @@ export async function apply(ctx) {
   const deliver = reportDelivery(ctx);
   ctx.effect(() => () => workflow.dispose());
   let guidance;
-  try { guidance = await configuredAccess(resolve(homedir(),'.ai-programming-workflow'), async () =>
-    (await Promise.all(['harness/prompt.md','AGENTS.md','L1.md'].map(path => readFile(new URL(`../${path}`, import.meta.url),'utf8')))).join('\n\n')); }
+  try { guidance = await configuredAccess(resolve(homedir(),'.ai-programming-workflow'), async () => {
+    const documents = await Promise.all(['harness/prompt.md','AGENTS.md','L1.md']
+      .map(path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')));
+    return composeGuidance(documents);
+  }); }
   catch { guidance = 'ReqPilot reference files are unreadable. Use workflow_updates action=diagnose to inspect file access. Preserve existing tasks. Do not run product work, infer approvals, or finalize failure from this loading problem.'; }
   ctx.systemPrompt.section({ name, order: 150, interpolate: false, text: guidance });
   for (const [toolName, fields] of Object.entries({ ...toolFields, ...updateFields })) {

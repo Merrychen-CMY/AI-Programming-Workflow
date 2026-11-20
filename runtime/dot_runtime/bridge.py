@@ -116,6 +116,10 @@ class Bridge:
             result['state'] = result['user_stop']['state']
             result['next_owner'] = 'user' if result['state'] == 'USER_STOP_PENDING' else 'L1'
             result['next'] = result['user_stop']['next']
+        from .recovery_advice import for_status
+        advice = for_status(result)
+        if advice:
+            result['recovery_advice'] = advice
         return result
 
     def _status(self):
@@ -444,8 +448,10 @@ class Bridge:
                 if ((previous.get('status') == 'NEEDS_INFO' and previous.get('request_sha256') == request_sha)
                         or (previous.get('status') == 'PLAN_REJECTED' and previous.get('request_sha256') == request_sha)):
                     return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
-                context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
                 from .input_material import material_packet
+                context = ('RECORDED ENVIRONMENT (source data, recheck changed conditions):\n'
+                    + json.dumps(material_packet(self.root, self.settings['environment_context'], 16000), ensure_ascii=False)
+                    + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.planning_context(self.root))
                 handoff_view = {**handoff, **{key: material_packet(self.root, handoff[key], 8000)
                     for key in ('l1_resource_adjustments', 'approved_authorization_amendments')}}
                 context += '\nCURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n' + json.dumps(handoff_view, ensure_ascii=False)

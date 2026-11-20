@@ -63,7 +63,11 @@ def compact(value):
         result['research_omitted_count'] = max(0, len(investigations) - 32)
         result['research'] = []
         for item in investigations[:32]:
-            entry = {k: item[k] for k in ('path', 'sha256', 'source_sha256', 'status', 'question', 'summary') if k in item}
+            entry = {k: item[k] for k in ('path', 'sha256', 'source_sha256', 'status', 'question', 'summary',
+                                         'observed_at', 'freshness') if k in item}
+            if 'observation' in item:
+                from .input_material import bounded_view
+                entry['observation'] = bounded_view(item['observation'], 1200)
             for key in ('question', 'summary'):
                 text = entry.get(key)
                 if isinstance(text, str) and len(text.encode('utf-8')) > 400:

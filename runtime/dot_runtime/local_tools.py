@@ -126,7 +126,8 @@ class LocalTools:
         atomic_json(folder / 'record.json', {'record': record, 'sha256': digest(record)})
         try:
             self.validate(name, args)
-            result = self.perform(name, args, folder, timeout)
+            reused = self.reuse_read(name, args, record['authority_sha256'])
+            result = reused if reused is not None else self.perform(name, args, folder, timeout)
         except (api_recovery.ApiReview, resources.BudgetReview) as exc:
             # The API ledger owns API uncertainty; do not also create a fictitious local process UNKNOWN.
             self.finish(folder, record, {'status': 'FAIL', 'summary': 'API/resource review required; see existing review ledger',
@@ -137,6 +138,10 @@ class LocalTools:
         return self.finish(folder, record, result)
 
     def finish(self, folder, record, result):
+        from .recovery_advice import tool_failure
+        guidance = tool_failure(result)
+        if guidance:
+            result = {**result, 'recovery_advice': guidance}
         record.update(result=result, finished_at=now())
         if result['status'] != 'UNKNOWN':
             record['evidence_files'] = [{'path': p.relative_to(folder).as_posix(), 'sha256': file_hash(p)}
@@ -146,6 +151,28 @@ class LocalTools:
         atomic_json(folder / 'record.json', {'record': record, 'sha256': digest(record)})
         return {**result, 'record': (folder / 'record.json').relative_to(self.root).as_posix(),
                 'record_sha256': digest(record)}
+
+    def reuse_read(self, name, args, authority_sha):
+        """Only reuse file pages after checking current access, identity and content."""
+        if name != 'local_read':
+            return None
+        path = self.path(args['path'])
+        current = None
+        for item in reversed(research.records(self.root)):
+            record = item['record']
+            result = record['result']
+            if (record.get('source') == 'direct_l2_tool' and record['question'] == name
+                    and record.get('arguments') == args and record['authority_sha256'] == authority_sha
+                    and result.get('status') == 'PASS' and result.get('path') == str(path)):
+                # Hash only when a matching page exists; cold reads keep their original cost.
+                # A current read failure must never be hidden by the cached page.
+                if current is None:
+                    current = file_hash(path)
+                if result.get('sha256') != current:
+                    continue
+                return {**result, 'reused_record': item['path'], 'reused_record_sha256': item['sha256'],
+                        'freshness': 'File bytes rehashed now; reused only this identical page, not prior commands or acceptance.'}
+        return None
 
     def perform(self, name, args, folder, timeout):
         result = {'status': 'PASS'}

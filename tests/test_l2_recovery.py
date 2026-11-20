@@ -79,11 +79,13 @@ class L2RecoveryTests(unittest.TestCase):
     def test_l1_can_reapprove_equivalent_concise_requirements_then_continue_same_task(self):
         from dot_runtime import requirements_review
         b = self.bridge([plan_response()]); b.settings['requirements_first'] = True
-        b.settings['environment_context'] = 'Environment evidence. ' * 4500
+        b.settings['environment_context'] = 'Environment evidence. ' * 720
         self.allocate(b)
         original_authority = self.delegation_path.read_bytes()
         concise = 'Return the specified value; keep all constraints and independent tests.'
-        oversized = concise + '\n' + ('Repeated background only. ' * 7200)
+        # Keep the baseline within its 200 KB gate, but exhaust the combined API
+        # payload with other valid material to exercise independent reapproval.
+        oversized = concise + '\n' + ('Repeated background only. ' * 7900)[:199000]
         b.call('l1_prepare_requirements', {'requirements': oversized})
         self.assertEqual(b.call('l1_approve', {'kind': 'requirements', 'l1_session_id': 'L1'})['state'], 'REQUIREMENTS_APPROVED')
         refused = b.call('dot_plan', {'requirements': oversized})

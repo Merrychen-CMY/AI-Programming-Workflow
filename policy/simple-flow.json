@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.19.2",
+  "workflow_version": "3.20.0",
   "default_mode": "simple",
   "execution_authority": false,
   "user_facing_roles": [
@@ -258,5 +258,6 @@
   "agent_capability_policy": "policy/agent-capabilities.json",
   "file_environment_policy": "policy/file-environment.json",
   "input_material_policy": "policy/input-material.json",
-  "blocker_recovery_guide": "docs/guides/execution-scope.md"
+  "blocker_recovery_guide": "docs/guides/execution-scope.md",
+  "efficiency_guide": "docs/guides/workflow-efficiency.md"
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.19.2",
+  "workflow_version": "3.20.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -38,7 +38,8 @@
       "docs/guides/verification-contract.md",
       "docs/guides/agent-capabilities.md",
       "docs/guides/encrypted-environment.md",
-      "policy/file-environment.json"
+      "policy/file-environment.json",
+      "docs/guides/workflow-efficiency.md"
     ],
     "L1-V": [
       "roles/verification-l1v.md",
@@ -49,7 +50,8 @@
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
       "docs/guides/verification-contract.md",
-      "docs/guides/agent-capabilities.md"
+      "docs/guides/agent-capabilities.md",
+      "docs/guides/workflow-efficiency.md"
     ],
     "L2": [
       "roles/orchestrator-l2.md",
@@ -68,7 +70,8 @@
       "docs/guides/verification-contract.md",
       "docs/guides/agent-capabilities.md",
       "docs/guides/encrypted-environment.md",
-      "policy/file-environment.json"
+      "policy/file-environment.json",
+      "docs/guides/workflow-efficiency.md"
     ],
     "L3": [
       "roles/implementer-l3.md",
@@ -78,7 +81,8 @@
       "docs/reference/20-reflow.md",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/agent-capabilities.md"
+      "docs/guides/agent-capabilities.md",
+      "docs/guides/workflow-efficiency.md"
     ],
     "L4": [
       "roles/verifier-l4.md",
@@ -90,7 +94,8 @@
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
       "docs/guides/verification-contract.md",
-      "docs/guides/agent-capabilities.md"
+      "docs/guides/agent-capabilities.md",
+      "docs/guides/workflow-efficiency.md"
     ],
     "L5": [
       "roles/delivery-l5.md",
@@ -101,7 +106,8 @@
       "policy/communication.json",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/agent-capabilities.md"
+      "docs/guides/agent-capabilities.md",
+      "docs/guides/workflow-efficiency.md"
     ],
     "DOT": [
       "DOT.md",
@@ -114,7 +120,8 @@
       "policy/communication.json",
       "docs/guides/execution-scope.md",
       "policy/execution-scope.json",
-      "docs/guides/agent-capabilities.md"
+      "docs/guides/agent-capabilities.md",
+      "docs/guides/workflow-efficiency.md"
     ]
   },
   "event_reading": {
@@ -424,5 +431,6 @@
   "execution_scope_policy": "policy/execution-scope.json",
   "agent_capability_policy": "policy/agent-capabilities.json",
   "file_environment_policy": "policy/file-environment.json",
-  "blocker_recovery_guide": "docs/guides/execution-scope.md"
+  "blocker_recovery_guide": "docs/guides/execution-scope.md",
+  "efficiency_guide": "docs/guides/workflow-efficiency.md"
 }
