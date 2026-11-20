@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.20.0",
+  "workflow_version": "3.20.1",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -432,5 +432,6 @@
   "agent_capability_policy": "policy/agent-capabilities.json",
   "file_environment_policy": "policy/file-environment.json",
   "blocker_recovery_guide": "docs/guides/execution-scope.md",
-  "efficiency_guide": "docs/guides/workflow-efficiency.md"
+  "efficiency_guide": "docs/guides/workflow-efficiency.md",
+  "c_readable_style_guide": "standards/embedded-c/v1.3/project-constraints/readable-style.md"
 }

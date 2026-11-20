@@ -60,3 +60,5 @@ revision 3补齐10个条款中的50个子项，包括目录/头文件命名、�
 ## 用户编程与交付约束
 
 开发、验证与交付前同读[通用补充](v1.3/project-constraints/README.md)和[26项机器清单](v1.3/project-constraints/adoption.json)。采用if调用先保存结果、Allman、自然中文、行后说明、定义/声明上方文档及bool接口等要求。华为优先；不继承B330的固定文件/函数/行号/本机路径和阶段限制。实际变更受当前委托约束。PC-U独立审查和风险验证纳入既有计划/报告，不要求用户另填表，也不宣称所有规则已自动扫描。
+
+新增[可读的命名与流程注释](v1.3/project-constraints/readable-style.md)：PC-U09、12～16细化为revision 2。函数头Doxygen、内部流程说明与功能.c文件概览分别核对；华为优先。

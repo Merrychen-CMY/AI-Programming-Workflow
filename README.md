@@ -6,7 +6,7 @@
 
 原项目名 AI-Programming-Workflow。[名称、图标与升级兼容说明](docs/guides/branding.md)。
 
-**你向L1提供原始需求、参数和环境，并在开工前集中确认一次边界。L1生成、独立审查并批准需求与执行计划，通过GPT API调用DOT组织开发、测试、审核，最后由L1提交成功或失败报告给你审核。** 当前版本 **3.20.0**。下载与更新说明见[最新正式发布](https://github.com/Merrychen-CMY/ReqPilot/releases/latest)。
+**你向L1提供原始需求、参数和环境，并在开工前集中确认一次边界。L1生成、独立审查并批准需求与执行计划，通过GPT API调用DOT组织开发、测试、审核，最后由L1提交成功或失败报告给你审核。** 当前版本 **3.20.1**。下载与更新说明见[最新正式发布](https://github.com/Merrychen-CMY/ReqPilot/releases/latest)。
 
 默认顺序：**配置模型和密钥 → 检查环境 → 沟通原始需求 → 集中确认开工 → L1 自动推进 → 用户审核最终报告**。
 
@@ -129,3 +129,5 @@ L1进度汇报采用[固定六字段模板](templates/l1-progress.md)：类型�
 3.19.2：所有层级按[执行范围与排障规则](docs/guides/execution-scope.md)主动处理本次授权内的阻塞，无法解决时提交已尝试动作、证据和具体方案。已接入L1提示、DOT API和独立执行会话提示；沿用既有控制器恢复入口，不扩大职责或增加通用重试器。
 
 3.20.0：环境材料有界化、按阶段去重事实、哈希核对后的文件页复用、常见故障处理建议与连续重复失败识别，保持原流程和权限。详见[提效与故障处理](docs/guides/workflow-efficiency.md)。提供隔离的完整流程基准，不宣称真实产品已验收。
+
+3.20.1：补齐函数内部流程注释、功能.c文件调用概览和用途明确的命名，规则自动进入L3及独立审核上下文，华为优先。参见[注释与命名示例](standards/embedded-c/v1.3/project-constraints/readable-style.md)。

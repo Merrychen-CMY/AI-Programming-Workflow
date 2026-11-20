@@ -47,6 +47,10 @@ class AdoptionTests(unittest.TestCase):
         self.data['precedence'] = 'newest_attachment_always_wins'
         self.assertTrue(self.errors())
 
+    def test_new_style_request_cannot_be_attributed_to_original_source(self):
+        self.data['supplemental_user_request']['origin'] = 'Huawei_original'
+        self.assertTrue(self.errors())
+
     def test_legacy_file_allowlist_cannot_survive(self):
         for key, value in [('new_project_legacy_file_allowlist', ['old-module.c']),
                            ('legacy_scope_is_global', True)]:
@@ -114,6 +118,9 @@ class RuntimePropagationTests(unittest.TestCase):
                 self.assertIn(f'PC-U{index:02}', prompt)
             self.assertIn('Huawei takes precedence', prompt)
             self.assertIn('does not expand approved paths', prompt)
+            for text in ('函数上方的Doxygen不能替代', '真实函数名',
+                         '不以AI味评分', '函数名说明动作和对象'):
+                self.assertIn(text, prompt)
 
     def test_non_c_worker_does_not_receive_c_format_rules(self):
         self.assertNotIn('PC-U07', self.approved().prompt('implementation', 'Python only'))
@@ -136,6 +143,18 @@ class RuntimePropagationTests(unittest.TestCase):
         with patch.object(runtime_constraints, 'DIRECTORY', self.root / 'absent'):
             with self.assertRaises(OSError):
                 self.controller().baseline()
+
+    def test_changed_flow_guide_requires_reapproval_not_dispatch(self):
+        directory = self.root / 'constraints'
+        shutil.copytree(runtime_constraints.DIRECTORY, directory)
+        with patch.object(runtime_constraints, 'DIRECTORY', directory):
+            c = self.approved()
+            path = directory / 'readable-style.md'
+            path.write_text(path.read_text(encoding='utf-8') + '\nChanged guidance',
+                            encoding='utf-8')
+            state = c.run()
+            self.assertEqual(state['state'], 'DECISION_PENDING')
+            self.assertEqual(c.adapter.calls, [])
 
     def test_changed_policy_invalidates_frozen_candidate(self):
         policy = self.root / 'policy.json'
@@ -163,6 +182,7 @@ class RuntimePropagationTests(unittest.TestCase):
             approve_l1(c, 'requirements', 'author', c.adapter)
         self.assertIn('PC-U07', seen[0])
         self.assertIn('PC-U26', seen[0])
+        self.assertIn('函数上方的Doxygen不能替代', seen[0])
 
     def test_gpt_plan_receives_rules_without_local_file_access(self):
         raw = self.root / 'raw.md'
@@ -173,6 +193,7 @@ class RuntimePropagationTests(unittest.TestCase):
         propose_plan(client, 'Known requirements', fixtures.fixture_plan(), 'Known environment')
         self.assertIn('PC-U01', client.request.call_args.args[0])
         self.assertIn('PC-U26', client.request.call_args.args[0])
+        self.assertIn('函数上方的Doxygen不能替代', client.request.call_args.args[0])
 
 
 if __name__ == '__main__':

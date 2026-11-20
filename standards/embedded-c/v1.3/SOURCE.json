@@ -18,7 +18,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.c",
-      "repository_sha256": "573564a22ccacda6a9afda6f4159b79d76c55a703031fc7b2f538c7b9d15d09c"
+      "repository_sha256": "7300bcfbca0cac947c23f2e6b03442c8c9e0f2d5901325d748b7251cdd801f5e"
     },
     {
       "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.h",
@@ -194,11 +194,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/adoption.json",
-      "repository_sha256": "7c460f4caf220dc567adb334aa65e57ccf5f75b4716e5e1a50a93e5228c25131"
+      "repository_sha256": "5d72dd6be580ea646937e6df6bc01ad305c9d2b4dc9e12d115d690b491866ef8"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/README.md",
-      "repository_sha256": "ea59f44ac534b9bc2c7f345d0120c25e5db3e945a2101632c6ef79c8bbb9d8f9"
+      "repository_sha256": "bd67821b12e231d10a64f862abc7b895f1f716276f72598f95cd25828714d782"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/source.json",
@@ -222,11 +222,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
-      "repository_sha256": "11a7009419f2ac30dde4fe56d4b79ae92c95d5f833c3991a59a8e82a0db80329"
+      "repository_sha256": "8dfa4f3732a14ea0bc6ffafd235d98f7217a97c083554c982c5c5021b888174e"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "repository_sha256": "4e1b6307e8ce89ad06ee775ceed72c89a13e411e18cad33a62ed2d7dffcf7c79"
+      "repository_sha256": "fbcf028c3faf4efffa48f8177e49398e1fb362c9d234843535e469b3dfdd3a32"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
@@ -298,7 +298,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "6ea5168626d85a209e0b6681db3e20146c8523e4624356aff92abf6ec1e7e9ea"
+      "repository_sha256": "422e659864524d67e309a1ced0bed21289024f609cb4fd23e8a9e10eafb84fe6"
+    },
+    {
+      "path": "standards/embedded-c/v1.3/project-constraints/readable-style.md",
+      "repository_sha256": "3cd656d922de675de3ad901636635162036866d17d2b24122ac18ac377b95aac"
     }
   ],
   "changes": [

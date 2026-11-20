@@ -11,6 +11,16 @@
  * 合成教学材料，无生产作者姓名或工号；实际产品按真实身份及已批准例外处理。
  * 教学修改记录：2026-11-17，Codex，建立示例；后续修改以 Git 历史追溯。
  * 2026-11-18，Codex，同步Allman、行后说明及函数定义文档。
+ * @par 程序流程（逻辑概览）
+ * 调用方先reset清空对象，再调用add追加采样；本模块不包含硬件或回调入口。
+ * @verbatim
+ * sample_accumulator_reset -> 清空total和count
+ * sample_accumulator_add
+ *   -> 检查输入、已有状态和剩余容量
+ *   -> sample_batch_sum：检查整批值并计算总和
+ *      失败 -> 返回错误，累加器和诊断计数不变
+ *      成功 -> 更新total/count，再更新饱和的诊断计数
+ * @endverbatim
  * @warning 编译和文档检查只能验证这个教学示例，不能替代产品测试或规范审查。
  */
 
@@ -54,10 +64,10 @@ static sample_status sample_batch_sum(const uint16_t *values,
             return SAMPLE_STATUS_VALUE_OUT_OF_RANGE;
         }
 
-        sum += values[index];
+        sum += values[index]; /* 只累计已检查的值，暂不改调用方的数据。 */
     }
 
-    *batch_total = sum;
+    *batch_total = sum; /* 整批都有效，再把总和交出去。 */
     return SAMPLE_STATUS_OK;
 }
 
@@ -79,7 +89,7 @@ void sample_accumulator_reset(sample_accumulator *accumulator)
         return;
     }
 
-    accumulator->total = 0U;
+    accumulator->total = 0U; /* 清空总和，让这个对象可以重新开始累计。 */
     accumulator->count = 0U;
 }
 
@@ -125,12 +135,14 @@ sample_status sample_accumulator_add(sample_accumulator *accumulator,
         return SAMPLE_STATUS_CAPACITY_EXCEEDED;
     }
 
+    /* 先检查整批数据；此处失败时，累加器还没有被改动（逻辑段总述）。 */
     status = sample_batch_sum(values, value_count, &batch_total);
     if (status != SAMPLE_STATUS_OK) /* 整批失败，保持累加器和诊断计数不变。 */
     {
         return status;
     }
 
+    /* 检查全部通过，再一起更新总和与数量；调用者须保证无并发访问（逻辑段总述）。 */
     accumulator->total += batch_total;
     accumulator->count += value_count;
     if (s_successful_batches < UINT32_MAX) /* 诊断计数饱和后不回绕。 */
