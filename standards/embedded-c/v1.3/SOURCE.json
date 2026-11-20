@@ -194,11 +194,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/adoption.json",
-      "repository_sha256": "db2719863830cc0ec439261c6482d06ff10716024f81429a09fa6c32e7eeefe4"
+      "repository_sha256": "bdf2ea0a4b3bf3dc251a1bc2d668f55d256794dfa46f7543bd9b81ff72c28a97"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/README.md",
-      "repository_sha256": "35a729adfa47fc8340adb9fa9b7dd42dc489bd3b4b4327ead5a4271de5c1cf22"
+      "repository_sha256": "a299e1797cd670be84f922fca366e843f83573a7e64a77defacfa49e70a7579e"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/source.json",
@@ -230,7 +230,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
-      "repository_sha256": "945b528729118a85ae169544e3e56a296fb05ae543bf8ccb4cd47fc7edc2c734"
+      "repository_sha256": "746988359a9b36964754b96dd1b0a89bc4ed596b42b77e752cf6a25608615a40"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/06-data-state-calibration.md",
@@ -238,11 +238,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/07-logs-errors.md",
-      "repository_sha256": "80f0f50bf4fffdcfe7fcb8eb360ad1a1e1d8e24e8c5fdb16cd7ace5483ad7e27"
+      "repository_sha256": "de2fca883084fa5e8e21f59f9ee953aa2c3099ee8a6fea6bd7a5ef6a4228cd96"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/08-agent-tasks.md",
-      "repository_sha256": "e2c995a8e258e80f55c2261ce909f0eb49d4a6317a938e17a9607297fbd64e0b"
+      "repository_sha256": "1156efedf4091c1ee0787bd78526fcde44eba30bedf20f577df2f4d8c4b84f60"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/09-test-design.md",
@@ -250,11 +250,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/10-hil-replay.md",
-      "repository_sha256": "bc97b30b5a28edce6c03ceb90b09a76f22671db9e2226384fc9b5f2639a27ecc"
+      "repository_sha256": "4a902092ec753b46583dde058fafb731fe4105adfa5a1b23d2aa36bb13dc4f8d"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/11-acceptance.md",
-      "repository_sha256": "248ffaf59970a9ef3f0052dea9e2550398b39c5fb05ff1d1d5ec12a193e7f70b"
+      "repository_sha256": "29d1ebbd9551b29793ecb20d50d491682827cd722c4c0075a33dfee9adce1e13"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/12-adoption.md",
@@ -294,15 +294,15 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/rules-index.json",
-      "repository_sha256": "8e4ae61cee9b4cccd560a1108e5a95470049254de114387c498cdd8373a2deb4"
+      "repository_sha256": "bddacdad331e82dca9f28aa9383dc783d8096419c84ecd928b55e9eebebab66b"
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "053a1f56527d8d7f844d1cebb1225f52614afb5bda8c1769736a740ae90e91a4"
+      "repository_sha256": "691281602514a4bdc7ef4564a6dbb8d67c6df02d615591b103b1a7a987ff68d2"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/readable-style.md",
-      "repository_sha256": "bdf129a95d6524a9a7e7a087a5766053147d131d7ac7f145d75a0e393b0da921"
+      "repository_sha256": "654c44e124e75e780ba1a5275a72c39e16c375e61189900f70fe1a8d691e3491"
     },
     {
       "path": "standards/embedded-c/v1.3/doxygen/module-example/led_driver.c",

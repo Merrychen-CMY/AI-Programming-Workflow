@@ -11,7 +11,7 @@ CONDITIONAL = {'U04', 'U21', 'U23', 'U24', 'U25'}
 def validate_adoption(data, source):
     errors = []
     expected = {
-        'schema_version': 1, 'revision': 5, 'source': 'source.json',
+        'schema_version': 1, 'revision': 6, 'source': 'source.json',
         'scope': 'all_applicable_owned_C_and_H_and_development_tasks',
         'precedence': 'Huawei_first_then_project_requirements_and_Doxygen_adoption',
         'normative_origin': 'user_project_supplement_not_Huawei_clauses',
@@ -74,7 +74,7 @@ def render(data, source):
         '本补充将用户提供的B330对话汇总推广到新项目。**取消原文件、函数、行号和阶段的固定适用范围；通用规则适用于所有适用自有C/H，实际修改仍限当前批准任务。** SDK、生成代码及既有迁移边界保持各自适用性。', '',
         '来源为 `' + source['filename'] + '`，日期 ' + source['source_date'] + '；原始字节SHA-256：`' + source['sha256'] + '`。来源身份及未读取材料见 [source.json](source.json)，权威逐项内容见 [adoption.json](adoption.json)。不上传包含私人路径的原对话全文，也不声称审查过B330产品。', '',
         '**华为优先，Doxygen保留。** PC-U01～PC-U26是本项目补充，不计入华为145父项/50子项，也不冒充DOX的12项/33子项。条件项仅在注明场景成立时强制，其他建议单列。规范适用性由L1/DOT记录，用户无需新填表。', '',
-        'revision 5增加PC-M02模块边界并统一PC-U16声明/定义文档；revision 4新增PC-M01：宏定义放到对应头文件；此前revision 3已纳入2026-11-20用户直接提出的流程注释和命名要求，细化PC-U09、12～16；不是原B330或华为新增原文。示例与skill评估见[可读的命名与流程注释](readable-style.md)。', '',
+        'revision 6按用户确认完善既有模块、验证与交付边界，实时性和日志沿用TIME-001/LOG-001，不增加平行条款；revision 5增加PC-M02模块边界并统一PC-U16声明/定义文档；revision 4新增PC-M01：宏定义放到对应头文件；此前revision 3已纳入2026-11-20用户直接提出的流程注释和命名要求，细化PC-U09、12～16；不是原B330或华为新增原文。示例与skill评估见[可读的命名与流程注释](readable-style.md)。', '',
         '## 逐条采用与审查', '',
     ]
     for row in data['requirements']:
@@ -98,7 +98,7 @@ def render(data, source):
     lines += ['', '## 建议，不新增强制门槛', '']
     lines += [f"- {r['id']}（{r['level']}）：{r['requirement']}" for r in data['recommendations']]
     lines += ['', '## 在当前流程中执行', '',
-        'L1在需求中引用本补充revision 5及PC-M01/PC-M02和仓库commit，区分通用规则、项目事实、当前任务范围及条件项。DOT把适用项写入任务和检查指令；L1内部L1-V设计验证，L3实施，L4及独立审核会话检查实际候选。问题先回DOT/L2分析，不能由L4直接派修。', '',
+        'L1在需求中引用本补充revision 6及PC-M01/PC-M02和仓库commit，区分通用规则、项目事实、当前任务范围及条件项。DOT把适用项写入任务和检查指令；L1内部L1-V设计验证，L3实施，L4及独立审核会话检查实际候选。问题先回DOT/L2分析，不能由L4直接派修。', '',
         '在既有最终报告的规范条款表中用PC-U和PC-M编号记录适用性、检查对象、独立会话、结论和证据。不适用须说明原因；未执行保持NOT_RUN，检查受阻如实报告。主机测试、目标构建和板上证据分开。最终报告仍由L1提交用户审核。', '',
         '运行器把本目录和C策略的摘要加入批准及候选基线，并向C开发/测试/审核/分诊会话提供完整机器清单；GPT规划及L1独立审批审查也获得该清单。规范变化使旧批准失效，必须重新审查受影响计划和候选。', '',
         '**检查能力边界：** 仓库检查覆盖U01～U26及PC-M01/PC-M02枚举、来源指纹、优先级、条件/范围边界及文档同步；运行器检测基线变化。未实现所有源码风格及语义的自动扫描。短路、布尔语义、注释事实、清理依赖等仍需独立审查及按风险执行的验证；Doxygen通过不能替代它们。', '',

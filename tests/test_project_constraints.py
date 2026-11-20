@@ -135,6 +135,10 @@ class RuntimePropagationTests(unittest.TestCase):
             self.assertIn('PC-M02', prompt)
             self.assertIn('keep @param and @return/@retval only at the header declaration', prompt)
             self.assertIn('L2 records responsibilities', prompt)
+            for boundary in ('Modules do not require one RTOS task', 'no unbounded busy waits',
+                             'a dedicated logging task is conditional', 'host tests exercise actual C',
+                             'Protect ongoing acquisition', 'L1/L1-V review'):
+                self.assertIn(boundary, prompt)
             for text in ('函数上方的Doxygen不能替代', '真实函数名',
                          '不以AI味评分', '函数名说明动作和对象', '同一函数内普通行后注释'):
                 self.assertIn(text, prompt)
@@ -154,6 +158,9 @@ class RuntimePropagationTests(unittest.TestCase):
             'sha256': packet['source_sha256'], 'offset': '0'})
         self.assertEqual(page['status'], 'PASS')
         self.assertIn('Full independent compliance coverage remains required', text)
+        self.assertIn('a dedicated logging task is conditional', text)
+        self.assertIn('Protect ongoing acquisition', text)
+        self.assertIn('Comment-only changes do not require new tests', text)
         self.assertIn('PC-M01', text)
         self.assertIn('Do not define macros with #define in owned .c files', text)
 
