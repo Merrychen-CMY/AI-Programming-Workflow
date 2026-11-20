@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 3,
+  "revision": 4,
   "source": "source.json",
   "scope": "all_applicable_owned_C_and_H_and_development_tasks",
   "precedence": "Huawei_first_then_project_requirements_and_Doxygen_adoption",
@@ -512,5 +512,24 @@
     "origin": "direct_user_request_not_original_B330_or_Huawei_text",
     "external_skill_installed_or_required": false,
     "right_alignment_clarification": "同一函数内流程注释在右侧对齐成列，不将逻辑段总述作为普遍上方例外。"
-  }
+  },
+  "supplemental_requirements": [
+    {
+      "id": "PC-M01",
+      "title": "宏定义放到对应头文件",
+      "source_kind": "direct_user_request",
+      "source_date": "2026-11-20",
+      "origin": "direct_user_request_not_original_B330_or_Huawei_text",
+      "level": "MUST",
+      "scope": "当前授权范围内新增或修改的自有C/H代码",
+      "requirements": [
+        "自有.c文件中不放置#define；对象宏、函数式宏和条件编译用宏统一放到所属模块对应的.h文件，通过#include使用。不能以仅本文件使用为由继续留在.c。",
+        "调用方需要的公共宏放模块公开头文件；仅实现内部使用的宏放对应私有头文件（如led_driver_private.h），仅由实现及确有需要的模块内部文件包含，不加入公共头文件的包含链，不汇入无关全局配置头。头文件自包含且使用唯一include guard。",
+        "迁移保留宏值、类型后缀、括号、参数展开语义、条件编译分支、定义生效顺序和注释；同步检查包含关系及所有受影响编译单元，避免宏重定义、循环依赖或内部宏泄漏。不为规避位置要求机械改为enum或const，也不新增无关抽象或批量迁移未授权代码。",
+        "沿用PC-U01的华为优先级及SDK/生成器边界；确有冲突需指明具体条款和对象，由L2分析并交L1按既有规则评估，不能以泛称兼容性自行豁免。"
+      ],
+      "verification": "L4及独立审核在实际候选的授权自有.c中检查预处理宏定义（包括带空白、续行及条件分支），记录宏名与对应.h位置；核对私有宏可见范围、值和展开语义、包含顺序及按影响范围执行的编译证据。发现违规先交L2分析，再派L3修复。Doxygen通过不等于本项通过。",
+      "product_status": "NOT_RUN"
+    }
+  ]
 }

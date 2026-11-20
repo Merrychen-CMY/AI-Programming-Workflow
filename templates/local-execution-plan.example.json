@@ -2,7 +2,7 @@
   "schema_version": 1,
   "description": "示例必须由DOT根据已审核需求改写，L1在固定委托内批准后方可执行；此文件本身不是授权。",
   "coding_standard": "huawei-c",
-  "standard_scope_reason": "项目自有或AI维护的嵌入式C，应用华为规范和Doxygen。 同时采用project-constraints/adoption.json的PC-U01～U26，按适用性执行，华为优先。",
+  "standard_scope_reason": "项目自有或AI维护的嵌入式C，应用华为规范和Doxygen。 同时采用project-constraints/adoption.json的PC-U01～U26，按适用性执行，华为优先。 新增用户要求PC-M01：宏定义放对应头文件，内部宏不暴露到公共接口。",
   "allowed_paths": [
     "src",
     "include"
@@ -28,17 +28,24 @@
     "test_contract": {
       "protocol": "cmake-ctest",
       "source_root": ".",
-      "product_files": ["src/REPLACE_WITH_TESTED_TRANSLATION_UNIT.c"],
-      "required_tests": ["REPLACE_WITH_REQUIRED_CTEST_NAME"],
+      "product_files": [
+        "src/REPLACE_WITH_TESTED_TRANSLATION_UNIT.c"
+      ],
+      "required_tests": [
+        "REPLACE_WITH_REQUIRED_CTEST_NAME"
+      ],
       "not_applicable_tests": [],
       "cmake": {
         "executable": "REPLACE_WITH_CMAKE_EXECUTABLE",
-        "configure_args": ["-G", "Ninja"],
+        "configure_args": [
+          "-G",
+          "Ninja"
+        ],
         "build_args": []
       }
     },
     "test_instructions": "独立从需求推导并执行测试；记录实际命令、输出、运行的非零测试数，失败/未执行如实报告。仅在临时目录创建构建产物，不修改候选源码。填写本项目准确测试步骤。",
-    "review_instructions": "独立检查代码正确性、安全性、需求/AC覆盖和Doxygen注释。逐条记录已审查的文件、问题与证据；不能用实现者自测代替独立审核。 读取固定viys/doxygen_stu采用清单DOX-01～12及其子项；注释参考与华为冲突时以华为为准。审查实际Doxygen报告之外的语义、元数据真实性、所有权与行为一致性。 逐项记录PC-U01～U26的适用性、结论与候选证据；重点审查if短路、中文注释事实、bool/ABI和清理依赖，不以Doxygen或通用PASS代替。",
+    "review_instructions": "独立检查代码正确性、安全性、需求/AC覆盖和Doxygen注释。逐条记录已审查的文件、问题与证据；不能用实现者自测代替独立审核。 读取固定viys/doxygen_stu采用清单DOX-01～12及其子项；注释参考与华为冲突时以华为为准。审查实际Doxygen报告之外的语义、元数据真实性、所有权与行为一致性。 逐项记录PC-U01～U26的适用性、结论与候选证据；重点审查if短路、中文注释事实、bool/ABI和清理依赖，不以Doxygen或通用PASS代替。 按PC-M01检查自有.c不定义宏、对应.h归属及私有可见范围，保留宏语义并核对受影响编译单元。",
     "doxygen": {
       "executable": "REPLACE_WITH_APPROVED_DOXYGEN_EXECUTABLE",
       "expected_version": "1.18.0",

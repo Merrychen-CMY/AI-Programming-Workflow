@@ -60,6 +60,16 @@ class AdoptionTests(unittest.TestCase):
                 self.assertTrue(self.errors())
                 self.data[key] = old
 
+    def test_macro_rule_cannot_be_removed_downgraded_or_claimed_as_huawei(self):
+        original = copy.deepcopy(self.data['supplemental_requirements'])
+        for change in ([], original * 2,
+                       [dict(original[0], level='SHOULD')],
+                       [dict(original[0], origin='Huawei_original')],
+                       [dict(original[0], product_status='PASS')]):
+            with self.subTest(change=change):
+                self.data['supplemental_requirements'] = change
+                self.assertTrue(self.errors())
+
     def test_generalization_does_not_remove_current_authorization(self):
         self.data['current_task_authorization_required'] = False
         self.assertTrue(self.errors())
@@ -118,6 +128,10 @@ class RuntimePropagationTests(unittest.TestCase):
                 self.assertIn(f'PC-U{index:02}', prompt)
             self.assertIn('Huawei takes precedence', prompt)
             self.assertIn('does not expand approved paths', prompt)
+            self.assertIn('PC-M01', prompt)
+            self.assertIn('Do not define macros with #define in owned .c files', prompt)
+            self.assertIn('private header not exposed through public includes', prompt)
+            self.assertIn('定义生效顺序', prompt)
             for text in ('函数上方的Doxygen不能替代', '真实函数名',
                          '不以AI味评分', '函数名说明动作和对象', '同一函数内普通行后注释'):
                 self.assertIn(text, prompt)
@@ -137,6 +151,8 @@ class RuntimePropagationTests(unittest.TestCase):
             'sha256': packet['source_sha256'], 'offset': '0'})
         self.assertEqual(page['status'], 'PASS')
         self.assertIn('Full independent compliance coverage remains required', text)
+        self.assertIn('PC-M01', text)
+        self.assertIn('Do not define macros with #define in owned .c files', text)
 
     def test_non_c_worker_does_not_receive_c_format_rules(self):
         self.assertNotIn('PC-U07', self.approved().prompt('implementation', 'Python only'))
@@ -198,6 +214,7 @@ class RuntimePropagationTests(unittest.TestCase):
             approve_l1(c, 'requirements', 'author', c.adapter)
         self.assertIn('PC-U07', seen[0])
         self.assertIn('PC-U26', seen[0])
+        self.assertIn('PC-M01', seen[0])
         self.assertIn('函数上方的Doxygen不能替代', seen[0])
 
     def test_gpt_plan_receives_rules_without_local_file_access(self):
@@ -209,6 +226,7 @@ class RuntimePropagationTests(unittest.TestCase):
         propose_plan(client, 'Known requirements', fixtures.fixture_plan(), 'Known environment')
         self.assertIn('PC-U01', client.request.call_args.args[0])
         self.assertIn('PC-U26', client.request.call_args.args[0])
+        self.assertIn('PC-M01', client.request.call_args.args[0])
         self.assertIn('函数上方的Doxygen不能替代', client.request.call_args.args[0])
 
 

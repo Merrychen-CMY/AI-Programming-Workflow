@@ -19,97 +19,97 @@
       "title": "3 编码风格与头文件",
       "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
       "source_start_line": 61,
-      "source_end_line": 108
+      "source_end_line": 110
     },
     {
       "title": "3.1 可读性与控制流组织",
       "path": "standards/embedded-c/v1.3/reference/03-1-readability.md",
-      "source_start_line": 109,
-      "source_end_line": 132
+      "source_start_line": 111,
+      "source_end_line": 134
     },
     {
       "title": "3.2 可读性评审与行为保持",
       "path": "standards/embedded-c/v1.3/reference/03-2-review-and-refactoring.md",
-      "source_start_line": 133,
-      "source_end_line": 157
+      "source_start_line": 135,
+      "source_end_line": 159
     },
     {
       "title": "4 注释与接口契约",
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "source_start_line": 158,
-      "source_end_line": 203
+      "source_start_line": 160,
+      "source_end_line": 205
     },
     {
       "title": "5 分层 资源与实时性",
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
-      "source_start_line": 204,
-      "source_end_line": 239
+      "source_start_line": 206,
+      "source_end_line": 241
     },
     {
       "title": "6 测量数据 状态机与标定",
       "path": "standards/embedded-c/v1.3/reference/06-data-state-calibration.md",
-      "source_start_line": 240,
-      "source_end_line": 273
+      "source_start_line": 242,
+      "source_end_line": 275
     },
     {
       "title": "7 日志与异常行为",
       "path": "standards/embedded-c/v1.3/reference/07-logs-errors.md",
-      "source_start_line": 274,
-      "source_end_line": 316
+      "source_start_line": 276,
+      "source_end_line": 318
     },
     {
       "title": "8 AI 开发任务约定与执行",
       "path": "standards/embedded-c/v1.3/reference/08-agent-tasks.md",
-      "source_start_line": 317,
-      "source_end_line": 350
+      "source_start_line": 319,
+      "source_end_line": 352
     },
     {
       "title": "9 测试设计与自动选择",
       "path": "standards/embedded-c/v1.3/reference/09-test-design.md",
-      "source_start_line": 351,
-      "source_end_line": 380
+      "source_start_line": 353,
+      "source_end_line": 382
     },
     {
       "title": "10 实机 长期记录与失败处置",
       "path": "standards/embedded-c/v1.3/reference/10-hil-replay.md",
-      "source_start_line": 381,
-      "source_end_line": 412
+      "source_start_line": 383,
+      "source_end_line": 414
     },
     {
       "title": "11 最终验收 版本绑定与交付",
       "path": "standards/embedded-c/v1.3/reference/11-acceptance.md",
-      "source_start_line": 413,
-      "source_end_line": 447
+      "source_start_line": 415,
+      "source_end_line": 449
     },
     {
       "title": "12 落地步骤与规则维护",
       "path": "standards/embedded-c/v1.3/reference/12-adoption.md",
-      "source_start_line": 448,
-      "source_end_line": 479
+      "source_start_line": 450,
+      "source_end_line": 481
     },
     {
       "title": "附录 A 开发任务填写模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-a-task.md",
-      "source_start_line": 480,
-      "source_end_line": 535
+      "source_start_line": 482,
+      "source_end_line": 537
     },
     {
       "title": "附录 B 测试任务与用例模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-b-test-plan.md",
-      "source_start_line": 536,
-      "source_end_line": 573
+      "source_start_line": 538,
+      "source_end_line": 575
     },
     {
       "title": "附录 C 交付与验收记录模板",
       "path": "standards/embedded-c/v1.3/reference/appendix-c-delivery.md",
-      "source_start_line": 574,
-      "source_end_line": 621
+      "source_start_line": 576,
+      "source_end_line": 623
     },
     {
       "title": "附录 D 项目适配与资料索引",
       "path": "standards/embedded-c/v1.3/reference/appendix-d-project-scope.md",
-      "source_start_line": 622,
-      "source_end_line": 662
+      "source_start_line": 624,
+      "source_end_line": 664
     }
   ],
   "readability_checklist": "standards/embedded-c/v1.3/source/readability-checklist.txt",

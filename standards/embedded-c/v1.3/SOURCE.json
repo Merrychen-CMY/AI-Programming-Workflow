@@ -130,7 +130,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/INDEX.json",
-      "repository_sha256": "25d030c736417570117eb5a3799aaaaf5510bd49f66bfa32e286f9c63da83914"
+      "repository_sha256": "8e21b2bcf1680598c77fbfabedabaf0ae553b77f482f84b9e5e19e1630d65a21"
     },
     {
       "path": "standards/embedded-c/v1.3/machine/common.schema.json",
@@ -194,11 +194,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/adoption.json",
-      "repository_sha256": "938a5b2ba65e6dce6accf80c735b92c8838f4bcb1c0fca6026d41bd59a2e13c5"
+      "repository_sha256": "f16c4cad710a0b47127b942de0d272908e1ae85dee248c11eb8e7a62b384c46c"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/README.md",
-      "repository_sha256": "9c3a34fbacbf3d1889cba3b6e9218b0a298fa5b0be2099b0845d5cabab269c83"
+      "repository_sha256": "f416466ffef612e0f3e92e3b0b6945a7fa0791b5c19d064103c6154dd8eaf1ab"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/source.json",
@@ -222,7 +222,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/03-c-style.md",
-      "repository_sha256": "8dfa4f3732a14ea0bc6ffafd235d98f7217a97c083554c982c5c5021b888174e"
+      "repository_sha256": "c93b972a172eeb009faeab8a713b3242bc35b714176880676e47b960521d04e9"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
@@ -298,11 +298,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "84634e8846790a48a5317c5d639be293a43c0b6fcba31302f8fa57a22f4bc505"
+      "repository_sha256": "5b402bdf8e148521cc807726b7ecb8baf79e63400adffdf67f4a8129de7bd57d"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/readable-style.md",
-      "repository_sha256": "13c7df377f215ced787a9b40366ada8328f221638d2f71ab29935135801c4cb8"
+      "repository_sha256": "c9db945ac4221c86a0b02e2f6957eec8643d822f4d03f2921a9396feef7d736a"
     }
   ],
   "changes": [
