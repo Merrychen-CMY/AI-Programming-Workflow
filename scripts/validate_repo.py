@@ -193,7 +193,7 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0', '3.19.1', '3.19.2', '3.20.0', '3.20.1', '3.20.2', '3.21.0', '3.22.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0', '3.19.1', '3.19.2', '3.20.0', '3.20.1', '3.20.2', '3.21.0', '3.22.0', '3.22.1'],
                 'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
