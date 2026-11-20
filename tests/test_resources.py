@@ -191,6 +191,7 @@ class ResourceTests(unittest.TestCase):
         invalid = fixtures.fixture_plan()
         invalid['verification']['test_instructions'] = ''
         b = self.bridge([delegated.call_response('propose_plan', {'plan_json': json.dumps(plan)}),
+                         delegated.call_response('propose_plan', {'plan_json': json.dumps(invalid)}),
                          delegated.call_response('propose_plan', {'plan_json': json.dumps(invalid)})])
         self.allocate(b, implementation_attempts=3)
         b.call('dot_plan', {'requirements': 'Keep all independent checks'})

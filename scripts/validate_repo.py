@@ -60,7 +60,7 @@ def validate_manifest(root, manifest):
 
 
 def validate_task_upgrade_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.4.0', '3.4.1', '3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0'],
                 'task_schema_version': 1, 'native_user_confirmation_required': True,
                 'preserve_original_authority_and_cumulative_usage': True,
                 'invalidate_approvals_and_candidate': True, 'replay_completed_implementation': False,
@@ -159,6 +159,7 @@ def validate_input_material_policy(value):
         'mark_excerpts_and_source_hash': True, 'local_rejection_consumes_api_attempt': False,
         'clear_unresolved_product_operation': False, 'reopen_old_final_report': False,
         'guide': 'docs/guides/investigation.md'}
+    expected.update({'planning_research_view_bytes': 32000, 'tool_output_view_bytes': 16000, 'tool_history_compaction_threshold_bytes': 80000, 'l2_evidence_read_tool': 'read_evidence', 'residual_input_recovery_coordinator': 'L1', 'approved_baseline_silently_truncated': False})
     if not isinstance(value, dict) or set(value) != set(expected):
         return ['Input material policy fields differ from implemented scope']
     return ['Input investigation policy drift: ' + k for k, v in expected.items()
@@ -182,7 +183,7 @@ def validate_api_recovery_policy(value):
 
 
 def validate_initialization_recovery_policy(value):
-    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0'],
+    expected = {'schema_version': 1, 'supported_source_versions': ['3.5.0', '3.6.0', '3.6.1', '3.7.0', '3.8.0', '3.9.1', '3.10.0', '3.11.0', '3.12.1', '3.13.0', '3.13.3', '3.14.0', '3.14.1', '3.15.0', '3.16.0', '3.17.0', '3.17.1', '3.18.0', '3.19.0'],
                 'scope': 'uncommitted_or_unbound_local_initialization_only', 'native_confirmation_required': True,
                 'changed_baseline_requires_explicit_adoption_and_replan': True,
                 'archive_partial_files_and_marker': True, 'original_confirmation_immutable': True,
@@ -302,6 +303,7 @@ def validate_planning_policy(value):
         'independent_review_required': True, 'legacy_locked_task_auto_migration': False,
         'initial_native_plan_requires_approved_requirements': True,
         'guide': 'docs/guides/plan-rejections.md'}
+    expected.update({'l2_draft_corrections_per_call': 1, 'resource_shortfall_auto_correction': False})
     if not isinstance(value, dict) or set(value) != set(expected):
         return ['Planning policy fields differ from implemented scope']
     return ['Planning boundary drift: ' + key for key, wanted in expected.items()

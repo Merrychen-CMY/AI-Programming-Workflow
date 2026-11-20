@@ -13,5 +13,7 @@
   "independent_review_required": true,
   "legacy_locked_task_auto_migration": false,
   "guide": "docs/guides/plan-rejections.md",
-  "initial_native_plan_requires_approved_requirements": true
+  "initial_native_plan_requires_approved_requirements": true,
+  "l2_draft_corrections_per_call": 1,
+  "resource_shortfall_auto_correction": false
 }

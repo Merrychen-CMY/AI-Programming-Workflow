@@ -5,6 +5,7 @@ from pathlib import Path
 import uuid
 
 from .snapshot import _filesystem_path, _reject_link, _root
+from .input_material import bounded_view, encoded
 
 
 def _block(value):
@@ -74,31 +75,61 @@ def review(root, record, number, approval=None, usage=None, *, preflight=False):
 
 
 def final(root, report, *, preflight=False, state=None):
+    import hashlib
     source = {key: value for key, value in report.items()
               if key not in ('markdown_report', 'markdown_error', 'markdown_required')}
     submission = source['l1_submission']
     closure = source.get('l1_closure_assessment', {}).get('assessment', {})
     tasks = state.get('approved_plan', {}).get('tasks') if state else None
     completion = ({'completed_tasks': state.get('completed_tasks', []),
-                   'pending_tasks': [task for task in tasks if task['id'] not in state.get('completed_tasks', [])]}
+                   'pending_tasks': [{k: bounded_view(task[k], 400) if k == 'instruction' else task[k]
+                                      for k in ('id', 'instruction', 'depends_on') if k in task}
+                                     for task in tasks if task['id'] not in state.get('completed_tasks', [])]}
                   if tasks is not None else {'approved_execution_plan': False,
                       'note': '尚无已批准的执行计划；未完成工作以 L1 结论和结案评估为准。'})
+    issues = [{**{k: issue[k] for k in ('id', 'root_cause', 'candidate_id') if k in issue},
+               **{k: bounded_view(issue.get('analysis', issue)[k], 600) for k in ('root_cause_key', 'summary',
+                   'recommended_action', 'source_record', 'source_sha256') if k in issue.get('analysis', issue)}}
+              for issue in source.get('issues', [])]
+    governance = source.get('resource_governance', {
+        'implementation_attempts': source.get('implementation_attempts'),
+        'revision_count': source.get('revision_count'), 'l1_reviews': len(source.get('l1_reviews', []))})
+    if 'history' in governance:
+        changes = []
+        for event in governance['history']:
+            record = event.get('record', event)
+            payload = record.get('payload', {})
+            allocation = payload.get('after', {})
+            changes.append({'at': record.get('at'), 'kind': record.get('kind'),
+                'reason': payload.get('reason', allocation.get('reason', payload.get('proposal', {}).get('reason'))),
+                'before': payload.get('before'), 'after': allocation.get('limits'),
+                'changes': payload.get('changes')})
+        governance = {**governance, 'history': changes}
+    governance = {k: bounded_view(v, 4000) if k in ('history', 'budget_review', 'pending_authorization') else v
+                  for k, v in governance.items()}
+    def view(value):
+        return _block(bounded_view(value, 12000))
     return _write(Path(root) / ('preflight-reports' if preflight else 'reports'),
         'l1-final', 'L1 最终审核报告', [
-            ('L1 结论', submission['summary']),
-            ('DOT 原始结果', _block({'outcome': source['outcome'], 'reason': source.get('reason'),
+            ('L1 结论', submission['summary'] if len(submission['summary'].encode('utf-8')) <= 16000
+             else view(submission['summary'])),
+            ('DOT 原始结果', view({'outcome': source['outcome'], 'reason': source.get('reason'),
                 'dot_report_sha256': submission['dot_report_sha256'],
                 'delivery_executed': source.get('delivery_executed', False),
                 'execution_started': source.get('execution_started')})),
-            ('未完成项与限制', _block({'task_completion': completion, 'recorded_issues': source.get('issues', []),
+            ('未完成项与限制', _block({k: bounded_view(v, 1600) for k, v in {
+                'task_completion': completion, 'recorded_issues': issues,
                 'closure_assessment': closure, 'approved_test_commands': source.get('approved_test_commands'),
                 'documentation_checks': source.get('documentation_checks'), 'compliance': source.get('compliance'),
-                'api_review': source.get('api_review')})),
-            ('额度、实际消耗及调整', _block(source.get('resource_governance', {
-                'implementation_attempts': source.get('implementation_attempts'),
-                'revision_count': source.get('revision_count'),
-                'l1_reviews': len(source.get('l1_reviews', []))}))),
-            ('完整报告与证据索引', _block(source)),
+                'api_review': source.get('api_review')}.items()})),
+            ('额度、实际消耗及调整', view(governance)),
+            ('完整报告与证据索引', _block({
+                'record': 'preflight-report.json' if preflight else 'final-report.json',
+                'source_content_sha256': hashlib.sha256(encoded(source)).hexdigest(),
+                'hash_scope': 'JSON excluding markdown_report, markdown_error and markdown_required; canonical sorted UTF-8 JSON',
+                'issues_count': len(source.get('issues', [])),
+                'l1_reviews_count': len(source.get('l1_reviews', [])),
+                'note': '原始 JSON 保留全部证据、失败与消耗。摘要中的 omitted 表示省略展示，不表示不存在或通过；按原始记录路径分页查看。'})),
             ('审核边界', 'JSON 原始记录及其摘要仍是审批依据，本文件摘要也绑定在提交记录中。'
              '用户审核报告不授权重新执行、部署或消除未决操作。')])
 

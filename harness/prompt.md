@@ -65,3 +65,5 @@ L2能力（3.17.0）：使用host_tools发现当前Harness会话工具，host_ca
 
 
 加密环境按 docs/guides/encrypted-environment.md 和 policy/file-environment.json 执行。读取失败先 workflow_updates(action="diagnose")；不同工具读取视图须核实，Python可读不代表Codex/编译器可读。L2调查、L1评估，不清空原任务/历史，不忽略摘要，不自动重做已发出操作或结案。
+
+3.19.0 协作恢复：L2 先在授权内查资料、查环境并处理可纠正的草案问题，不能只把问题转交 L1；L1 负责主动组织恢复、完善并批准基线及资源。规划调查材料、历史额度变更和工具输出自动生成有界视图，完整原件保存在控制目录，DOT 通过 read_evidence 按摘要绑定分页读取。材料超限时 L1 必须查看 component_bytes / planning_component_bytes，消除重复日志、历史转述和无关附件，保留当前事实及原件引用；保留原件不等于每次全量发送。若精简已批准需求，逐项核对目标、硬约束、AC 和权限后重新独立审核及 L1 批准，不直接更改基线绕过检查，不要求用户代为整理。纯计划格式/校验错误由 L2 在同一次 dot_plan 内最多纠正一次，仍计 API 和时间；资源不足直接由 L1 评估，未决操作不重放。再次失败须带证据和具体方案交 L1，不能直接结案。详见docs/guides/investigation.md。

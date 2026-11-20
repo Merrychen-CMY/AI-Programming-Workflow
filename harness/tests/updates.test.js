@@ -239,7 +239,7 @@ test('snapshot loader executes the actual Python status pipe without network or 
   await updates.setEnabled(false);
   const bootstrap=createBootstrap({root,directory,fields:actualFields,ctx:{},updates});t.after(()=>bootstrap.dispose());
   const result=await bootstrap.invoke('workflow_status',{}, {agent:{id:'真实管道只读会话'}});
-  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,'3.18.0');
+  assert.equal(result.state,'DISCOVERY');assert.equal(result.workflow_runtime.version,JSON.parse(await readFile(resolve(root,'package.json'),'utf8')).version);
   assert.equal(result.workflow_runtime.task_pinned,false);assert.equal(result.workflow_runtime.updates.enabled,false);
 });
 

@@ -25,6 +25,7 @@ def records(root):
 def context(root):
     # Full evidence is retained on disk; do not copy raw command histories into each API request.
     return [{'path': item['path'], 'sha256': item['sha256'],
+             'source_sha256': file_hash(Path(root) / item['path']),
              'question': item['record']['question'], 'status': item['record']['result']['status'],
              'summary': item['record']['result'].get('summary', '')[:12000],
              'evidence_excerpt': [{**{k: e.get(k) for k in ('kind', 'description', 'command', 'exit_code')},

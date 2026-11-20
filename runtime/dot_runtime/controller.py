@@ -746,7 +746,7 @@ class Controller:
             self.state['active_run'] = protected_operation
             self.state['analysis_activity'] = None
             atomic_json(self.run_dir / 'decision-request.json', {
-                'reason': 'Local API input refused before sending; L1 must reorganize evidence',
+                'reason': 'Local API input refused before sending; L1 coordinates bounded evidence views and baseline-preserving recovery with L2',
                 'diagnostic': exc.diagnostic, 'pending_failure_record': 'run/state.json',
                 'source_record': (self.state.get('pending_triage') or {}).get('source_record'),
                 'source_sha256': (self.state.get('pending_triage') or {}).get('source_sha256'),
@@ -940,7 +940,7 @@ class Controller:
                 or result.get('recommended_action') not in ('repair', 'reverify')
                 or result.get('permission_gaps') or result.get('missing_information')):
             atomic_json(self.run_dir / 'decision-request.json', {
-                'reason': 'L2 investigation remains open; L1 resolves evidence, permissions and resources',
+                'reason': 'L2 investigates obtainable evidence; L1 coordinates remaining baseline, permission and resource decisions',
                 'owner': 'L2', 'escalation_owner': 'L1', 'investigation_status': 'OPEN',
                 'unresolved_product_operation': self.state['active_run'],
                 'analysis': result, 'issue_id': self.state['issues'][-1]['id'], 'root_cause': cause,
@@ -948,8 +948,8 @@ class Controller:
                 'source_sha256': packet['source_sha256'],
                 'next': 'Use dot_investigate for bounded read-only investigation; L1 assesses the resulting '
                         'proposal through l1_resume_decision or revises the affected baseline. '
-                        'L1 resolves missing evidence/permissions/resources. '
-                        'Request native user authorization for scope or ceiling changes. Do not finalize solely '
+                        'L2 collects obtainable evidence and proposes concrete fixes; L1 actively organizes recovery and approves resource adjustments. '
+                        'Request native user authorization only for changes outside delegated authority, not ordinary resource increases. Do not finalize solely '
                         'for an undiagnosed cause; reconcile any unresolved product operation before writes.'})
             self.transition('DECISION_PENDING', 'L2 investigation requires L1 support; no automatic final report')
             return 'stop'
@@ -1114,7 +1114,8 @@ class Controller:
             self.state['history'].append({'action': 'l1_requested_read_only_investigation',
                 'at': now(), 'record': path.relative_to(self.run_dir.parent).as_posix(), 'sha256': file_hash(path)})
             self.save()
-            # Codex's triage role is read-only. GPT triage has no tools at all.
+            # Investigation remains read-only for product files; DOT can use
+            # evidence/local/host tools without gaining implementation authority.
             # Never dispatch any implementation/test process in this method.
             self.triage(previous['failure'], Path(self.state['project']), route=False, count_failure=False, context=request)
             return self.state

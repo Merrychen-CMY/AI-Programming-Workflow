@@ -15,5 +15,11 @@
   "reopen_old_final_report": false,
   "guide": "docs/guides/investigation.md",
   "api_wire_limit_bytes": 32000000,
-  "image_bytes_count_as_text": false
+  "image_bytes_count_as_text": false,
+  "planning_research_view_bytes": 32000,
+  "tool_output_view_bytes": 16000,
+  "tool_history_compaction_threshold_bytes": 80000,
+  "l2_evidence_read_tool": "read_evidence",
+  "residual_input_recovery_coordinator": "L1",
+  "approved_baseline_silently_truncated": false
 }

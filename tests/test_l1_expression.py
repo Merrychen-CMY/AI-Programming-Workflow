@@ -230,7 +230,12 @@ class L1ExpressionRuntimeTests(unittest.TestCase):
         self.assertEqual(file_hash(markdown_path), markdown['sha256'])
         markdown_text = markdown_path.read_text(encoding='utf-8')
         self.assertIn(summary, markdown_text)
-        self.assertIn(json.dumps({**original, 'l1_submission': submission}, ensure_ascii=False, indent=2), markdown_text)
+        from dot_runtime.input_material import encoded
+        import hashlib
+        content_hash = hashlib.sha256(encoded({**original, 'l1_submission': submission})).hexdigest()
+        self.assertIn(content_hash, markdown_text)
+        self.assertIn('final-report.json', markdown_text)
+        self.assertIn(original['outcome'], markdown_text)
         self.assertEqual(submitted, original)
         self.assertEqual(submission['outcome'], original['outcome'])
         self.assertEqual(submission['summary'], summary)

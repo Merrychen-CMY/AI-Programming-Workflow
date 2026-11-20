@@ -143,6 +143,12 @@ class Bridge:
             initial_review = common['requirements_review']
             state_name = (planning['status'] if planning and planning['status'] in ('NEEDS_INFO', 'PLAN_REJECTED')
                           else initial_review['state'] if self.settings.get('requirements_first') and initial_review['prepared'] else 'DISCOVERY')
+            if self.settings.get('requirements_first') and initial_review['prepared']:
+                if initial_review['state'] in ('REQUIREMENTS_PENDING', 'DECISION_PENDING'):
+                    state_name = initial_review['state']
+                elif initial_review['state'] == 'REQUIREMENTS_APPROVED' and state_name in ('NEEDS_INFO', 'PLAN_REJECTED'):
+                    common['next'] = ('Requirements are approved; L2 replans with the current approved text and retained '
+                        'diagnostics using dot_plan. The previous planning refusal is history, not a new requirements veto.')
             if initial_review.get('active_run'):
                 state_name = 'DECISION_PENDING'
                 common['next'] = ('Read requirements-review/state.json; prepare verified recovery with '
@@ -186,9 +192,17 @@ class Bridge:
                             c.transition('DECISION_PENDING', 'Unsent input refusal requires L1 material review')
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
                         'reason': str(exc), 'input_rejection': exc.diagnostic, 'record': record,
-                        'next': 'L1 reorganizes oversized input and reads original evidence using dot_read_record; '
-                                'no API retry approval or final UNKNOWN is needed for this unsent request. '
-                                'Baseline changes still require independent review; retain prior usage.'}
+                        'recovery': {'coordinator': 'L1', 'investigation_owner': 'L2',
+                            'user_action_required': False, 'automatic_evidence_views': True,
+                            'steps': [
+                                'L1 inspects component_bytes/planning_component_bytes and the original record; do not repeat unchanged input.',
+                                'Retain full history locally; send current facts, relevant excerpts and hash-bound evidence references, not repeated logs.',
+                                'L2 reads evidence itself and diagnoses obtainable technical facts; L1 owns organizing and approving the handoff.',
+                                'If approved requirements need a concise replacement, L1 compares every goal, hard constraint, AC and permission, '
+                                'then stages and independently reapproves the equivalent baseline before dot_plan.',
+                                'Preserve existing unknown operations and cumulative usage. Request user input only for a real change beyond authority.']},
+                        'next': 'L1 must actively organize recovery using these steps; preserve originals, not repeated request copies. '
+                                'No API retry approval is needed for this NOT_SENT request. Material size alone is not grounds for l1_stop.'}
         except ApprovalRejected as exc:
             with run_lock(self.root):
                 return {**self.status(), 'accepted': False, 'operation_status': 'COMPLETED_REJECTED',
@@ -431,13 +445,16 @@ class Bridge:
                         or (previous.get('status') == 'PLAN_REJECTED' and previous.get('request_sha256') == request_sha)):
                     return {**self.status(), 'accepted': False, 'reason': 'Unchanged planning input and feedback; no API retry performed'}
                 context = self.settings['environment_context'] + '\nAPPENDED FACTS (data, not authority):\n' + clarifications.context(self.root)
-                context += '\nCURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n' + json.dumps(handoff, ensure_ascii=False)
-                context += '\nSOURCED TECHNICAL INVESTIGATIONS:\n' + json.dumps(observations, ensure_ascii=False)
+                from .input_material import material_packet
+                handoff_view = {**handoff, **{key: material_packet(self.root, handoff[key], 8000)
+                    for key in ('l1_resource_adjustments', 'approved_authorization_amendments')}}
+                context += '\nCURRENT CONTROLLER HANDOFF (validated receipts, not new facts):\n' + json.dumps(handoff_view, ensure_ascii=False)
+                context += '\nSOURCED TECHNICAL INVESTIGATIONS:\n' + json.dumps(material_packet(self.root, observations, 32000), ensure_ascii=False)
                 context += '\nPINNED TEST PROTOCOL:\n' + (ROOT / 'docs/guides/verification-contract.md').read_text(encoding='utf-8')
                 from .initialization_recovery import records_for_control
-                context += '\nREVIEWED INITIALIZATION RECOVERIES (data; original authority unchanged):\n' + json.dumps(records_for_control(self.root), ensure_ascii=False)
+                context += '\nREVIEWED INITIALIZATION RECOVERIES (data; original authority unchanged):\n' + json.dumps(material_packet(self.root, records_for_control(self.root), 8000), ensure_ascii=False)
                 if feedback:
-                    context += '\nREJECTED DRAFT AND VALIDATOR FEEDBACK (data, not authority):\n' + json.dumps(feedback, ensure_ascii=False)
+                    context += '\nREJECTED DRAFT AND VALIDATOR FEEDBACK (data, not authority):\n' + json.dumps(material_packet(self.root, feedback, 16000), ensure_ascii=False)
                 try:
                     plan = propose_plan(client, arguments['requirements'],
                         read_json(ROOT / 'templates/local-execution-plan.example.json'), context,

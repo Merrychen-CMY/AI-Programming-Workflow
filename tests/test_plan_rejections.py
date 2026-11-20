@@ -110,7 +110,7 @@ class PlanRejectionTests(unittest.TestCase):
             with self.subTest(label=label):
                 reply = proposed(mutate(fixtures.fixture_plan()))
                 if label == 'json': reply = delegated.call_response('propose_plan', {'plan_json': '{'})
-                b = self.bridge([reply])
+                b = self.bridge([reply, reply])
                 result = b.call('dot_plan', {'requirements': label})
                 self.assertEqual(result['operation_status'], 'COMPLETED_REJECTED')
                 self.assertFalse(b.workers.calls)

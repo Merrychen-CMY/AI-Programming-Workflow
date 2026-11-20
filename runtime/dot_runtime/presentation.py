@@ -15,7 +15,7 @@ def read_record(root, name, offset):
                                 'run/triage-inputs/', 'run/decision-requests/', 'input-rejections/',
                                 'requirements-review/', 'run/preflight-requirements/', 'preflight-reports/',
                                 'operation-recovery-proposals/', 'user-stop-decisions/',
-                                'run/facility-evidence/', 'research/'))
+                                'run/facility-evidence/', 'research/', 'api/materials/'))
     if (not allowed or '\\' in name or ':' in name or relative.is_absolute() or '..' in relative.parts
             or relative.suffix not in ('.json', '.md', '.txt', '.jsonl', '.log')
             or not offset.isascii() or not offset.isdecimal()):
@@ -57,6 +57,19 @@ def compact(value):
     if not isinstance(value, dict) or 'state' not in value:
         return value
     result = copy.deepcopy(value)
+    investigations = result.get('research')
+    if isinstance(investigations, list):
+        result['research_record_count'] = len(investigations)
+        result['research_omitted_count'] = max(0, len(investigations) - 32)
+        result['research'] = []
+        for item in investigations[:32]:
+            entry = {k: item[k] for k in ('path', 'sha256', 'source_sha256', 'status', 'question', 'summary') if k in item}
+            for key in ('question', 'summary'):
+                text = entry.get(key)
+                if isinstance(text, str) and len(text.encode('utf-8')) > 400:
+                    entry[key] = text.encode('utf-8')[:400].decode('utf-8', errors='ignore') + '… [abridged; read the record]'
+                    entry[key + '_abridged'] = True
+            result['research'].append(entry)
     # Approval/preparation return separate copies of the same journal. Compact
     # every copy: otherwise one unbounded alias can exceed the host pipe limit.
     for key in ('requirements_review', 'requirements_approval', 'requirements_preparation'):
