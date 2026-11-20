@@ -1,6 +1,6 @@
 # 可读的命名与流程注释
 
-这是2026-11-20用户要求的项目细化，权威条目见[adoption.json](adoption.json) revision 2（PC-U09、12～16）。**冲突时华为规范优先**；Doxygen继续使用。只改当前授权范围内的自有源码，SDK与既有接口兼容边界不变。
+这是2026-11-20用户要求的项目细化，权威条目见[adoption.json](adoption.json) revision 3（PC-U09、12～16）。**冲突时华为规范优先**；Doxygen继续使用。只改当前授权范围内的自有源码，SDK与既有接口兼容边界不变。
 
 ## 三处说明各管什么
 
@@ -8,9 +8,15 @@
 | --- | --- | --- |
 | 功能.c文件开头 | 这个文件负责什么、从哪里进、主要调用顺序和失败去向 | 在Doxygen文件头中补简短文字或ASCII流程，使用真实函数名；保留原有真实元数据 |
 | 函数定义上方 | 怎么调用、输入输出、返回值、前提和副作用 | 保留完整且精练的Doxygen；声明处契约同步 |
-| 函数内部 | 当前步骤、分支原因、状态提交以及失败后怎么办 | 关键语句右侧短注释，逻辑段总述或长说明可紧邻上方，不能用函数头代替 |
+| 函数内部 | 当前步骤、分支原因、状态提交以及失败后怎么办 | 对应代码右侧短注释，同一函数内对齐成一列，嵌套分支也保持该列；不能用函数头代替 |
 
 不要求每一行都有注释。看注释应能顺着关键路径读懂程序；不把赋值、加一等自明操作重复翻译一遍。注释要与实现一起更新。
+
+## 右侧对齐规则
+
+同一函数内，变量、语句、if/else及其他关键分支的普通行后注释使用同一注释起始列；代码嵌套缩进变化时，右侧注释列不跟着移动。用空格补齐，根据本函数代码长度选择列，不强制所有文件使用某个列号。统一普通注释形式，使起始符和正文各自对齐。
+
+过长时先精简文字，把必要的长背景说明移入函数Doxygen。只有确有华为位置要求或无法合理缩短的代码/注释影响可读性，才记录具体依据采用分组对齐或上方例外；“逻辑段总述”本身不再是例外。不要为排版重写表达式、拆函数或改变执行顺序。80列仍为项目默认目标，不是硬上限。
 
 ## 口语化的尺度
 
@@ -23,32 +29,30 @@
 
 口语化是同事间的清楚说明，保留必要术语和准确单位。不要添加情绪、故事、比喻，或把“已提交请求”写成“硬件已完成”。失败时资源由调用者释放就说清楚，不写成此处已经释放。
 
-下面只展示用户截图中初始化逻辑的注释方式，不是完整驱动，也不规定产品参数。配置与函数Doxygen仍须保留。逻辑段总述紧邻上方，是PC-U15的位置例外；短说明留在右侧。
+下面只展示用户截图中初始化逻辑的注释方式，不是完整驱动，也不规定产品参数。配置与函数Doxygen仍须保留。内部流程注释统一放右侧，用空格对齐；不再把简短的逻辑段总述放到代码上方。
 
 ```c
-/* 先申请发送通道；之后任一步失败，已申请资源都交给调用者清理。 */
-status = rmt_new_tx_channel(&channel_config, &driver->channel);
-if (status != ESP_OK) /* 申请失败，本次初始化到此结束。 */
+status = rmt_new_tx_channel(&channel_config, &driver->channel);     /* 先申请发送通道。 */
+if (status != ESP_OK)                                               /* 申请失败，返回错误，由调用者清理资源。 */
 {
     log_failure("rmt_new_tx_channel", status, __func__, __LINE__);
     return status;
 }
 
-/* 再创建编码器，供后续发送使用。 */
-status = rmt_new_copy_encoder(&encoder_config, &driver->encoder);
-if (status != ESP_OK) /* 保留失败原因，让调用者清理已有资源。 */
+status = rmt_new_copy_encoder(&encoder_config, &driver->encoder);   /* 再创建编码器，供后续发送使用。 */
+if (status != ESP_OK)                                               /* 保留失败原因，让调用者清理已有资源。 */
 {
     log_failure("rmt_new_copy_encoder", status, __func__, __LINE__);
     return status;
 }
 
-status = rmt_enable(driver->channel); /* 最后启用发送通道。 */
-if (status != ESP_OK) /* 未启用成功，不标记为可用。 */
+status = rmt_enable(driver->channel);                               /* 最后启用发送通道。 */
+if (status != ESP_OK)                                               /* 未启用成功，不标记为可用。 */
 {
     log_failure("rmt_enable", status, __func__, __LINE__);
     return status;
 }
-driver->enabled = TRUE; /* 前面都成功了，后续才可使用通道。 */
+driver->enabled = TRUE;                                             /* 前面都成功了，后续才可使用通道。 */
 return ESP_OK;
 ```
 

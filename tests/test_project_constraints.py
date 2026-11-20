@@ -119,7 +119,7 @@ class RuntimePropagationTests(unittest.TestCase):
             self.assertIn('Huawei takes precedence', prompt)
             self.assertIn('does not expand approved paths', prompt)
             for text in ('函数上方的Doxygen不能替代', '真实函数名',
-                         '不以AI味评分', '函数名说明动作和对象'):
+                         '不以AI味评分', '函数名说明动作和对象', '同一函数内普通行后注释'):
                 self.assertIn(text, prompt)
 
     def test_non_c_worker_does_not_receive_c_format_rules(self):

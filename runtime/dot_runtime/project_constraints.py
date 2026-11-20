@@ -21,6 +21,8 @@ def prompt():
             'Huawei takes precedence. Apply PC-U01 through PC-U26 by scope, including Allman braces, '
             'precomputed if results with preserved short-circuit, definition/header documentation and semantic bool. '
             'Function Doxygen is not enough: explain meaningful internal stages, branches, failure exits and state commits in concise natural Chinese. '
+            'Put in-function flow comments on the right of their code and align comment starts within each function using spaces, including nested branches. '
+            'Do not move a short stage summary above code; only documented Huawei/readability exceptions may use another placement. '
             'Use action/object function names and meaningful variable names, with units where needed; preserve existing SDK/ABI and task scope. '
             'Feature C files need a truthful file-header call-flow overview, including asynchronous triggers where applicable. '
             'Inspect actual candidate paths and comments, not comment counts, AI-style scores or Doxygen PASS alone. '

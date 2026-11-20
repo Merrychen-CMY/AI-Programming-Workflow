@@ -18,7 +18,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.c",
-      "repository_sha256": "7300bcfbca0cac947c23f2e6b03442c8c9e0f2d5901325d748b7251cdd801f5e"
+      "repository_sha256": "588fb420d178a578ee6bd6c86160e02f334934c8c39511075491e539471887e8"
     },
     {
       "path": "standards/embedded-c/v1.3/doxygen/examples/commented_module.h",
@@ -194,11 +194,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/adoption.json",
-      "repository_sha256": "5d72dd6be580ea646937e6df6bc01ad305c9d2b4dc9e12d115d690b491866ef8"
+      "repository_sha256": "938a5b2ba65e6dce6accf80c735b92c8838f4bcb1c0fca6026d41bd59a2e13c5"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/README.md",
-      "repository_sha256": "bd67821b12e231d10a64f862abc7b895f1f716276f72598f95cd25828714d782"
+      "repository_sha256": "9c3a34fbacbf3d1889cba3b6e9218b0a298fa5b0be2099b0845d5cabab269c83"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/source.json",
@@ -226,7 +226,7 @@
     },
     {
       "path": "standards/embedded-c/v1.3/reference/04-doxygen-api.md",
-      "repository_sha256": "fbcf028c3faf4efffa48f8177e49398e1fb362c9d234843535e469b3dfdd3a32"
+      "repository_sha256": "0a0b5a0048a40bba4880f007e657a899bb407bd36a79a35ece4799a3f1a2344d"
     },
     {
       "path": "standards/embedded-c/v1.3/reference/05-resources-realtime.md",
@@ -298,11 +298,11 @@
     },
     {
       "path": "standards/embedded-c/v1.3/source/standard.txt",
-      "repository_sha256": "422e659864524d67e309a1ced0bed21289024f609cb4fd23e8a9e10eafb84fe6"
+      "repository_sha256": "84634e8846790a48a5317c5d639be293a43c0b6fcba31302f8fa57a22f4bc505"
     },
     {
       "path": "standards/embedded-c/v1.3/project-constraints/readable-style.md",
-      "repository_sha256": "3cd656d922de675de3ad901636635162036866d17d2b24122ac18ac377b95aac"
+      "repository_sha256": "13c7df377f215ced787a9b40366ada8328f221638d2f71ab29935135801c4cb8"
     }
   ],
   "changes": [

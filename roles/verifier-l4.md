@@ -37,4 +37,4 @@
 
 嵌入式C任务按 [用户规范V1.3](../standards/embedded-c/README.md) 和 [职责映射](../policy/embedded-c.json) 补读本职责所需章节，维护规范规则到任务/验证证据的关联。
 
-C项目还须应用[可读的命名与流程注释](../standards/embedded-c/v1.3/project-constraints/readable-style.md)：文件头说明真实调用流程，函数头保留Doxygen，函数内用简短自然中文解释关键步骤、分支和失败去向；函数/变量名直接体现用途。华为规范优先，不扩展本次修改权限，不用Doxygen通过替代语义审核。
+C项目还须应用[可读的命名与流程注释](../standards/embedded-c/v1.3/project-constraints/readable-style.md)：文件头说明真实调用流程，函数头保留Doxygen，函数内用简短自然中文解释关键步骤、分支和失败去向，放在对应代码右侧，同一函数内用空格对齐成一列（含嵌套分支）；不得仅以逻辑段总述为由移到上方，例外按华为要求及具体可读性依据记录；函数/变量名直接体现用途。华为规范优先，不扩展本次修改权限，不用Doxygen通过替代语义审核。

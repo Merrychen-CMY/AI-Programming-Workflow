@@ -54,20 +54,20 @@ static sample_status sample_batch_sum(const uint16_t *values,
                                      size_t value_count,
                                      uint32_t *batch_total)
 {
-    uint32_t sum = 0U;   /* 当前批次已检查采样值之和，只有全部有效才写入输出。 */
-    size_t index;       /* 当前采样下标，访问范围受value_count限制。 */
+    uint32_t sum = 0U;                          /* 当前批次已检查采样值之和，只有全部有效才写入输出。 */
+    size_t index;                               /* 当前采样下标，访问范围受value_count限制。 */
 
     for (index = 0U; index < value_count; ++index)
     {
-        if (values[index] > SAMPLE_MAX_VALUE) /* 任一采样越界时整批失败，不提交局部总和。 */
+        if (values[index] > SAMPLE_MAX_VALUE)   /* 任一采样越界时整批失败，不提交局部总和。 */
         {
             return SAMPLE_STATUS_VALUE_OUT_OF_RANGE;
         }
 
-        sum += values[index]; /* 只累计已检查的值，暂不改调用方的数据。 */
+        sum += values[index];                   /* 只累计已检查的值，暂不改调用方的数据。 */
     }
 
-    *batch_total = sum; /* 整批都有效，再把总和交出去。 */
+    *batch_total = sum;                         /* 整批都有效，再把总和交出去。 */
     return SAMPLE_STATUS_OK;
 }
 
@@ -84,12 +84,12 @@ static sample_status sample_batch_sum(const uint16_t *values,
  */
 void sample_accumulator_reset(sample_accumulator *accumulator)
 {
-    if (accumulator == NULL) /* 允许空对象，本次不执行清空。 */
+    if (accumulator == NULL)    /* 允许空对象，本次不执行清空。 */
     {
         return;
     }
 
-    accumulator->total = 0U; /* 清空总和，让这个对象可以重新开始累计。 */
+    accumulator->total = 0U;    /* 清空总和，让这个对象可以重新开始累计。 */
     accumulator->count = 0U;
 }
 
@@ -116,36 +116,34 @@ sample_status sample_accumulator_add(sample_accumulator *accumulator,
                                     const uint16_t *values,
                                     size_t value_count)
 {
-    uint32_t batch_total;   /* 整批校验成功后才能读取的批次总和。 */
-    sample_status status;   /* 保留具体失败原因，返回给调用者。 */
+    uint32_t batch_total;                                                   /* 整批校验成功后才能读取的批次总和。 */
+    sample_status status;                                                   /* 保留具体失败原因，返回给调用者。 */
 
-    if ((accumulator == NULL) || (values == NULL) || (value_count == 0U)) /* 输入不完整。 */
+    if ((accumulator == NULL) || (values == NULL) || (value_count == 0U))   /* 输入不完整。 */
     {
         return SAMPLE_STATUS_INVALID_ARGUMENT;
     }
 
     if ((accumulator->count > SAMPLE_MAX_COUNT) ||
-        (accumulator->total > accumulator->count * SAMPLE_MAX_VALUE)) /* 已有状态无效。 */
+        (accumulator->total > accumulator->count * SAMPLE_MAX_VALUE))       /* 已有状态无效。 */
     {
         return SAMPLE_STATUS_INVALID_ARGUMENT;
     }
 
-    if (value_count > SAMPLE_MAX_COUNT - accumulator->count) /* 剩余容量装不下整批数据。 */
+    if (value_count > SAMPLE_MAX_COUNT - accumulator->count)                /* 剩余容量装不下整批数据。 */
     {
         return SAMPLE_STATUS_CAPACITY_EXCEEDED;
     }
 
-    /* 先检查整批数据；此处失败时，累加器还没有被改动（逻辑段总述）。 */
-    status = sample_batch_sum(values, value_count, &batch_total);
-    if (status != SAMPLE_STATUS_OK) /* 整批失败，保持累加器和诊断计数不变。 */
+    status = sample_batch_sum(values, value_count, &batch_total);           /* 先检查整批数据，此时还没改累加器。 */
+    if (status != SAMPLE_STATUS_OK)                                         /* 整批失败，保持累加器和诊断计数不变。 */
     {
         return status;
     }
 
-    /* 检查全部通过，再一起更新总和与数量；调用者须保证无并发访问（逻辑段总述）。 */
-    accumulator->total += batch_total;
+    accumulator->total += batch_total;                                      /* 检查都通过，再更新总和与数量。 */
     accumulator->count += value_count;
-    if (s_successful_batches < UINT32_MAX) /* 诊断计数饱和后不回绕。 */
+    if (s_successful_batches < UINT32_MAX)                                  /* 诊断计数饱和后不回绕。 */
     {
         ++s_successful_batches;
     }
