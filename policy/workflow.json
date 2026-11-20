@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.23.3",
+  "policy_version": "3.23.4",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -208,5 +208,10 @@
     "new_question_evidence_baseline_or_decision_requires_analysis": true,
     "host_discovery": "needed_capabilities_only",
     "guide": "docs/guides/workflow-efficiency.md"
+  },
+  "evidence_handoff": {
+    "latest_tool_result": "bounded_working_view_before_historical_compaction",
+    "latest_evidence_page": "preserve_content_hash_and_cursor",
+    "hard_limit": "NOT_SENT_before_ledger_reservation"
   }
 }

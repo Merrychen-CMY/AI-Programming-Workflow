@@ -47,6 +47,19 @@ def bounded_view(value, limit):
         view = excerpt(value, text_limit, item_limit)
         if len(encoded(view)) <= limit:
             return view
+    # Wide logs must not crowd out the investigation's conclusion and next action.
+    if isinstance(value, dict):
+        keys = ('status', 'summary', 'reason', 'recommended_action', 'recovery_advice',
+                'next', 'findings', 'solutions', 'investigation_steps',
+                'missing_information', 'permission_gaps', 'output')
+        view = {'omitted': True, 'original_bytes': len(encoded(value)),
+                'sha256': hashlib.sha256(encoded(value)).hexdigest()}
+        for key in keys:
+            if key in value:
+                candidate = {**view, key: excerpt(value[key], 1200, 3)}
+                if len(encoded(candidate)) <= limit:
+                    view = candidate
+        return view
     return {'omitted': True, 'original_bytes': len(encoded(value)),
             'sha256': hashlib.sha256(encoded(value)).hexdigest()}
 
@@ -101,7 +114,7 @@ def compact_tool_output(root, text, limit=2000):
 
 
 def fit_history(root, history, size, target=230000):
-    """Use the entire request budget; keep reasoning/call IDs and newest evidence intact when possible."""
+    """Compact old observations; deliver the newest result before archiving it."""
     import copy
     result = copy.deepcopy(history)
     # Bound repeated observations even when the full request still fits. The
@@ -109,14 +122,27 @@ def fit_history(root, history, size, target=230000):
     target = min(target, size([]) + 40000)
     if size(result) <= target:
         return result
-    completed = {item.get('call_id') for item in result if item.get('type') == 'function_call'}
+    completed = {item.get('call_id'): item.get('name') for item in result
+                 if item.get('type') == 'function_call'}
+    outputs = [item for item in result if item.get('type') == 'function_call_output'
+               and item.get('call_id') in completed]
+    newest = outputs[-1] if outputs else None
+    # researched_request already bounds ordinary results to 16 KB and evidence
+    # reads to one page. Keep that working set even if it exceeds the soft target.
+    # Direct callers may supply an unbounded ordinary result; archive it once.
+    # Never rearchive a requested page: that would make read_evidence unreadable.
+    if newest is not None and completed[newest['call_id']] != 'read_evidence':
+        newest['output'] = compact_tool_output(root, newest.get('output'), 16000)
     for limit in (2000, 350):
         for item in result:  # Oldest observations first; no tool replay or model summarizer.
-            if item.get('type') != 'function_call_output' or item.get('call_id') not in completed:
+            if (item is newest or item.get('type') != 'function_call_output'
+                    or item.get('call_id') not in completed):
                 continue
             item['output'] = compact_tool_output(root, item.get('output'), limit)
             if size(result) <= target:
                 return result
+    # The caller retains its hard NOT_SENT size check. Do not satisfy a byte
+    # target by erasing the answer the model just requested.
     return result
 
 

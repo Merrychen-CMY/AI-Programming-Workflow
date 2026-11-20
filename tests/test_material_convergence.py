@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import test_l2_recovery as fixtures
 import test_delegated_l1 as delegated
-from dot_runtime.input_material import material_packet, compact_tool_output, fit_history, read_evidence
+from dot_runtime.input_material import material_packet, compact_tool_output, fit_history, read_evidence, InputRejected
 from dot_runtime.controller import atomic_json, file_hash, read_json
 from dot_runtime.gpt_dot import researched_request
 
@@ -88,12 +88,85 @@ class MaterialViews(unittest.TestCase):
         self.assertEqual(len(result), len(history))
         self.assertEqual(fit_history(self.root, result, size), result)
 
+    def test_wide_result_keeps_conclusion_instead_of_only_omission_metadata(self):
+        value = {f'log_{i}': 'x' * 2000 for i in range(180)}
+        value.update(status='FAIL', summary='Compiler installed; initialize its environment.',
+                     recommended_action='prepare_environment', findings=['INCLUDE is empty'])
+        packet = material_packet(self.root, value, 16000)
+        self.assertEqual(packet['recorded_data']['summary'], value['summary'])
+        self.assertEqual(packet['recorded_data']['recommended_action'], value['recommended_action'])
+        self.assertEqual(read_json(self.root / packet['source_record']), value)
+
+    def test_soft_target_cannot_remove_the_requested_page(self):
+        page = {'status': 'PASS', 'content': 'actual stdout ' * 400, 'next_offset': 6000}
+        history = [{'type': 'function_call', 'call_id': 'read', 'name': 'read_evidence', 'arguments': '{}'},
+                   {'type': 'function_call_output', 'call_id': 'read', 'output': json.dumps(page)}]
+        view = fit_history(self.root, history, lambda rows: len(json.dumps(rows)), target=500)
+        self.assertEqual(view, history)
+        self.assertFalse((self.root / 'api/materials').exists())
+
 
 class LongChain(unittest.TestCase):
     setUp = fixtures.L2RecoveryTests.setUp
     bridge = fixtures.L2RecoveryTests.bridge
     controller = fixtures.L2RecoveryTests.controller
     allocate = fixtures.L2RecoveryTests.allocate
+
+    def pressured_call(self, name, arguments, identifier):
+        response = delegated.call_response(name, arguments)
+        response['output'][0]['call_id'] = identifier
+        # Uncompressible call arguments/response items can consume the soft
+        # history budget. Use synthetic data, never actual model reasoning.
+        response['output'].insert(0, {'type': 'reasoning', 'id': identifier + '-context',
+            'summary': [{'type': 'summary_text', 'text': 'synthetic context ' * 2600}]})
+        return response
+
+    def test_requested_pages_reach_actual_sender_under_history_pressure(self):
+        b = self.bridge([]); self.allocate(b)
+        value = {'summary': 'Initialize MSVC before starting the controlled process.',
+                 'log': 'evidence-line\n' * 2000}
+        packet = material_packet(b.root, value, 2000)
+        first = {'path': packet['source_record'], 'sha256': packet['source_sha256'], 'offset': '0'}
+        page = read_evidence(b.root, first)
+        second = {**first, 'offset': str(page['next_offset'])}
+        page2 = read_evidence(b.root, second)
+        before = (b.root / packet['source_record']).read_bytes()
+        self.responses.extend([self.pressured_call('read_evidence', first, 'page-1'),
+                               delegated.call_response('read_evidence', second),
+                               delegated.call_response('stop', {'reason': 'Read complete'})])
+        researched_request(b.client(), 'Read the exact evidence pages.')
+        for request, expected in zip(self.requests[1:], (page, page2)):
+            actual = request['input'][-1]['output'].split('\n', 1)[-1]
+            self.assertEqual(json.loads(actual), expected)
+        self.assertEqual((b.root / packet['source_record']).read_bytes(), before)
+        self.assertFalse(b.workers.calls)
+
+    def test_latest_investigation_conclusion_reaches_sender_under_pressure(self):
+        b = self.bridge([]); self.allocate(b)
+        client = b.client()
+        result = {'status': 'FAIL', 'summary': 'Tools installed; initialize MSVC environment.',
+                  'recommended_action': 'prepare_environment', 'findings': ['INCLUDE and LIB are empty'],
+                  'log': 'diagnostic ' * 2000}
+        client.research = Mock(return_value=result)
+        self.responses.extend([self.pressured_call('request_investigation', {'question': 'Inspect environment'}, 'probe'),
+                               delegated.call_response('stop', {'reason': 'Use the supplied solution'})])
+        researched_request(client, 'Inspect installed tools.')
+        output = self.requests[-1]['input'][-1]['output']
+        self.assertIn(result['summary'], output)
+        self.assertIn(result['recommended_action'], output)
+        self.assertIn('INCLUDE and LIB are empty', output)
+        self.assertFalse(b.workers.calls)
+
+    def test_hard_limit_refuses_before_send_instead_of_erasing_current_evidence(self):
+        b = self.bridge([]); self.allocate(b)
+        history = [{'type': 'function_call', 'name': 'read_evidence', 'call_id': 'page', 'arguments': '{}'},
+                   {'type': 'function_call_output', 'call_id': 'page',
+                    'output': json.dumps({'content': 'required evidence ' * 400})}]
+        with self.assertRaises(InputRejected) as raised:
+            b.client().request('baseline ' * 28000, input_items=history)
+        self.assertEqual(raised.exception.diagnostic['outcome'], 'NOT_SENT')
+        self.assertFalse(self.requests)
+        self.assertFalse((b.root / 'api/ledger.json').exists())
 
     def test_forty_observations_keep_original_views_and_call_pairing(self):
         self.original['limits']['api_calls'] = 60
