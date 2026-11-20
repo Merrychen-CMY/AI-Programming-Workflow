@@ -68,7 +68,7 @@ def verify_command(command: dict, executable: str, phase: str) -> None:
 
 
 def verify_generated(report: dict, source: Path, output: Path,
-                     executable: str, version: str) -> None:
+                     executable: str, version: str, files=FILES) -> None:
     """Check actual execution and independently read/hash the emitted evidence."""
     require(report.get("checker") == "doxygen-owned-c", "Unexpected checker identity")
     require(report.get("actual_version") == version, "Actual Doxygen version differs")
@@ -82,7 +82,7 @@ def verify_generated(report: dict, source: Path, output: Path,
     require(commands[1]["argv"] == [executable, str(config)], "Wrong generation config")
     require(config.is_file() and config.stat().st_size > 0, "Controlled config is empty")
     require(digest(config) == report.get("config_sha256"), "Config hash differs")
-    require(report.get("source_files") == {name: digest(source / name) for name in FILES},
+    require(report.get("source_files") == {name: digest(source / name) for name in files},
             "Source evidence does not describe the actual fixture files")
     xml_files = report.get("xml_files", {})
     require("generated/xml/index.xml" in xml_files and len(xml_files) > 1,
@@ -95,7 +95,7 @@ def verify_generated(report: dict, source: Path, output: Path,
                 "Generated XML is missing or empty: " + relative)
         require(digest(xml_path) == expected_digest, "Generated XML hash differs: " + relative)
     counts = report.get("checks", {})
-    require(counts.get("source_file_count") == 2 and counts.get("compound_count", 0) >= 3
+    require(counts.get("source_file_count") == len(files) and counts.get("compound_count", 0) >= 3
             and counts.get("member_count", 0) > 0 and counts.get("parameter_count", 0) > 0,
             "Generated XML did not inspect the fixture files, structure and parameters")
     saved = json.loads((output / "report.json").read_text(encoding="utf-8"))
@@ -158,6 +158,47 @@ def run_scenarios(work: Path, executable: str, version: str) -> int:
                 name + " failed without identifying the intended documentation defect")
         completed_case(name + ": real Doxygen/XML gate refused the mutated documentation")
 
+    # The same named parameter at both declaration and definition caused the LED task failure.
+    source, duplicate_output = copy_fixture(work, "duplicate-definition")
+    implementation = source / "commented_module.c"
+    original = implementation.read_text(encoding="utf-8")
+    # Select by the actual definition, without changing the private helper's valid tags.
+    definition = original.index("void sample_accumulator_reset(")
+    start = original.rfind("/**", 0, definition)
+    duplicate = original[:start] + original[start:].replace(
+        "/**", "/**\n * @param[in,out] accumulator 重复声明处契约的错误示例。", 1)
+    implementation.write_text(duplicate, encoding="utf-8", newline="\n")
+    rejected = check_doxygen(source, duplicate_output, version, doxygen=executable)
+    require(rejected['status'] == 'FAIL' and any(
+        'sample_accumulator_reset' in item and 'parameter' in item for item in rejected['findings']),
+        'Declaration/definition duplicate parameter must be rejected: ' + diagnostic(rejected))
+    verify_generated(rejected, source, duplicate_output, executable, version)
+    completed_case('duplicate declaration/definition parameter: refused without suppressing warnings')
+    implementation.write_text(original, encoding="utf-8", newline="\n")
+    repaired_output = work / 'repaired-definition' / 'evidence'
+    repaired = check_doxygen(source, repaired_output, version, doxygen=executable)
+    require(repaired['status'] == 'PASS', 'Restored implementation paragraphs must pass: ' + diagnostic(repaired))
+    verify_generated(repaired, source, repaired_output, executable, version)
+    completed_case('repair duplicate: header contract and implementation explanation both retained')
+
+    source, duplicate_output = copy_fixture(work, "duplicate-header")
+    replace_once(source, " * @param[in] value_count 输入数组",
+                 " * @param[in] value_count 重复参数标签。\n * @param[in] value_count 输入数组")
+    rejected = check_doxygen(source, duplicate_output, version, doxygen=executable)
+    require(rejected['status'] == 'FAIL' and any(
+        'sample_accumulator_add' in item and 'parameter' in item for item in rejected['findings']),
+        'Duplicate within the header must still fail: ' + diagnostic(rejected))
+    verify_generated(rejected, source, duplicate_output, executable, version)
+    completed_case('duplicate in one header: still refused')
+
+    led_source, led_output = work / 'led-module-source', work / 'led-module-evidence'
+    shutil.copytree(FIXTURES.parent / 'module-example', led_source)
+    led_files = tuple(sorted(p.name for p in led_source.iterdir() if p.suffix in ('.c', '.h')))
+    led = check_doxygen(led_source, led_output, version, doxygen=executable)
+    require(led['status'] == 'PASS', 'LED entry/pattern/driver documentation must pass: ' + diagnostic(led))
+    verify_generated(led, led_source, led_output, executable, version, led_files)
+    completed_case('LED module example: entry, pattern and simulated driver documented together')
+
     empty_source, empty_output = work / "empty-source", work / "empty-evidence"
     empty_source.mkdir()
     empty = check_doxygen(empty_source, empty_output, version, doxygen=executable)
@@ -187,7 +228,7 @@ def run_scenarios(work: Path, executable: str, version: str) -> int:
     require(tree_hashes(output) == before, "Refused output reuse modified existing evidence")
     completed_case("output reuse: refused before execution; original evidence unchanged")
 
-    require(completed == 8, "The intended eight scenarios did not all execute")
+    require(completed == 12, "The intended twelve scenarios did not all execute")
     return completed
 
 
@@ -212,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, VerificationFailure) as exc:
         print("FAIL: " + str(exc), file=sys.stderr)
         return 1
-    print(f"PASS: {count} real-tool integration scenarios; 5 XML generations and 6 version probes. "
+    print(f"PASS: {count} real-tool integration scenarios; 9 XML generations and 10 version probes. "
           "These check documentation structure and refusals, not C behaviour or product compliance.")
     return 0
 

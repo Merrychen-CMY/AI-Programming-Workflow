@@ -9,6 +9,7 @@ import { recoverOperation } from './operation-recovery.js';
 import { pythonCall } from './process.js';
 import { configuredAccess, accessReport, probeFiles } from './file-access.js';
 import { mkdir } from 'node:fs/promises';
+import { standardStatus } from './standard-status.js';
 
 export const updateFields = { workflow_updates: { action: 'status | check | diagnose | enable | disable | upgrade_preview | upgrade | upgrade_recover | initialization_preview | initialization_recover | initialization_finish. diagnose checks inert scratch file views without product execution, API or resetting a task. Initialization recovery requires exact native approval. Enable/disable only at user request.' } };
 export const updateDescriptions = { workflow_updates: 'Check releases, review task upgrades, or review a failed initialization. Previews are read-only; native approval is mandatory for recovery and baseline adoption. finish only completes recorded authorized local writes. Product UNKNOWN and final reports cannot reopen.' };
@@ -100,6 +101,10 @@ export function createBootstrap({ ctx, root, keyRef, fields,
       catch (error) { if (error.code?.startsWith('FILE_')) throw error;
         result = { error: error.message, executed_successfully: false }; }
       seen.set(session, runtime.manifest_sha256);
+      if (['workflow_status', 'dot_status'].includes(name)) {
+        const available = await updates.upgradeTarget(task).catch(() => null);
+        details.coding_standards = await standardStatus(runtime, available, result.coding_standards || null);
+      }
       return { ...result, workflow_runtime: details };
     } catch(error) {
       if(error.code?.startsWith('FILE_') || /RUNTIME_INTEGRITY/.test(error.message))

@@ -63,9 +63,9 @@ class AdoptionTests(unittest.TestCase):
     def test_macro_rule_cannot_be_removed_downgraded_or_claimed_as_huawei(self):
         original = copy.deepcopy(self.data['supplemental_requirements'])
         for change in ([], original * 2,
-                       [dict(original[0], level='SHOULD')],
-                       [dict(original[0], origin='Huawei_original')],
-                       [dict(original[0], product_status='PASS')]):
+                       [dict(original[0], level='SHOULD'), *original[1:]],
+                       [dict(original[0], origin='Huawei_original'), *original[1:]],
+                       [dict(original[0], product_status='PASS'), *original[1:]]):
             with self.subTest(change=change):
                 self.data['supplemental_requirements'] = change
                 self.assertTrue(self.errors())
@@ -132,6 +132,9 @@ class RuntimePropagationTests(unittest.TestCase):
             self.assertIn('Do not define macros with #define in owned .c files', prompt)
             self.assertIn('private header not exposed through public includes', prompt)
             self.assertIn('定义生效顺序', prompt)
+            self.assertIn('PC-M02', prompt)
+            self.assertIn('keep @param and @return/@retval only at the header declaration', prompt)
+            self.assertIn('L2 records responsibilities', prompt)
             for text in ('函数上方的Doxygen不能替代', '真实函数名',
                          '不以AI味评分', '函数名说明动作和对象', '同一函数内普通行后注释'):
                 self.assertIn(text, prompt)
@@ -156,6 +159,22 @@ class RuntimePropagationTests(unittest.TestCase):
 
     def test_non_c_worker_does_not_receive_c_format_rules(self):
         self.assertNotIn('PC-U07', self.approved().prompt('implementation', 'Python only'))
+
+    def test_status_reports_only_current_candidate_review_and_never_changes_state(self):
+        c = self.approved()
+        c.make_candidate()
+        before = copy.deepcopy(c.state)
+        self.assertEqual(runtime_constraints.status(c.state)['independent_review_status'], 'NOT_RUN')
+        self.assertEqual(c.state, before)
+        c.state['sessions'].append({'role': 'review', 'candidate_id': 'old', 'result': {'status': 'PASS'}})
+        self.assertEqual(runtime_constraints.status(c.state)['independent_review_status'], 'NOT_RUN')
+        c.state['sessions'].append({'role': 'review', 'candidate_id': c.state['candidate']['id'],
+                                    'result': {'status': 'PASS'}})
+        self.assertEqual(runtime_constraints.status(c.state)['independent_review_status'], 'PASS')
+        c.state['candidate']['baseline']['project_constraints'] = 'old-digest'
+        result = runtime_constraints.status(c.state)
+        self.assertEqual(result['independent_review_status'], 'STALE')
+        self.assertFalse(result['candidate_rules_match'])
 
     def test_changed_rule_file_invalidates_approval_before_dispatch(self):
         directory = self.root / 'constraints'

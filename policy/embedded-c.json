@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.22.2",
+  "workflow_version": "3.23.0",
   "standard_version": "1.3",
   "contract_schema_version": "1.1",
   "entrypoint": "standards/embedded-c/README.md",
@@ -37,12 +37,13 @@
       "TRUE"
     ],
     "boolean_conversion_scope": "semantic_bool_owned_interfaces_with_ABI_and_platform_compatibility",
-    "definition_documentation": "complete_Doxygen_above_definition_with_header_contract_preserved",
+    "definition_documentation": "header_machine_contract_and_definition_Doxygen_implementation_details",
     "c_statement_comment_placement": "right_aligned_column_within_function_using_spaces_with_documented_Huawei_readability_exceptions",
     "flow_comments": "meaningful_stages_branches_failures_and_state_commits_in_plain_Chinese",
     "feature_c_file_overview": "truthful_entry_call_flow_and_async_context_in_Doxygen_file_header",
     "purposeful_names": "action_object_functions_and_meaningful_variables_preserve_SDK_ABI",
-    "macro_definition_location": "corresponding_public_or_private_header_not_C_source"
+    "macro_definition_location": "corresponding_public_or_private_header_not_C_source",
+    "module_boundaries": "entry_orchestration_and_cohesive_modules_without_mechanical_splitting"
   },
   "readability": {
     "review_triggers": {
@@ -654,7 +655,7 @@
     "entrypoint": "standards/embedded-c/v1.3/project-constraints/README.md",
     "catalog": "standards/embedded-c/v1.3/project-constraints/adoption.json",
     "source": "standards/embedded-c/v1.3/project-constraints/source.json",
-    "revision": 4,
+    "revision": 5,
     "rules": 26,
     "huawei_takes_precedence": true,
     "legacy_file_scope_inherited": false,
@@ -663,7 +664,8 @@
     "runtime_integration": "runtime/dot_runtime/project_constraints.py",
     "review_mode": "independent_candidate_bound_review_and_risk_based_checks",
     "supplemental_rules": [
-      "PC-M01"
+      "PC-M01",
+      "PC-M02"
     ]
   }
 }

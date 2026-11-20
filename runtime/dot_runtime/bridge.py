@@ -86,6 +86,9 @@ class Bridge:
 
     def status(self):
         result = self._status()
+        from .project_constraints import status as standards_status
+        result['coding_standards'] = standards_status(
+            read_json(self.run_dir / 'state.json') if (self.run_dir / 'state.json').exists() else None)
         from .upgrades import records_for_control
         result['runtime_upgrades'] = records_for_control(self.root)
         from .operation_recovery import records_for_control as operation_records

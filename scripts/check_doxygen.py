@@ -272,7 +272,10 @@ def _check_xml(output: Path, root: Path, files: dict[str, str]) -> tuple[dict, d
                         if not _text(pitem.find("parameterdescription")):
                             findings.append(label + f" parameter {text} has no description")
             counts["parameter_count"] += len(params)
-            if sorted(params) != sorted(documented) or len(documented) != len(set(documented)):
+            if len(documented) != len(set(documented)):
+                findings.append(label + " has duplicate parameter documentation; keep machine tags at the header declaration "
+                                "and use implementation paragraphs at the definition (PC-U16)")
+            elif sorted(params) != sorted(documented):
                 findings.append(label + " parameter documentation does not match its named parameters exactly")
             return_type = _text(member.find("type"))
             returns = member.findall(".//simplesect[@kind='return']")

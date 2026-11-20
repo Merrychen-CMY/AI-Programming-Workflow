@@ -15,6 +15,25 @@ def baseline_digest():
     return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
 
 
+def status(state=None):
+    """Read-only view of the pinned rules and candidate-bound review records."""
+    state = state or {}
+    catalog = json.loads((DIRECTORY / 'adoption.json').read_text(encoding='utf-8'))
+    digest = baseline_digest()
+    candidate = state.get('candidate') or {}
+    matched = bool(candidate and candidate.get('baseline', {}).get('project_constraints') == digest)
+    reviews = [entry for entry in state.get('sessions', []) if entry.get('role') == 'review'
+               and candidate.get('id') and entry.get('candidate_id') == candidate['id']]
+    return {'workflow_version': (ROOT / 'VERSION').read_text(encoding='utf-8').strip(),
+            'project_constraints_revision': catalog['revision'], 'rules_digest': digest,
+            'coding_standard': (state.get('approved_plan') or {}).get('coding_standard'),
+            'approved_rules_match': (state.get('approved_baseline') or {}).get('project_constraints') == digest,
+            'candidate_id': candidate.get('id'), 'candidate_rules_match': matched,
+            'independent_review_status': ('STALE' if candidate and not matched else
+                reviews[-1]['result'].get('status', 'NOT_RUN') if reviews else 'NOT_RUN'),
+            'evidence_scope': 'Recorded review for this candidate and pinned rules; not a new verification or final acceptance.'}
+
+
 def prompt(*, compact=False, root=None):
     catalog = json.loads((DIRECTORY / 'adoption.json').read_text(encoding='utf-8'))
     if compact and root is not None:
@@ -27,6 +46,12 @@ def prompt(*, compact=False, root=None):
             'public macros in the module public header, implementation-only macros in a private header not exposed through public includes. '
             'Preserve values, suffixes, expansion semantics, conditional branches and definition/include order; verify affected translation units. '
             'Review actual candidate .c/.h paths and route findings to L2 before L3 repairs. '
+            'PC-M02: Keep main/entry files focused on startup and top-level flow; put complete drivers, protocols and algorithms in cohesive modules. '
+            'L2 records responsibilities, paths, public interfaces and private state in the existing plan; L4 reviews actual ownership and call/include boundaries. '
+            'Do not split by function counts, add empty wrappers or expand scope for advisory refactors. '
+            'For public functions, keep @param and @return/@retval only at the header declaration; retain Doxygen implementation @details/@par and @see header in .c. '
+            'Do not duplicate machine tags or self-copydoc the same function. Internal functions document their contracts at the definition. '
+            'Tool/rule conflicts go to L2 investigation and L1 assessment, not blind product retries. '
             'Function Doxygen is not enough: explain meaningful internal stages, branches, failure exits and state commits in concise natural Chinese. '
             'Put in-function flow comments on the right of their code and align comment starts within each function using spaces, including nested branches. '
             'Do not move a short stage summary above code; only documented Huawei/readability exceptions may use another placement. '

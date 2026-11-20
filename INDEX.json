@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "workflow_version": "3.22.2",
+  "workflow_version": "3.23.0",
   "project_name": "ReqPilot",
   "display_name": "ReqPilot · 需求领航",
   "repository": "https://github.com/Merrychen-CMY/ReqPilot",
@@ -434,5 +434,6 @@
   "blocker_recovery_guide": "docs/guides/execution-scope.md",
   "efficiency_guide": "docs/guides/workflow-efficiency.md",
   "c_readable_style_guide": "standards/embedded-c/v1.3/project-constraints/readable-style.md",
-  "chatgpt_login_guide": "docs/guides/chatgpt-login.md"
+  "chatgpt_login_guide": "docs/guides/chatgpt-login.md",
+  "c_workflow_quality_guide": "docs/guides/c-workflow-quality.md"
 }

@@ -81,6 +81,7 @@ static sample_status sample_batch_sum(const uint16_t *values,
  * 调用者保证对象无并发访问；本教学接口未验证ISR调用，不从ISR调用。
  * 先判空，再清空两个字段；不阻塞、无等待超时。声明处保留机器参数契约，
  * 此处以段落补充完整语义，避免Doxygen合并声明与定义时重复参数条目。
+ * @see commented_module.h
  */
 void sample_accumulator_reset(sample_accumulator *accumulator)
 {
@@ -111,6 +112,7 @@ void sample_accumulator_reset(sample_accumulator *accumulator)
  * 不保存指针，无堆分配、I/O、阻塞、异步受理或取消；最大检查SAMPLE_MAX_COUNT个元素。
  * 失效非空指针或区域重叠违反调用方前置条件，本实现不保证识别。
  * 声明处保留完整参数与返回契约，定义处段落描述同步维护。
+ * @see commented_module.h
  */
 sample_status sample_accumulator_add(sample_accumulator *accumulator,
                                     const uint16_t *values,
