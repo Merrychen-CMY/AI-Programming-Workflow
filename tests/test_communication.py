@@ -24,6 +24,15 @@ class CommunicationPolicyTests(unittest.TestCase):
     def test_policy_and_all_four_maxims_are_present(self):
         self.assertEqual(communication.validate_communication_policy(self.value), [])
 
+    def test_concise_exchange_reaches_l1_and_each_worker_without_hiding_failures(self):
+        from dot_runtime.scope_constraints import prompt, ROLE_RULES
+        prompts = [communication.l1_prompt(), *(prompt(role) for role in ROLE_RULES)]
+        for text in prompts:
+            for rule in self.value['agent_exchange_rules']:
+                self.assertIn(rule, text)
+        self.value['agent_exchange_rules'] = []
+        self.assertTrue(communication.validate_communication_policy(self.value))
+
     def test_missing_or_duplicate_maxim_is_refused(self):
         self.value['maxims'].pop()
         self.assertTrue(communication.validate_communication_policy(self.value))

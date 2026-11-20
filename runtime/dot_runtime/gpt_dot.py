@@ -26,7 +26,7 @@ from .clarifications import PlanningNeedsInfo, STAGES
 from .planning import PlanRejected, validate_proposal
 from . import resources
 from . import api_recovery
-from .input_material import InputRejected, encoded, material_packet, read_evidence
+from .input_material import InputRejected, encoded, material_packet, read_evidence, fit_history
 from .closure import L2_GUIDANCE
 
 
@@ -115,6 +115,11 @@ class ResponsesClient:
                 return {key: ('[image data]' if key == 'image_url' and value.get('type') == 'input_image'
                               else text_material(item)) for key, item in value.items()}
             return value
+        def request_size(items):
+            inputs = {'history': items, 'tools': tools, 'schema': schema}
+            return len((prompt + developer_message + json.dumps(text_material(inputs), ensure_ascii=False)).encode('utf-8'))
+        original_input_bytes = request_size(history)
+        history = fit_history(root or self.root.parent, history, request_size)
         inputs = {'history': history, 'tools': tools, 'schema': schema}
         wire = (prompt + developer_message + json.dumps(inputs, ensure_ascii=False)).encode('utf-8')
         if len(wire) > 32_000_000:
@@ -146,7 +151,10 @@ class ResponsesClient:
             resources.require(self.delegation, root, 'api_calls', len(ledger['attempts']))
         if elapsed >= limits['wall_time_seconds'] or len(ledger['attempts']) >= limits['api_calls']:
             raise ValueError('Delegated API/time budget exhausted')
-        item = {'id': uuid.uuid4().hex, 'status': 'RESERVED', 'started_at': time.time()}
+        item = {'id': uuid.uuid4().hex, 'status': 'RESERVED', 'started_at': time.time(),
+                'input_material': {'original_text_bytes': original_input_bytes,
+                    'sent_text_bytes': len(material), 'history_bytes': len(encoded(text_material(history))),
+                    'prompt_bytes': len(prompt.encode('utf-8')), 'developer_bytes': len(developer_message.encode('utf-8'))}}
         ledger['attempts'].append(item)
         atomic_json(ledger_path, ledger)
         payload = {'model': self.model, 'store': False, 'max_output_tokens': limits['api_max_output_tokens'],
@@ -229,12 +237,8 @@ def researched_request(client, prompt, *, tools=None, schema=None):
     last_failed_call, blocked_repeat = None, False
     history = []
     while True:
-        # Preserve every response item and call ID; reduce only already completed tool
-        # output views. This neither replays tools nor discards stateless reasoning.
-        if evidence_root is not None and len(encoded(history)) > 80000:
-            for item in history:
-                if item.get('type') == 'function_call_output':
-                    item['output'] = json.dumps(material_packet(evidence_root, item['output'], 2000), ensure_ascii=False)
+        # ResponsesClient fits a copy against the full request budget. The source
+        # history stays unchanged, so reading a page cannot create nested archives.
         response = client.request(prompt, tools=available or None, schema=schema, input_items=history)
         calls = [item for item in response['output'] if item.get('type') == 'function_call']
         names = {'request_investigation'} if research else set()
@@ -362,6 +366,12 @@ def _propose_plan_once(client, requirements, example, context, implementation_us
         'Put independent build/test/HIL steps in verification.test_instructions and the supported test_command; '
         'verification.test_contract must bind exact required test IDs, approved non-applicable IDs with reasons, '
         'and current candidate product source files to a supported unittest/pytest/CMake-CTest protocol. '
+        'Establish the verification route once: Python source loading, host C/C++ executable tests, and target firmware/HIL '
+        'are different evidence routes. Python tests do not prove C source compilation; a target ELF is not a host CTest executable. '
+        'For embedded work, map each required build/flash/serial/visual check to its exact authorized L4 action, '
+        'candidate or firmware hash, required evidence, prerequisite and failure/resume path in test_instructions. '
+        'Keep hardware/manual results separate from host PASS; identify a missing executor or human receipt as a concrete '
+        'verification-plan gap for L1, with a proposed supported route, rather than repeatedly asking for tool versions. '
         'Do not pass an old build directory or an arbitrary wrapper; the controller owns fresh build/test paths. '
         'Declare bounded local facility_recovery actions only when the baseline authorizes their exact commands; '
         'otherwise facility repair needs L1 review, never an invented retry action. '
@@ -385,7 +395,8 @@ def _propose_plan_once(client, requirements, example, context, implementation_us
         'For C keep Huawei and Doxygen. Planning may run diagnostic commands, but must not start product implementation or acceptance tests.\nREQUIREMENTS:\n' + requirements
         + '\nDELEGATION:\n' + json.dumps(client.delegation, ensure_ascii=False)
         + '\nKNOWN ENVIRONMENT:\n' + context + '\nEXAMPLE SHAPE:\n' + json.dumps(example, ensure_ascii=False)
-        + constraints_prompt(),
+        + constraints_prompt(compact=isinstance(getattr(client, "root", None), Path),
+                             root=getattr(client, "governance_root", None) or (client.root.parent if isinstance(getattr(client, "root", None), Path) else None)),
         tools=[function('propose_plan', {'plan_json': {'type': 'string'}}),
                function('request_clarification', {'reason': {'type': 'string'}, 'gaps': {
                    'type': 'array', 'minItems': 1, 'maxItems': 50, 'items': {

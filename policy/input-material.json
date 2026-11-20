@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "api_input_limit_bytes": 250000,
-  "triage_view_target_bytes": 60000,
+  "triage_view_target_bytes": 18000,
   "local_rejection_outcome": "NOT_SENT",
   "local_rejection_operation_status": "COMPLETED_REJECTED",
   "investigation_owner": "L2",
@@ -18,8 +18,12 @@
   "image_bytes_count_as_text": false,
   "planning_research_view_bytes": 32000,
   "tool_output_view_bytes": 16000,
-  "tool_history_compaction_threshold_bytes": 80000,
+  "tool_history_compaction_threshold_bytes": 40000,
   "l2_evidence_read_tool": "read_evidence",
   "residual_input_recovery_coordinator": "L1",
-  "approved_baseline_silently_truncated": false
+  "approved_baseline_silently_truncated": false,
+  "complete_request_target_bytes": 230000,
+  "idempotent_evidence_references": true,
+  "decoded_legacy_evidence_view": true,
+  "request_size_accounting": true
 }

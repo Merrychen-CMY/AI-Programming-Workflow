@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy_version": "3.20.2",
+  "policy_version": "3.21.0",
   "status": "reference_specification",
   "execution_authority": false,
   "description": "L1唯一用户入口、代理中间审批；GPT/DOT承担L2/L5，所有回流先经L2。用户只审核最终报告。",
@@ -200,5 +200,13 @@
   "agent_capability_policy": "policy/agent-capabilities.json",
   "file_environment_policy": "policy/file-environment.json",
   "blocker_recovery_guide": "docs/guides/execution-scope.md",
-  "efficiency_guide": "docs/guides/workflow-efficiency.md"
+  "efficiency_guide": "docs/guides/workflow-efficiency.md",
+  "efficiency": {
+    "supplemental_same_failure_candidate_reuses_issue": true,
+    "supplemental_analysis_preserves_history": true,
+    "unchanged_completed_investigation_reuses_result": true,
+    "new_question_evidence_baseline_or_decision_requires_analysis": true,
+    "host_discovery": "needed_capabilities_only",
+    "guide": "docs/guides/workflow-efficiency.md"
+  }
 }

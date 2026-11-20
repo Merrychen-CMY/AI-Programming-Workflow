@@ -6,7 +6,7 @@ from .local_tools import LocalTools
 
 
 SPECS = {
-    'host_tools': ('Discover current Harness tools and exact schemas. Empty query lists all; follow next_offset.',
+    'host_tools': ('Find needed Harness tools by query; read further pages only if the required tool is missing.',
                    {'query': {'type': 'string'}, 'offset': {'type': 'integer', 'minimum': 0}}),
     'host_call': ('Invoke a discovered Harness tool through host permission checks. Use its exact schema.',
                   {'name': {'type': 'string'}, 'arguments_json': {'type': 'string'}}),
@@ -25,8 +25,9 @@ class HostTools(LocalTools):
                 for name, (description, fields) in SPECS.items()]
 
     def instructions(self):
-        return ('\nFULL HOST CAPABILITIES: use host_tools to discover ALL tools admitted for this Harness session, '
-                'then host_call with their exact arguments. This includes files/patches/images, commands, web, '
+        return ('\nFULL HOST CAPABILITIES: use existing direct tools first; search host_tools for a needed capability, '
+                'then host_call with its exact arguments. Reuse schemas already returned in this turn; do not enumerate the full catalog. '
+                'This includes files/patches/images, commands, web, '
                 'background jobs, skills, subagents and communication, workflows, documents, presentation, '
                 'todos/goals/schedules and host/plugin management when installed. Do not infer lack of capability '
                 'from your L2 role. Read needed skill guidance using the discovered tools. '

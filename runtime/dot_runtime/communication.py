@@ -63,7 +63,7 @@ def validate_communication_policy(value):
     if not isinstance(value, dict):
         return ['Communication policy must be an object']
     errors = []
-    for name, expected in [('schema_version', 1), ('revision', 3),
+    for name, expected in [('schema_version', 1), ('revision', 4),
                            ('scope', 'L1_user_and_L1_DOT_communication_and_supporting_worker_reports')]:
         if type(value.get(name)) is not type(expected) or value.get(name) != expected:
             errors.append('Communication policy identity mismatch: ' + name)
@@ -111,6 +111,8 @@ def validate_communication_policy(value):
             or evaluation.get('speed_or_tokens_alone_define_success') is not False
             or evaluation.get('new_dashboard_or_user_form_required') is not False):
         errors.append('Communication efficiency needs evidence without extra user forms')
+    if not _text_list(value.get('agent_exchange_rules')):
+        errors.append('Concise agent exchange rules are missing')
     errors.extend(_validate_l1_expression(value.get('l1_user_expression')))
     return errors
 
@@ -191,7 +193,7 @@ def _shared_prompt(value):
 def l1_prompt():
     """L1-only natural-language guidance; DOT receives only the shared rules."""
     value = load_policy()
-    lines = [_shared_prompt(value),
+    lines = [_shared_prompt(value), exchange_prompt(),
              'L1 USER EXPRESSION — 以下仅约束L1向用户沟通需求和汇报的自然语言表达；'
              '独立审查据此核对完整性，不为作者辩护。原始需求、授权、验收、证据和华为/Doxygen规范优先。'
              '不改变工具字段、原始回执、状态机或批准，不增加模型调用和用户审批。']
@@ -201,3 +203,7 @@ def l1_prompt():
     lines.append('\n'.join(progress['headings']))
     lines.extend(progress['instructions'])
     return '\n'.join(lines)
+
+
+def exchange_prompt():
+    return "\nCONCISE AGENT HANDOFF:\n" + "\n".join(load_policy()["agent_exchange_rules"]) + "\n"

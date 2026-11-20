@@ -68,6 +68,46 @@ class RecoveryTests(unittest.TestCase):
             self.decide(c)
         self.assertEqual(c.adapter.calls, ['triage'])
 
+    def test_unchanged_question_reuses_completed_analysis_but_new_question_runs(self):
+        c = self.paused()
+        self.investigate(c)
+        first = copy.deepcopy(c.state['issues'][-1])
+        self.investigate(c)
+        self.assertEqual(c.adapter.calls, ['triage'])
+        self.assertEqual(c.state['issues'], [first])
+        c.investigate({'question': 'Check a different concrete hypothesis',
+                       'evidence': ['run/decision-request.json']})
+        self.assertEqual(c.adapter.calls, ['triage', 'triage'])
+        self.assertEqual(len(c.state['issues']), 1)
+        self.assertEqual(c.state['issues'][0]['id'], first['id'])
+        self.assertEqual(c.state['issues'][0]['failure'], first['failure'])
+        self.assertEqual(c.state['issues'][0]['analysis_history'][0]['analysis'], first['analysis'])
+        self.assertEqual(c.state['root_cause_counts'], {})
+
+    def test_a_new_decision_cannot_reuse_an_old_analysis_cache(self):
+        c = self.paused()
+        self.investigate(c)
+        c.request_l1_assessment('A new blocker requires the same bounded investigation')
+        self.investigate(c)
+        self.assertEqual(c.adapter.calls, ['triage', 'triage'])
+
+    def test_new_research_or_allocation_invalidates_the_same_question_cache(self):
+        from dot_runtime.controller import digest
+        c = self.paused()
+        self.investigate(c)
+        path = c.run_dir.parent / 'research/new-observation/record.json'
+        path.parent.mkdir(parents=True)
+        record = {'question': 'Inspect newly available SDK', 'result': {'status': 'PASS'}}
+        atomic_json(path, {'record': record, 'sha256': digest(record)})
+        self.investigate(c)
+        self.assertEqual(c.adapter.calls, ['triage', 'triage'])
+        self.investigate(c)
+        self.assertEqual(c.adapter.calls, ['triage', 'triage'])
+        # This manual-controller fixture has no delegated resource journal.
+        atomic_json(c.run_dir.parent / 'resources.json', {'fixture_allocation': 2})
+        self.investigate(c)
+        self.assertEqual(c.adapter.calls, ['triage', 'triage', 'triage'])
+
     def test_unresolved_analysis_cannot_be_overwritten_by_another_analysis(self):
         c = self.paused()
         c.state['analysis_activity'] = {'role': 'triage', 'output': 'old-analysis'}; c.save()

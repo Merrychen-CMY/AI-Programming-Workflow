@@ -15,8 +15,11 @@ def baseline_digest():
     return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
 
 
-def prompt():
+def prompt(*, compact=False, root=None):
     catalog = json.loads((DIRECTORY / 'adoption.json').read_text(encoding='utf-8'))
+    if compact and root is not None:
+        from .input_material import material_packet
+        catalog = material_packet(root, catalog, 2400)
     return ('\nPORTABLE C PROJECT CONSTRAINTS (apply only to applicable C/H and tasks):\n'
             'Huawei takes precedence. Apply PC-U01 through PC-U26 by scope, including Allman braces, '
             'precomputed if results with preserved short-circuit, definition/header documentation and semantic bool. '
@@ -30,4 +33,5 @@ def prompt():
             'This does not expand approved paths or authorize cleanup/refactoring. '
             'Independent review must report applicable PC-U IDs, candidate evidence, exclusions and unverified items. '
             'Doxygen or a generic PASS does not prove these semantic requirements.\n'
+            + ('Read the referenced applicable clauses before deciding a standards issue. Full independent compliance coverage remains required.\n' if compact else '')
             + json.dumps(catalog, ensure_ascii=False, sort_keys=True))

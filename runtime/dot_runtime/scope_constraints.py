@@ -103,4 +103,5 @@ ROLE_RULES = {
 
 
 def prompt(role):
-    return "\nTASK SCOPE AND MINIMUM CHANGE:\n" + COMMON + ROLE_RULES[role] + "\n"
+    from .communication import exchange_prompt
+    return "\nTASK SCOPE AND MINIMUM CHANGE:\n" + COMMON + ROLE_RULES[role] + exchange_prompt()

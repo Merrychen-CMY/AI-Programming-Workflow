@@ -112,7 +112,7 @@ class RuntimePropagationTests(unittest.TestCase):
     def test_each_c_worker_role_receives_all_rules_and_scope(self):
         c = self.approved()
         c.state['approved_plan']['coding_standard'] = 'huawei-c'
-        for role in ('implementation', 'test', 'review', 'triage'):
+        for role in ('implementation', 'test', 'review'):
             prompt = c.prompt(role, 'Inspect the assigned candidate')
             for index in range(1, 27):
                 self.assertIn(f'PC-U{index:02}', prompt)
@@ -121,6 +121,22 @@ class RuntimePropagationTests(unittest.TestCase):
             for text in ('函数上方的Doxygen不能替代', '真实函数名',
                          '不以AI味评分', '函数名说明动作和对象', '同一函数内普通行后注释'):
                 self.assertIn(text, prompt)
+
+    def test_triage_gets_bounded_rules_with_the_complete_original_available(self):
+        from dot_runtime.project_constraints import prompt as constraints_prompt, DIRECTORY
+        from dot_runtime.input_material import read_evidence
+        c = self.approved()
+        c.state['approved_plan']['coding_standard'] = 'huawei-c'
+        prompt = c.prompt('triage', 'Diagnose a specific Doxygen failure')
+        self.assertLess(len(prompt), len(c.prompt('review', 'Review all applicable rules')))
+        text = constraints_prompt(compact=True, root=c.run_dir.parent)
+        packet = json.loads(text.rsplit('\n', 1)[-1])
+        original = json.loads((c.run_dir.parent / packet['source_record']).read_text(encoding='utf-8'))
+        self.assertEqual(original, json.loads((DIRECTORY / 'adoption.json').read_text(encoding='utf-8')))
+        page = read_evidence(c.run_dir.parent, {'path': packet['source_record'],
+            'sha256': packet['source_sha256'], 'offset': '0'})
+        self.assertEqual(page['status'], 'PASS')
+        self.assertIn('Full independent compliance coverage remains required', text)
 
     def test_non_c_worker_does_not_receive_c_format_rules(self):
         self.assertNotIn('PC-U07', self.approved().prompt('implementation', 'Python only'))
